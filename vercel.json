@@ -1,0 +1,9 @@
+{
+  "name": "rentyourclaw",
+  "buildCommand": null,
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "http://193.58.121.157:3000/api/:path*" },
+    { "source": "/v1/:path*", "destination": "http://193.58.121.157:3000/v1/:path*" }
+  ]
+}

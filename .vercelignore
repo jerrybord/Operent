@@ -1,0 +1,6 @@
+backend/
+node_modules/
+.claude/
+*.html
+!public/**
+prototype-*.html

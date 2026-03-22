@@ -1,0 +1,3030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>RentYourClaw — Prototype 3: Premium Neon</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/@tonconnect/ui@2.4.2/dist/tonconnect-ui.min.js"></script>
+<script src="https://unpkg.com/tonweb@0.0.66/dist/tonweb.js"></script>
+<!-- Node.js globals required by WalletConnect UMD bundle (process.env.NODE_ENV etc.) -->
+<script>
+window.process = window.process || {
+  env: { NODE_ENV: 'production', DEBUG: '' },
+  version: 'v18.0.0', versions: {}, platform: 'browser', browser: true,
+  nextTick: function(fn, a, b) { setTimeout(function(){ fn(a,b); }, 0); },
+};
+window.addEventListener('error', function(e) {
+  // Log full details for cross-origin script errors
+  console.error('[LOAD-ERR]', e.message || 'Script error', '|', e.filename, 'line', e.lineno, e.error);
+}, true);
+</script>
+<!-- WalletConnect EthereumProvider — local copy, avoids CDN ORB issues -->
+<script src="/wc-provider.js"></script>
+<script>
+(function() {
+  var mod = window['@walletconnect/ethereum-provider'];
+  var EP = mod && (mod.EthereumProvider || mod.default);
+  // Expose on window.WCEthProvider for uniform access
+  window.WCEthProvider = (EP && typeof EP.init === 'function') ? EP : null;
+  console.log('[WC-LOAD]', window.WCEthProvider ? 'OK — EthereumProvider ready' : 'FAILED — mod keys: ' + JSON.stringify(Object.keys(mod || {})));
+})();
+</script>
+<script src="/qrcode.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+  :root {
+    --bg: #08080A;
+    --bg2: #101014;
+    --card: rgba(255,255,255,0.03);
+    --border: rgba(255,255,255,0.06);
+    --red: #FF2942;
+    --red2: #E6112B;
+    --red-g: rgba(255,41,66,0.35);
+    --red-s: rgba(255,41,66,0.1);
+    --orange: #FF6B35;
+    --text: #FAFAFA;
+    --t2: rgba(255,255,255,0.5);
+    --t3: rgba(255,255,255,0.22);
+    --green: #22C55E;
+    --blue: #3B82F6;
+    --r: 18px;
+    --rs: 14px;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,'SF Pro Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;touch-action:pan-y;overscroll-behavior:none;user-select:none;-webkit-user-select:none;}
+
+  #app{width:100%;height:100%;position:relative;overflow:hidden;max-width:430px;margin:0 auto;}
+
+  /* Animated mesh gradient background */
+  .mesh-bg{position:fixed;top:0;left:50%;transform:translateX(-50%);width:430px;height:100%;pointer-events:none;z-index:0;overflow:hidden;}
+  .mesh-bg .blob{position:absolute;border-radius:50%;filter:blur(80px);animation:drift 8s ease-in-out infinite alternate;}
+  .mesh-bg .b1{width:200px;height:200px;background:rgba(255,41,66,0.06);top:-40px;right:-40px;animation-delay:0s;}
+  .mesh-bg .b2{width:160px;height:160px;background:rgba(255,107,53,0.04);bottom:20%;left:-40px;animation-delay:2s;}
+  .mesh-bg .b3{width:120px;height:120px;background:rgba(59,130,246,0.03);top:40%;right:-20px;animation-delay:4s;}
+  @keyframes drift{0%{transform:translate(0,0);}100%{transform:translate(20px,20px);}}
+
+  .screen{
+    position:absolute;top:0;left:0;width:100%;height:100%;
+    display:flex;flex-direction:column;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.4s cubic-bezier(0.16,1,0.3,1);
+    overflow:hidden;
+    z-index:1;
+  }
+  .screen.on{opacity:1;pointer-events:auto;}
+  .screen.out{opacity:0;pointer-events:none;}
+
+  .screen-body{
+    flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+    padding:0 20px;
+    padding-top:calc(env(safe-area-inset-top,0px) + 16px);
+    padding-bottom:20px;
+    scrollbar-width:none;
+    display:flex;flex-direction:column;
+  }
+  .screen-body::-webkit-scrollbar{display:none;}
+
+  /* Top bar */
+  .top{display:flex;align-items:center;justify-content:center;padding:8px 0 12px;}
+  .top-tag{font-size:11px;font-weight:700;color:var(--red);background:var(--red-s);padding:5px 12px;border-radius:100px;letter-spacing:0.3px;text-transform:uppercase;}
+
+  /* Progress */
+  .prg{height:2px;background:rgba(255,255,255,0.04);border-radius:1px;overflow:hidden;margin-bottom:28px;}
+  .prg i{display:block;height:100%;background:linear-gradient(90deg,var(--red),var(--orange));border-radius:1px;transition:width 0.6s cubic-bezier(0.16,1,0.3,1);}
+
+  /* Landing */
+  .land{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding-top:8vh;}
+
+  .logo-wrap{position:relative;margin-bottom:36px;}
+  .logo-main{
+    width:96px;height:96px;border-radius:28px;
+    background:linear-gradient(145deg,var(--red),#8B0018);
+    display:flex;align-items:center;justify-content:center;
+    font-size:48px;position:relative;z-index:2;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.08),0 16px 48px var(--red-g);
+  }
+  .logo-ring{
+    position:absolute;top:-8px;left:-8px;right:-8px;bottom:-8px;
+    border-radius:32px;
+    border:1.5px solid rgba(255,41,66,0.2);
+    animation:ring-pulse 3s ease-in-out infinite;
+  }
+  .logo-ring2{
+    position:absolute;top:-16px;left:-16px;right:-16px;bottom:-16px;
+    border-radius:36px;
+    border:1px solid rgba(255,41,66,0.08);
+    animation:ring-pulse 3s ease-in-out infinite 1s;
+  }
+  @keyframes ring-pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(1.04);}}
+
+  .land h1{font-size:36px;font-weight:900;letter-spacing:-1px;line-height:1.08;margin-bottom:16px;}
+  .land h1 .red{background:linear-gradient(90deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .land p{font-size:15px;color:var(--t2);line-height:1.55;max-width:300px;margin-bottom:40px;}
+
+  .trust-row{display:flex;gap:20px;margin-bottom:36px;}
+  .trust{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--t2);font-weight:500;}
+  .trust .dot{width:6px;height:6px;border-radius:3px;background:var(--green);box-shadow:0 0 6px rgba(34,197,94,0.5);}
+
+  /* CTA */
+  .btn{
+    width:100%;border:none;border-radius:var(--r);padding:18px;
+    font-size:17px;font-weight:700;cursor:pointer;
+    color:#fff;position:relative;overflow:hidden;
+    background:linear-gradient(135deg,var(--red),var(--red2));
+    box-shadow:0 8px 32px var(--red-g),0 0 0 1px rgba(255,41,66,0.2);
+    transition:transform 0.12s;letter-spacing:-0.2px;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn .shine{position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);animation:shine 3s infinite;}
+  @keyframes shine{0%{left:-100%;}50%,100%{left:100%;}}
+
+  /* Section */
+  .sec{margin-bottom:24px;}
+  .h2{font-size:24px;font-weight:800;letter-spacing:-0.5px;line-height:1.2;margin-bottom:10px;}
+  .sub{font-size:14px;color:var(--t2);margin-bottom:18px;line-height:1.45;}
+
+  .inp{
+    width:100%;background:var(--bg2);
+    border:1.5px solid var(--border);border-radius:var(--rs);
+    padding:16px;font-size:16px;color:var(--text);font-family:inherit;
+    outline:none;transition:border-color 0.2s,box-shadow 0.2s;resize:none;
+  }
+  .inp:focus{border-color:var(--red);box-shadow:0 0 0 3px var(--red-s);}
+  .inp::placeholder{color:var(--t3);}
+  textarea.inp{min-height:110px;line-height:1.5;}
+
+  /* Goals */
+  .goals{display:flex;flex-direction:column;gap:8px;}
+  .gl{
+    display:flex;align-items:center;gap:14px;
+    padding:16px;border-radius:var(--rs);cursor:pointer;
+    background:var(--bg2);border:1.5px solid var(--border);
+    transition:all 0.2s;
+  }
+  .gl.on{border-color:var(--red);background:var(--red-s);box-shadow:0 0 20px rgba(255,41,66,0.08);}
+  .gl-i{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+  .gl.on .gl-i{background:rgba(255,41,66,0.15);}
+  .gl h4{font-size:15px;font-weight:600;}
+  .gl p{font-size:12px;color:var(--t2);margin-top:2px;}
+  .gl-check{width:22px;height:22px;border-radius:11px;border:2px solid var(--border);flex-shrink:0;margin-left:auto;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+  .gl.on .gl-check{border-color:var(--red);background:var(--red);}
+  .gl.on .gl-check::after{content:'✓';color:#fff;font-size:12px;font-weight:700;}
+
+  /* Toggles */
+  .tw{
+    display:flex;align-items:center;gap:12px;
+    padding:14px 16px;margin-bottom:6px;border-radius:var(--rs);cursor:pointer;
+    background:var(--bg2);border:1.5px solid var(--border);transition:all 0.2s;
+  }
+  .tw.on{border-color:rgba(255,41,66,0.3);background:rgba(255,41,66,0.04);}
+  .tw-ic{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+  .tw.on .tw-ic{background:var(--red-s);}
+  .tw-d{flex:1;} .tw-d h4{font-size:14px;font-weight:600;} .tw-d p{font-size:11px;color:var(--t2);}
+  .sw2{width:44px;height:26px;border-radius:13px;background:rgba(255,255,255,0.06);position:relative;flex-shrink:0;transition:background 0.3s;}
+  .sw2::after{content:'';width:20px;height:20px;border-radius:10px;background:#fff;position:absolute;top:3px;left:3px;transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);box-shadow:0 1px 3px rgba(0,0,0,0.3);}
+  .tw.on .sw2{background:var(--red);}
+  .tw.on .sw2::after{transform:translateX(18px);}
+
+  /* BotFather steps */
+  .guide{display:flex;flex-direction:column;gap:14px;margin-bottom:20px;}
+  .gs{display:flex;gap:10px;align-items:flex-start;}
+  .gs-n{width:24px;height:24px;border-radius:12px;background:linear-gradient(135deg,var(--red),var(--orange));color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px;}
+  .gs-t{font-size:14px;line-height:1.5;color:var(--t2);} .gs-t b{color:var(--text);}
+
+  .api-w{position:relative;margin-top:16px;}
+  .api-w .inp{padding-right:60px;}
+  .api-p{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--red-s);border:none;border-radius:8px;padding:7px 12px;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.3px;}
+
+  /* LLM */
+  .lm{
+    display:flex;align-items:center;gap:12px;
+    padding:14px 16px;margin-bottom:6px;border-radius:var(--rs);cursor:pointer;
+    background:var(--bg2);border:1.5px solid var(--border);transition:all 0.2s;
+  }
+  .lm.sl{border-color:var(--red);background:var(--red-s);box-shadow:0 0 16px rgba(255,41,66,0.06);}
+  .lm-a{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+  .lm-d{flex:1;} .lm-d h4{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap;} .lm-d p{font-size:11px;color:var(--t2);margin-top:1px;}
+  .tg{display:inline-block;padding:2px 7px;border-radius:5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;}
+  .tg-r{background:var(--red-s);color:var(--red);} .tg-g{background:rgba(34,197,94,0.1);color:var(--green);} .tg-b{background:rgba(59,130,246,0.1);color:var(--blue);}
+  .rd{width:20px;height:20px;border-radius:10px;border:2px solid rgba(255,255,255,0.12);flex-shrink:0;position:relative;transition:all 0.2s;}
+  .lm.sl .rd{border-color:var(--red);background:var(--red);}
+  .lm.sl .rd::after{content:'✓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:10px;font-weight:700;}
+
+  /* Tree */
+  .tree{display:flex;flex-direction:column;align-items:center;padding:20px 0;}
+  .tree-top{
+    padding:14px 28px;border-radius:var(--r);font-size:16px;font-weight:700;
+    background:linear-gradient(135deg,var(--red),#8B0018);
+    box-shadow:0 8px 28px var(--red-g);position:relative;text-align:center;
+  }
+  .tree-top::after{content:'';width:2px;height:20px;background:linear-gradient(to bottom,var(--red),transparent);position:absolute;bottom:-20px;left:50%;}
+  .tree-br{display:flex;gap:8px;margin-top:20px;width:100%;}
+  .br{
+    flex:1;padding:14px 6px;text-align:center;border-radius:var(--rs);cursor:pointer;
+    background:var(--bg2);border:1.5px solid var(--border);
+    transition:all 0.2s;position:relative;
+  }
+  .br::before{content:'';width:1px;height:10px;background:rgba(255,41,66,0.15);position:absolute;top:-10px;left:50%;}
+  .br:hover{border-color:rgba(255,41,66,0.3);}
+  .br .bi{font-size:22px;margin-bottom:4px;}
+  .br h4{font-size:11px;font-weight:600;margin-bottom:2px;}
+  .br p{font-size:9px;color:var(--t3);}
+  .br-m{margin-top:6px;padding:4px 6px;background:var(--red-s);border-radius:6px;font-size:9px;font-weight:600;color:var(--red);}
+
+  /* Popup */
+  .ov{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(8,8,10,0.7);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:100;display:none;align-items:flex-end;justify-content:center;}
+  .ov.sh{display:flex;}
+  .sh{
+    width:100%;max-width:430px;
+    background:linear-gradient(180deg,#18181C,#101014);
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:24px 24px 0 0;
+    padding:8px 20px calc(env(safe-area-inset-bottom,0px) + 20px);
+    max-height:70vh;overflow-y:auto;
+    animation:shUp 0.4s cubic-bezier(0.16,1,0.3,1);
+  }
+  @keyframes shUp{from{transform:translateY(100%);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .sh-h{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,0.12);margin:8px auto 16px;}
+  .sh-t{font-size:18px;font-weight:700;margin-bottom:12px;text-align:center;}
+
+  /* Proactivity */
+  .pr{
+    padding:16px;margin-bottom:8px;border-radius:var(--rs);cursor:pointer;
+    background:var(--bg2);border:1.5px solid var(--border);transition:all 0.2s;
+  }
+  .pr.on{border-color:var(--red);background:var(--red-s);}
+  .pr h4{font-size:15px;font-weight:600;margin-bottom:3px;}
+  .pr p{font-size:13px;color:var(--t2);line-height:1.4;}
+
+  /* Deploy */
+  .dep{
+    margin:28px 0;padding:40px 20px 32px;text-align:center;
+    border-radius:24px;position:relative;overflow:hidden;
+    background:var(--bg2);
+    border:2px solid var(--red);
+    box-shadow:0 0 80px rgba(255,41,66,0.12),inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .dep::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,41,66,0.4),transparent);}
+  .dep::after{content:'';position:absolute;top:-40%;left:20%;width:60%;height:80%;background:radial-gradient(circle,rgba(255,41,66,0.06),transparent 60%);pointer-events:none;}
+  .dep-label{font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  .dep-price{font-size:64px;font-weight:900;letter-spacing:-3px;position:relative;}
+  .dep-price sup{font-size:22px;vertical-align:super;font-weight:700;}
+  .dep-sub{font-size:13px;color:var(--t2);margin:6px 0 24px;}
+  .dep-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
+  .dep-chip{
+    padding:6px 12px;border-radius:100px;font-size:11px;color:var(--t2);font-weight:500;
+    background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  }
+
+  /* Nick */
+  .nick-a{
+    width:76px;height:76px;border-radius:22px;
+    background:linear-gradient(145deg,var(--red),#6B0015);
+    display:flex;align-items:center;justify-content:center;
+    font-size:34px;font-weight:900;margin:0 auto 20px;
+    box-shadow:0 8px 32px var(--red-g);position:relative;
+  }
+  .nick-a::after{content:'';position:absolute;inset:-2px;border-radius:24px;border:1px solid rgba(255,41,66,0.2);animation:ring-pulse 2s ease-in-out infinite;}
+
+  .bottom{flex-shrink:0;padding:12px 20px calc(env(safe-area-inset-bottom,0px) + 16px);background:var(--bg);border-top:1px solid var(--border);}
+  .sep{height:1px;background:var(--border);margin:20px 0;}
+  .sp{flex:1;}.sm{height:12px;}.md{height:20px;}.lg{height:28px;}
+
+  /* Deploy button progress bar */
+  .btn-deploy{position:relative;overflow:hidden;transition:all 0.5s cubic-bezier(0.16,1,0.3,1);}
+  .btn-deploy .btn-track{position:absolute;top:0;left:0;height:100%;width:0;background:linear-gradient(135deg,var(--green),#1a9d4a);border-radius:inherit;transition:width 0.6s cubic-bezier(0.16,1,0.3,1);}
+  .btn-deploy .btn-glow{position:absolute;top:0;left:0;width:60px;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent);border-radius:inherit;opacity:0;animation:none;pointer-events:none;}
+  .btn-deploy.loading .btn-glow{opacity:1;animation:glow-sweep 1.8s ease-in-out infinite;}
+  @keyframes glow-sweep{0%{transform:translateX(-60px);opacity:0;}30%{opacity:1;}100%{transform:translateX(calc(var(--track-w,200px) + 60px));opacity:0;}}
+
+  .btn-deploy .btn-text{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;transition:all 0.3s;font-variant-numeric:tabular-nums;}
+
+  .btn-deploy.loading{cursor:default;pointer-events:none;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.08);box-shadow:0 4px 20px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.03);}
+  .btn-deploy.loading:active{transform:none;}
+
+  .btn-deploy.success{background:linear-gradient(135deg,var(--green),#15803D) !important;box-shadow:0 8px 32px rgba(34,197,94,0.35),0 0 0 1px rgba(34,197,94,0.3) !important;animation:success-pop 0.5s cubic-bezier(0.16,1,0.3,1);cursor:pointer !important;pointer-events:auto !important;}
+  @keyframes success-pop{0%{transform:scale(0.95);}50%{transform:scale(1.03);}100%{transform:scale(1);}}
+
+  /* SVG icon base */
+  .ic{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .ic svg{width:100%;height:100%;}
+
+  /* Dashboard */
+  .dash-top{display:flex;align-items:center;gap:12px;padding:48px 0 16px;}
+  .dash-hamburger{width:36px;height:36px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background 0.2s;}
+  .dash-hamburger:active{background:rgba(255,255,255,0.1);}
+  .dash-hamburger svg{width:18px;height:18px;stroke:var(--t2);stroke-width:2;stroke-linecap:round;fill:none;}
+  .dash-spacer{flex:1;}
+
+  /* Hero */
+  .dash-hero{text-align:center;padding:16px 0 28px;}
+  .dash-label{font-size:13px;color:var(--t2);font-weight:500;margin-bottom:6px;}
+  .dash-count{font-size:52px;font-weight:900;letter-spacing:-2px;line-height:1;margin-bottom:6px;}
+  .dash-count span{font-size:18px;font-weight:600;color:var(--t2);letter-spacing:0;vertical-align:middle;}
+  .dash-status{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:8px;}
+  .dash-status.ok{color:var(--green);background:rgba(34,197,94,0.1);}
+  .dash-status.off{color:var(--t3);background:rgba(255,255,255,0.04);}
+
+  /* New Agent button */
+  .dash-new{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;padding:16px;border-radius:var(--r);cursor:pointer;border:none;
+    background:linear-gradient(135deg,var(--red),var(--red2));
+    color:#fff;font-size:16px;font-weight:700;letter-spacing:-0.2px;
+    box-shadow:0 8px 32px var(--red-g),0 0 0 1px rgba(255,41,66,0.2);
+    transition:transform 0.12s;margin-bottom:28px;position:relative;overflow:hidden;
+  }
+  .dash-new:active{transform:scale(0.97);}
+  .dash-new .shine{position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);animation:shine 3s infinite;}
+  .dash-new svg{width:18px;height:18px;stroke:#fff;stroke-width:2.5;stroke-linecap:round;fill:none;}
+
+  /* Agent list */
+  .dash-section{padding:0 0 12px;}
+  .dash-sec-head{display:flex;align-items:center;justify-content:space-between;padding:0 0 12px;}
+  .dash-sec-title{font-size:15px;font-weight:700;color:var(--t2);}
+
+  .agent-list{border-radius:16px;overflow:hidden;background:rgba(255,255,255,0.03);border:1px solid var(--border);}
+  .agent-card{display:flex;align-items:center;gap:12px;padding:14px 16px;transition:background 0.15s;cursor:pointer;}
+  .agent-card:active{background:rgba(255,255,255,0.04);}
+  .agent-card+.agent-card{border-top:1px solid var(--border);}
+  .agent-ava{width:44px;height:44px;border-radius:50%;background:linear-gradient(145deg,var(--red),#8B0018);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0;}
+  .agent-info{flex:1;min-width:0;}
+  .agent-name{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .agent-desc{font-size:12px;color:var(--t2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .agent-right{text-align:right;flex-shrink:0;}
+  .agent-model{font-size:12px;font-weight:600;color:var(--text);}
+  .agent-stat{font-size:11px;color:var(--green);margin-top:2px;display:flex;align-items:center;gap:3px;justify-content:flex-end;}
+  .agent-stat .dot-live{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(34,197,94,0.5);}
+  .agent-empty{text-align:center;padding:48px 20px;}
+  .agent-empty p{font-size:13px;color:var(--t3);line-height:1.5;}
+
+  /* Liquid Glass Tab Bar */
+  .dash-tabs{
+    flex-shrink:0;position:relative;
+    margin:0 16px calc(env(safe-area-inset-bottom,0px) + 8px);
+    padding:6px;border-radius:22px;
+    background:rgba(255,255,255,0.04);
+    backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
+    border:1px solid rgba(255,255,255,0.08);
+    display:flex;
+    box-shadow:0 4px 24px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .dash-tab-pill{
+    position:absolute;height:calc(100% - 12px);top:6px;
+    border-radius:16px;
+    background:rgba(255,41,66,0.12);
+    border:1px solid rgba(255,41,66,0.2);
+    box-shadow:0 2px 12px rgba(255,41,66,0.15);
+    transition:left 0.4s cubic-bezier(0.32,1.2,0.32,1),width 0.4s cubic-bezier(0.32,1.2,0.32,1);
+    pointer-events:none;z-index:0;
+  }
+  .dash-tab{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:8px 0;cursor:pointer;position:relative;z-index:1;
+    transition:color 0.3s,transform 0.2s;color:var(--t3);
+  }
+  .dash-tab:active{transform:scale(0.92);}
+  .dash-tab.active{color:var(--red);}
+  .dash-tab-ic{height:22px;display:flex;align-items:center;justify-content:center;}
+  .dash-tab-ic svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;transition:stroke 0.3s;}
+  .dash-tab span{font-size:10px;font-weight:600;transition:color 0.3s;}
+
+  /* Usage screen */
+  .dash-panel{display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .dash-panel.active{display:block;}
+
+  .usage-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+  .usage-stat{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;padding:16px;position:relative;overflow:hidden;}
+  .usage-stat.wide{grid-column:1/-1;}
+  .usage-stat-label{font-size:12px;color:var(--t2);font-weight:500;margin-bottom:8px;}
+  .usage-stat-value{font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1.1;}
+  .usage-stat-value.sm{font-size:22px;}
+  .usage-stat-sub{font-size:11px;color:var(--t3);margin-top:4px;}
+  .usage-stat::after{content:'';position:absolute;top:0;right:0;width:80px;height:80px;border-radius:50%;filter:blur(40px);opacity:0.08;pointer-events:none;}
+  .usage-stat:nth-child(1)::after{background:var(--red);}
+  .usage-stat:nth-child(2)::after{background:var(--blue);}
+  .usage-stat:nth-child(3)::after{background:var(--green);}
+  .usage-stat:nth-child(4)::after{background:var(--orange);}
+
+  .usage-limit{margin-top:10px;}
+  .usage-limit-bar{height:4px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden;margin-top:6px;}
+  .usage-limit-fill{height:100%;border-radius:2px;background:var(--red);transition:width 0.6s cubic-bezier(0.16,1,0.3,1);}
+  .usage-limit-label{display:flex;justify-content:space-between;font-size:11px;color:var(--t3);font-weight:500;}
+
+  .usage-chart-wrap{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:20px;}
+  .usage-chart-head{margin-bottom:14px;}
+  .usage-chart-title{font-size:15px;font-weight:700;}
+  .usage-chart-sub{font-size:12px;color:var(--t2);margin-top:2px;}
+  .usage-chart{position:relative;width:100%;height:200px;}
+  .usage-chart canvas{width:100% !important;height:100% !important;}
+
+  .usage-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;}
+  .usage-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);font-weight:500;}
+  .usage-legend-dot{width:8px;height:8px;border-radius:3px;flex-shrink:0;}
+
+  .usage-models{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:20px;}
+  .usage-model-row{display:flex;align-items:center;gap:12px;padding:14px 16px;}
+  .usage-model-row+.usage-model-row{border-top:1px solid var(--border);}
+  .usage-model-dot{width:10px;height:10px;border-radius:4px;flex-shrink:0;}
+  .usage-model-info{flex:1;min-width:0;}
+  .usage-model-name{font-size:14px;font-weight:600;}
+  .usage-model-tokens{font-size:11px;color:var(--t2);margin-top:1px;}
+  .usage-model-cost{font-size:14px;font-weight:700;color:var(--text);flex-shrink:0;}
+
+  .usage-empty{text-align:center;padding:60px 20px;}
+  .usage-empty-ic{font-size:36px;margin-bottom:12px;opacity:0.3;}
+  .usage-empty p{font-size:13px;color:var(--t3);line-height:1.5;}
+
+  /* Billing */
+  .bill-balance{
+    position:relative;overflow:hidden;
+    border-radius:20px;padding:28px 24px;margin-bottom:16px;
+    background:linear-gradient(135deg,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.03) 100%);
+    border:1px solid rgba(255,255,255,0.1);
+    box-shadow:0 8px 32px rgba(0,0,0,0.2);
+  }
+  .bill-balance::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.04);filter:blur(30px);pointer-events:none;}
+  .bill-balance-label{font-size:13px;color:var(--t2);font-weight:500;margin-bottom:6px;text-align:center;}
+  .bill-balance-val{font-size:48px;font-weight:900;letter-spacing:-2px;line-height:1;text-align:center;}
+  .bill-balance-sub{font-size:12px;color:var(--t3);margin-top:8px;text-align:center;}
+
+  .bill-buy{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;padding:15px;border-radius:var(--r);cursor:pointer;border:none;
+    background:linear-gradient(135deg,var(--red),var(--red2));
+    color:#fff;font-size:15px;font-weight:700;letter-spacing:-0.2px;
+    box-shadow:0 6px 24px var(--red-g),0 0 0 1px rgba(255,41,66,0.2);
+    transition:transform 0.12s;margin-bottom:24px;position:relative;overflow:hidden;
+  }
+  .bill-buy:active{transform:scale(0.97);}
+  .bill-buy .shine{position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);animation:shine 3s infinite;}
+  .bill-buy svg{width:18px;height:18px;stroke:#fff;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+
+  .bill-invoices{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+  .bill-inv-head{display:grid;grid-template-columns:1fr 0.7fr 0.6fr;padding:12px 16px;border-bottom:1px solid var(--border);}
+  .bill-inv-head span{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:0.5px;}
+  .bill-inv-row{display:grid;grid-template-columns:1fr 0.7fr 0.6fr;padding:14px 16px;align-items:center;}
+  .bill-inv-row+.bill-inv-row{border-top:1px solid var(--border);}
+  .bill-inv-date{font-size:13px;font-weight:500;color:var(--text);}
+  .bill-inv-type{font-size:13px;color:var(--t2);}
+  .bill-inv-cost{font-size:14px;font-weight:700;color:var(--green);text-align:right;}
+
+  /* Numpad screen */
+  .numpad-screen{position:fixed;top:0;left:0;width:100%;height:100%;z-index:99;background:var(--bg);display:none;flex-direction:column;transform:translateY(20px);transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1),transform 0.35s cubic-bezier(0.16,1,0.3,1);}
+  .numpad-screen.open{display:flex;opacity:1;transform:translateY(0);}
+  .numpad-amount-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 20px;gap:8px;}
+  .numpad-dollar{font-size:18px;font-weight:500;color:var(--t3);margin-bottom:-4px;}
+  .numpad-val{font-size:72px;font-weight:800;color:var(--text);letter-spacing:-3px;transition:transform 0.1s ease;line-height:1;}
+  .numpad-val.pop{transform:scale(1.03);}
+  .numpad-sub{font-size:13px;color:var(--t3);margin-top:4px;}
+  .numpad-sub span{color:var(--text);font-weight:700;}
+  .numpad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 24px;flex-shrink:0;max-width:420px;margin:0 auto;width:100%;}
+  .numpad-key{height:62px;border-radius:14px;background:rgba(255,255,255,0.06);border:none;color:var(--text);font-size:28px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background 0.12s,transform 0.1s;user-select:none;}
+  .numpad-key:active{background:rgba(255,255,255,0.12);transform:scale(0.95);}
+  .numpad-key.dim{color:var(--t3);}
+  .numpad-key svg{width:24px;height:24px;stroke:var(--text);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  .numpad-bottom{flex-shrink:0;padding:16px 20px calc(env(safe-area-inset-bottom,0px) + 12px);}
+
+  /* Payment method select screen */
+  .pay-screen{position:fixed;top:0;left:0;width:100%;height:100%;z-index:100;background:var(--bg);display:none;flex-direction:column;transform:translateY(20px);transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1),transform 0.35s cubic-bezier(0.16,1,0.3,1);}
+  .pay-screen.open{display:flex;opacity:1;transform:translateY(0);}
+  .pay-head{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 16px) 20px 16px;flex-shrink:0;}
+  .pay-back{width:36px;height:36px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+  .pay-back svg{width:18px;height:18px;stroke:var(--t2);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  .pay-title{font-size:17px;font-weight:700;flex:1;}
+  .pay-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 20px;}
+  .pay-method{display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid var(--border);margin-bottom:10px;cursor:pointer;transition:border-color 0.2s,background 0.2s;}
+  .pay-method.selected{border-color:rgba(255,41,66,0.4);background:rgba(255,41,66,0.06);}
+  .pay-method:active{background:rgba(255,255,255,0.06);}
+  .pay-method-ic{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;}
+  .pay-method-info{flex:1;min-width:0;}
+  .pay-method-name{font-size:15px;font-weight:600;}
+  .pay-method-desc{font-size:12px;color:var(--t2);margin-top:2px;}
+  .pay-radio{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color 0.2s;}
+  .pay-method.selected .pay-radio{border-color:var(--red);}
+  .pay-radio-dot{width:12px;height:12px;border-radius:50%;background:var(--red);transform:scale(0);transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1);}
+  .pay-method.selected .pay-radio-dot{transform:scale(1);}
+  .pay-bottom{flex-shrink:0;padding:12px 20px calc(env(safe-area-inset-bottom,0px) + 12px);}
+
+  /* Network + Method + Address + TON + WC screens — share pay-screen base style */
+  .net-screen{position:fixed;top:0;left:0;width:100%;height:100%;z-index:101;background:var(--bg);display:none;flex-direction:column;transform:translateY(20px);transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1),transform 0.35s cubic-bezier(0.16,1,0.3,1);}
+  .net-screen.open{display:flex;opacity:1;transform:translateY(0);}
+  .method-screen{position:fixed;top:0;left:0;width:100%;height:100%;z-index:102;background:var(--bg);display:none;flex-direction:column;transform:translateY(20px);transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1),transform 0.35s cubic-bezier(0.16,1,0.3,1);}
+  .method-screen.open{display:flex;opacity:1;transform:translateY(0);}
+  .addr-screen{position:fixed;top:0;left:0;width:100%;height:100%;z-index:103;background:var(--bg);display:none;flex-direction:column;transform:translateY(20px);transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1),transform 0.35s cubic-bezier(0.16,1,0.3,1);}
+  .addr-screen.open{display:flex;opacity:1;transform:translateY(0);}
+  .ton-screen{position:fixed;top:0;left:0;width:100%;height:100%;z-index:104;background:var(--bg);display:none;flex-direction:column;transform:translateY(20px);transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1),transform 0.35s cubic-bezier(0.16,1,0.3,1);}
+  .ton-screen.open{display:flex;opacity:1;transform:translateY(0);}
+  .wc-screen{position:fixed;top:0;left:0;width:100%;height:100%;z-index:104;background:var(--bg);display:none;flex-direction:column;transform:translateY(20px);transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1),transform 0.35s cubic-bezier(0.16,1,0.3,1);}
+  .wc-screen.open{display:flex;opacity:1;transform:translateY(0);}
+
+  /* Method screen option cards */
+  .method-option{display:flex;align-items:center;gap:14px;padding:18px 16px;border-radius:16px;background:rgba(255,255,255,0.03);border:1px solid var(--border);margin-bottom:10px;cursor:pointer;transition:border-color 0.2s,background 0.2s;}
+  .method-option.selected{border-color:rgba(255,41,66,0.4);background:rgba(255,41,66,0.06);}
+  .method-option:active{background:rgba(255,255,255,0.06);}
+  .method-option-ic{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .method-option-ic.manual-ic{background:rgba(255,107,53,0.1);}
+  .method-option-ic.wc-ic{background:rgba(59,130,246,0.1);}
+  .method-option-info{flex:1;min-width:0;}
+  .method-option-name{font-size:15px;font-weight:600;}
+  .method-option-desc{font-size:12px;color:var(--t2);margin-top:3px;line-height:1.4;}
+  .method-option .pay-radio{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color 0.2s;}
+  .method-option.selected .pay-radio{border-color:var(--red);}
+  .method-option .pay-radio-dot{width:12px;height:12px;border-radius:50%;background:var(--red);transform:scale(0);transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1);}
+  .method-option.selected .pay-radio-dot{transform:scale(1);}
+
+  /* WC wallet card */
+  .wc-wallet-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--rs);padding:16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+  .wc-wallet-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .wc-wallet-dot.connected{background:var(--green);box-shadow:0 0 6px rgba(34,197,94,0.5);}
+  .wc-wallet-dot.disconnected{background:var(--t3);}
+  .wc-wallet-info{flex:1;min-width:0;}
+  .wc-wallet-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .wc-wallet-addr{font-size:11px;color:var(--t2);margin-top:2px;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .wc-disconnect{width:32px;height:32px;border-radius:10px;background:rgba(255,41,66,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+  .wc-status-msg{margin:12px 0;}
+
+  /* WalletConnect QR overlay */
+  .wc-qr-overlay{position:fixed;top:0;left:0;width:100%;height:100%;z-index:200;background:rgba(0,0,0,0.75);display:none;flex-direction:column;align-items:center;justify-content:flex-end;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+  .wc-qr-overlay.open{display:flex;}
+  .wc-qr-sheet{background:var(--bg2);border-radius:24px 24px 0 0;width:100%;max-width:430px;padding:20px 20px calc(env(safe-area-inset-bottom,0px) + 28px);border-top:1px solid var(--border);animation:slideUp 0.35s cubic-bezier(0.16,1,0.3,1);}
+  @keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+  .wc-qr-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 18px;}
+  .wc-qr-title{font-size:17px;font-weight:700;text-align:center;margin-bottom:3px;}
+  .wc-qr-sub{font-size:12px;color:var(--t2);text-align:center;margin-bottom:18px;line-height:1.4;}
+  .wc-qr-canvas{display:flex;justify-content:center;margin-bottom:18px;}
+  .wc-qr-canvas canvas{border-radius:12px;border:1px solid var(--border);}
+  .wc-qr-wallets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+  .wc-qr-wallet{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:8px 4px;border-radius:12px;transition:background 0.15s;}
+  .wc-qr-wallet:active{background:rgba(255,255,255,0.07);}
+  .wc-qr-wallet-ic{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid var(--border);background:rgba(255,255,255,0.04);}
+  .wc-qr-wallet-name{font-size:10px;color:var(--t2);font-weight:500;text-align:center;line-height:1.2;}
+  .wc-qr-divider{display:flex;align-items:center;gap:10px;margin:4px 0 12px;color:var(--t3);font-size:11px;}
+  .wc-qr-divider::before,.wc-qr-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+  .wc-qr-bottom-row{display:flex;gap:8px;}
+  .wc-qr-copy-btn{flex:1;padding:13px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:12px;font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;transition:all 0.15s;text-align:center;}
+  .wc-qr-copy-btn.copied{background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.3);color:var(--green);}
+  .wc-qr-copy-btn:active{background:rgba(255,255,255,0.08);}
+  .wc-qr-cancel-btn{padding:13px 18px;background:rgba(255,41,66,0.08);border:1px solid rgba(255,41,66,0.15);border-radius:12px;font-size:13px;font-weight:600;color:var(--red);cursor:pointer;white-space:nowrap;transition:background 0.15s;}
+  .wc-qr-cancel-btn:active{background:rgba(255,41,66,0.15);}
+  .wc-qr-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;gap:12px;}
+  .wc-qr-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* Numpad back button */
+  .numpad-head{display:flex;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 12px) 20px 4px;flex-shrink:0;}
+
+  /* Copy field */
+  .addr-field{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--rs);padding:14px 50px 14px 16px;font-size:13px;color:var(--text);font-family:monospace;word-break:break-all;line-height:1.5;position:relative;margin-bottom:10px;}
+  .addr-field-label{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+  .addr-copy-wrap{position:relative;}
+  .addr-copy-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--red-s);border:none;border-radius:8px;padding:6px 10px;color:var(--red);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:0.3px;transition:background 0.15s;}
+  .addr-copy-btn.copied{background:rgba(34,197,94,0.15);color:var(--green);}
+  .addr-warning{background:rgba(255,107,53,0.08);border:1px solid rgba(255,107,53,0.2);border-radius:var(--rs);padding:14px 16px;margin:16px 0;display:flex;gap:10px;align-items:flex-start;}
+  .addr-warning svg{flex-shrink:0;margin-top:1px;}
+  .addr-warning p{font-size:12px;color:rgba(255,107,53,0.9);line-height:1.5;}
+  .addr-amount-card{background:linear-gradient(135deg,rgba(255,41,66,0.08),rgba(255,41,66,0.03));border:1px solid rgba(255,41,66,0.2);border-radius:var(--rs);padding:16px;text-align:center;margin-bottom:16px;}
+  .addr-amount-label{font-size:12px;color:var(--t2);margin-bottom:4px;}
+  .addr-amount-val{font-size:32px;font-weight:800;letter-spacing:-1px;}
+  .addr-amount-sub{font-size:11px;color:var(--t3);margin-top:4px;}
+
+  /* TON screen */
+  .ton-wallet-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--rs);padding:16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+  .ton-wallet-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .ton-wallet-dot.connected{background:var(--green);box-shadow:0 0 6px rgba(34,197,94,0.5);}
+  .ton-wallet-dot.disconnected{background:var(--t3);}
+  .ton-wallet-info{flex:1;min-width:0;}
+  .ton-disconnect{width:32px;height:32px;border-radius:10px;background:rgba(255,41,66,0.1);border:1px solid rgba(255,41,66,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:background 0.2s;}
+  .ton-disconnect:active{background:rgba(255,41,66,0.2);}
+  .ton-wallet-name{font-size:14px;font-weight:600;}
+  .ton-wallet-addr{font-size:11px;color:var(--t2);font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+  .ton-status-msg{font-size:13px;color:var(--t3);text-align:center;padding:20px;line-height:1.5;}
+
+  /* Payment pending state */
+  .pay-pending{text-align:center;padding:32px 20px;}
+  .pay-pending-ic{font-size:44px;margin-bottom:16px;animation:spin 2s linear infinite;}
+  @keyframes spin{100%{transform:rotate(360deg);}}
+  .pay-pending h3{font-size:18px;font-weight:700;margin-bottom:8px;}
+  .pay-pending p{font-size:13px;color:var(--t2);line-height:1.5;}
+
+  /* Disabled pay method (RUB soon) */
+  .pay-method-disabled{opacity:0.45;cursor:default !important;}
+  .pay-soon{font-size:9px;font-weight:700;background:rgba(255,107,53,0.15);color:var(--orange);padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:0.4px;margin-left:4px;}
+
+  /* Net option */
+  .net-option{display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;background:rgba(255,255,255,0.03);border:1.5px solid var(--border);margin-bottom:10px;cursor:pointer;transition:border-color 0.2s,background 0.2s;}
+  .net-option.selected{border-color:rgba(255,41,66,0.4);background:rgba(255,41,66,0.06);}
+  .net-option:active{background:rgba(255,255,255,0.06);}
+  .net-option-ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px;}
+  .net-option-info{flex:1;}
+  .net-option-name{font-size:15px;font-weight:600;}
+  .net-option-sub{font-size:12px;color:var(--t2);margin-top:2px;}
+  .net-radio{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color 0.2s;}
+  .net-option.selected .net-radio{border-color:var(--red);}
+  .net-radio-dot{width:12px;height:12px;border-radius:50%;background:var(--red);transform:scale(0);transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1);}
+  .net-option.selected .net-radio-dot{transform:scale(1);}
+
+  /* Dropdown menu (replaces sidebar) */
+  .dropdown-ov{position:fixed;top:0;left:0;width:100%;height:100%;z-index:200;opacity:0;pointer-events:none;transition:opacity 0.25s;}
+  .dropdown-ov.open{opacity:1;pointer-events:auto;}
+  .dropdown{
+    position:fixed;top:calc(env(safe-area-inset-top,0px) + 64px);left:20px;
+    width:220px;z-index:201;
+    background:rgba(24,24,30,0.95);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
+    border:1px solid rgba(255,255,255,0.08);border-radius:16px;
+    padding:6px;
+    box-shadow:0 12px 40px rgba(0,0,0,0.5);
+    transform:translateY(-8px) scale(0.96);opacity:0;
+    transition:transform 0.3s cubic-bezier(0.16,1,0.3,1),opacity 0.25s;
+  }
+  .dropdown-ov.open .dropdown{transform:translateY(0) scale(1);opacity:1;}
+  .dropdown-item{
+    display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;
+    cursor:pointer;transition:background 0.15s;font-size:15px;font-weight:500;color:var(--text);
+  }
+  .dropdown-item:active{background:rgba(255,255,255,0.06);}
+  .dropdown-item svg{width:20px;height:20px;stroke:var(--red);stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  .dropdown-sep{height:1px;background:var(--border);margin:4px 8px;}
+</style>
+</head>
+<body>
+<div class="mesh-bg"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+<div id="app">
+
+  <!-- Landing -->
+  <div class="screen on" id="p-landing">
+    <div class="screen-body">
+      <div class="land">
+        <div class="logo-wrap">
+          <div class="logo-ring2"></div>
+          <div class="logo-ring"></div>
+          <div class="logo-main"><svg width="48" height="48" viewBox="0 0 48 48" fill="none"><path d="M24 6c-3 0-6 2-7 5l-3-2c-2-1-4 0-5 2s0 4 2 5l3 2c-1 2-1 4-1 6s0 4 1 6l-3 2c-2 1-3 3-2 5s3 3 5 2l3-2c1 3 4 5 7 5s6-2 7-5l3 2c2 1 4 0 5-2s0-4-2-5l-3-2c1-2 1-4 1-6s0-4-1-6l3-2c2-1 3-3 2-5s-3-3-5-2l-3 2c-1-3-4-5-7-5z" fill="url(#lg)"/><circle cx="20" cy="20" r="2" fill="#fff" opacity="0.9"/><circle cx="28" cy="20" r="2" fill="#fff" opacity="0.9"/><defs><linearGradient id="lg" x1="10" y1="6" x2="38" y2="42"><stop stop-color="#FF4D6A"/><stop offset="1" stop-color="#FF2942"/></linearGradient></defs></svg></div>
+        </div>
+        <h1>Deploy your<br><span class="red">AI Agent.</span></h1>
+        <p>No code. No servers. No headaches. We handle everything — you just describe what you need.</p>
+        <div class="trust-row">
+          <span class="trust"><span class="dot"></span> 60s deploy</span>
+          <span class="trust"><span class="dot"></span> From $2</span>
+          <span class="trust"><span class="dot"></span> 6+ LLMs</span>
+        </div>
+      </div>
+    </div>
+    <div class="bottom"><button class="btn" onclick="go(1)"><span class="shine"></span>Hire Your Agent</button></div>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="screen" id="p-1">
+    <div class="screen-body">
+      <div class="top"><span class="top-tag">Step 1</span></div>
+      <div class="prg"><i style="width:16%"></i></div>
+      <div class="sec">
+        <h2 class="h2">Describe your<br>ideal assistant.</h2>
+        <p class="sub">Plain language. It handles the rest.</p>
+        <textarea class="inp" placeholder="e.g. Manage my social media, respond to DMs, schedule posts, analyze metrics..."></textarea>
+      </div>
+      <div class="sp"></div>
+    </div>
+    <div class="bottom"><button class="btn" onclick="go(2)"><span class="shine"></span>Continue</button></div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="screen" id="p-2">
+    <div class="screen-body">
+      <div class="top"><span class="top-tag">Step 2</span></div>
+      <div class="prg"><i style="width:33%"></i></div>
+      <div class="sec">
+        <h2 class="h2">What's your<br>main goal?</h2>
+        <p class="sub">We'll configure everything for you.</p>
+        <div class="goals">
+          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></div><div><h4>Business Automation</h4><p>Workflows & operations</p></div><div class="gl-check"></div></div>
+          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></div><div><h4>Social Media</h4><p>Content & engagement</p></div><div class="gl-check"></div></div>
+          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div><div><h4>Development</h4><p>Code, debug & deploy</p></div><div class="gl-check"></div></div>
+          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div><div><h4>Research & Analytics</h4><p>Data & insights</p></div><div class="gl-check"></div></div>
+          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div><div><h4>Personal Assistant</h4><p>Daily tasks & calendar</p></div><div class="gl-check"></div></div>
+        </div>
+      </div>
+      <div class="sp"></div>
+    </div>
+    <div class="bottom"><button class="btn" onclick="go(3)"><span class="shine"></span>Continue</button></div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="screen" id="p-3">
+    <div class="screen-body">
+      <div class="top"><span class="top-tag">Step 3</span></div>
+      <div class="prg"><i style="width:50%"></i></div>
+      <div class="sec">
+        <h2 class="h2">Capabilities</h2>
+        <p class="sub">All included. No extra cost.</p>
+        <div class="tw on" onclick="tg(this)"><div class="tw-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg></div><div class="tw-d"><h4>Human Browser</h4><p>Browse like a human</p></div><div class="sw2"></div></div>
+        <div class="tw on" onclick="tg(this)"><div class="tw-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2H7a5 5 0 00-5 5v10a5 5 0 005 5h10a5 5 0 005-5V7a5 5 0 00-5-5z"/><circle cx="12" cy="12" r="4"/><circle cx="18" cy="6" r="1.5"/></svg></div><div class="tw-d"><h4>Instagram + X + LinkedIn</h4><p>Social accounts</p></div><div class="sw2"></div></div>
+        <div class="tw" onclick="tg(this)"><div class="tw-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4"/></svg></div><div class="tw-d"><h4>Voice Messages</h4><p>Voice notes</p></div><div class="sw2"></div></div>
+        <div class="tw on" onclick="tg(this)"><div class="tw-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="tw-d"><h4>Google Docs</h4><p>Documents</p></div><div class="sw2"></div></div>
+        <div class="tw" onclick="tg(this)"><div class="tw-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="tw-d"><h4>Calendar</h4><p>Scheduling</p></div><div class="sw2"></div></div>
+        <div class="tw" onclick="tg(this)"><div class="tw-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div class="tw-d"><h4>Analytics</h4><p>Metrics & reports</p></div><div class="sw2"></div></div>
+        <div class="tw" onclick="tg(this)"><div class="tw-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div><div class="tw-d"><h4>YouTube</h4><p>Channel mgmt</p></div><div class="sw2"></div></div>
+      </div>
+      <div class="sp"></div>
+    </div>
+    <div class="bottom"><button class="btn" onclick="go(4)"><span class="shine"></span>Continue</button></div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="screen" id="p-4">
+    <div class="screen-body">
+      <div class="top"><span class="top-tag">Step 4</span></div>
+      <div class="prg"><i style="width:66%"></i></div>
+      <div class="sec">
+        <h2 class="h2">Connect your bot</h2>
+        <p class="sub">Create via @BotFather, paste the token.</p>
+        <div class="guide">
+          <div class="gs"><div class="gs-n">1</div><div class="gs-t">Open <b>@BotFather</b></div></div>
+          <div class="gs"><div class="gs-n">2</div><div class="gs-t">Send <b>/newbot</b></div></div>
+          <div class="gs"><div class="gs-n">3</div><div class="gs-t">Copy <b>API Token</b></div></div>
+          <div class="gs"><div class="gs-n">4</div><div class="gs-t">Paste below</div></div>
+        </div>
+        <div class="api-w"><input class="inp" placeholder="Bot API Token..." /><button class="api-p" onclick="haptic('light');navigator.clipboard.readText().then(t=>{this.previousElementSibling.value=t}).catch(()=>{})">PASTE</button></div>
+      </div>
+      <div class="sep"></div>
+      <div class="sec">
+        <h2 class="h2">AI Brain</h2>
+        <p class="sub">Choose the intelligence engine.</p>
+        <div class="lm" onclick="lp(this,0)"><div class="lm-a" style="background:linear-gradient(135deg,#D4A574,#8B6914);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><div class="lm-d"><h4>Claude Haiku 4.5 <span class="tg tg-r">FAST</span></h4><p>Lightning quick</p></div><div class="rd"></div></div>
+        <div class="lm sl" onclick="lp(this,0)"><div class="lm-a" style="background:linear-gradient(135deg,#D4A574,#8B6914);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 017 7c0 3-2 5-3 7h-8c-1-2-3-4-3-7a7 7 0 017-7z"/><path d="M9 22h6M10 18h4"/></svg></div><div class="lm-d"><h4>Claude Sonnet 4.6 <span class="tg tg-r">RECOMMENDED</span></h4><p>Best balance</p></div><div class="rd"></div></div>
+        <div class="lm" onclick="lp(this,0)"><div class="lm-a" style="background:linear-gradient(135deg,#D4A574,#8B6914);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg></div><div class="lm-d"><h4>Claude Opus 4.6</h4><p>Max reasoning</p></div><div class="rd"></div></div>
+        <div class="lm" onclick="lp(this,0)"><div class="lm-a" style="background:linear-gradient(135deg,#10A37F,#066);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div><div class="lm-d"><h4>Codex 5.3 <span class="tg tg-g">NEW</span></h4><p>OpenAI latest</p></div><div class="rd"></div></div>
+        <div class="lm" onclick="lp(this,0)"><div class="lm-a" style="background:linear-gradient(135deg,#4A90D9,#2C5AA0);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></div><div class="lm-d"><h4>Kimi K2.5</h4><p>Multilingual</p></div><div class="rd"></div></div>
+        <div class="lm" onclick="lp(this,1)"><div class="lm-a" style="background:linear-gradient(135deg,var(--red),#600);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div><div class="lm-d"><h4>Custom Routing <span class="tg tg-b">PRO</span></h4><p>Task-based routing</p></div><div class="rd"></div></div>
+      </div>
+    </div>
+    <div class="bottom"><button class="btn" onclick="go(5)"><span class="shine"></span>Continue</button></div>
+  </div>
+
+  <!-- Routing -->
+  <div class="screen" id="p-routing">
+    <div class="screen-body">
+      <div class="top"><span class="top-tag">Routing</span></div>
+      <div class="sm"></div>
+      <div class="sec" style="text-align:center;">
+        <h2 class="h2">Smart Routing</h2>
+        <p class="sub">Assign models to task types.</p>
+      </div>
+      <div class="tree">
+        <div class="tree-top"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg> AI Agent</div>
+        <div class="tree-br">
+          <div class="br" onclick="op('coding')"><div class="bi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div><h4>Coding</h4><p>Code & Debug</p><div class="br-m" id="r-coding">Select</div></div>
+          <div class="br" onclick="op('everyday')"><div class="bi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h4>Everyday</h4><p>Daily Tasks</p><div class="br-m" id="r-everyday">Select</div></div>
+          <div class="br" onclick="op('cron')"><div class="bi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><h4>Cron</h4><p>Scheduled</p><div class="br-m" id="r-cron">Select</div></div>
+        </div>
+      </div>
+      <div class="sp"></div>
+    </div>
+    <div class="bottom"><button class="btn" onclick="go(5)"><span class="shine"></span>Continue</button></div>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="screen" id="p-5">
+    <div class="screen-body">
+      <div class="top"><span class="top-tag">Step 5</span></div>
+      <div class="prg"><i style="width:83%"></i></div>
+      <div class="md"></div>
+      <div class="nick-a" id="na">?</div>
+      <div class="sec" style="text-align:center;">
+        <h2 class="h2">Name your agent</h2>
+        <p class="sub">Give it personality.</p>
+        <input class="inp" type="text" placeholder="e.g. Clawde, Atlas, Jarvis..." oninput="document.getElementById('na').textContent=this.value?this.value[0].toUpperCase():'?'" style="text-align:center;font-size:18px;font-weight:700;" />
+      </div>
+      <div class="sep"></div>
+      <div class="sec">
+        <h2 class="h2">Proactivity</h2>
+        <p class="sub">How much initiative?</p>
+        <div class="pr" onclick="sel(this,'pr')"><h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" style="vertical-align:-2px;margin-right:6px;"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>Only when asked</h4><p>Responds to direct messages only.</p></div>
+        <div class="pr on" onclick="sel(this,'pr')"><h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><path d="M12 2a7 7 0 017 7c0 3-2 5-3 7h-8c-1-2-3-4-3-7a7 7 0 017-7z"/><path d="M9 22h6"/></svg>Smart nudges</h4><p>Suggestions & reminders. Balanced.</p></div>
+        <div class="pr" onclick="sel(this,'pr')"><h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/></svg>Full autopilot</h4><p>Maximum autonomy. Acts proactively.</p></div>
+      </div>
+    </div>
+    <div class="bottom"><button class="btn" onclick="go(6)"><span class="shine"></span>Continue</button></div>
+  </div>
+
+  <!-- Step 6: Deploy -->
+  <div class="screen" id="p-6">
+    <div class="screen-body">
+      <div class="top"><span class="top-tag">Deploy</span></div>
+      <div class="prg"><i style="width:100%"></i></div>
+      <div class="lg"></div>
+      <div style="text-align:center;">
+        <h2 class="h2">Ready to launch.</h2>
+        <p class="sub">Configured & waiting for deployment.</p>
+      </div>
+      <div class="dep">
+        <div class="dep-label">Deploy Fee</div>
+        <div class="dep-price"><sup>$</sup>2</div>
+        <div class="dep-sub">One-time. Everything included.</div>
+        <div class="dep-chips">
+          <span class="dep-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>Hosting</span>
+          <span class="dep-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M12 2a7 7 0 017 7c0 3-2 5-3 7h-8c-1-2-3-4-3-7a7 7 0 017-7z"/><path d="M9 22h6"/></svg>LLM Credits</span>
+          <span class="dep-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Auto Updates</span>
+          <span class="dep-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</span>
+        </div>
+      </div>
+      <div class="sp"></div>
+    </div>
+    <div class="bottom"><button class="btn btn-deploy" id="dbtn" onclick="dep()"><span class="shine" id="dbtn-shine"></span><div class="btn-track" id="dbtn-track"></div><div class="btn-glow"></div><span class="btn-text" id="dbtn-text">Born your Agent</span></button></div>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="screen" id="p-dash">
+    <div class="screen-body">
+      <div class="dash-top">
+        <div class="dash-hamburger" onclick="haptic('light');toggleDropdown()"><svg viewBox="0 0 18 18"><line x1="3" y1="5" x2="15" y2="5"/><line x1="3" y1="9" x2="15" y2="9"/><line x1="3" y1="13" x2="15" y2="13"/></svg></div>
+        <div class="dash-spacer"></div>
+      </div>
+
+      <!-- Tab: Agents -->
+      <div class="dash-panel active" id="panel-agents">
+        <div class="dash-hero">
+          <div class="dash-label">Active Agents</div>
+          <div class="dash-count" id="dash-count">0 <span>agents</span></div>
+          <div class="dash-status ok" id="dash-status"><span class="dot-live" style="width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(34,197,94,0.5);"></span> All systems online</div>
+        </div>
+        <button class="dash-new" onclick="haptic('heavy');newAgent()"><span class="shine"></span><svg viewBox="0 0 18 18"><line x1="9" y1="3" x2="9" y2="15"/><line x1="3" y1="9" x2="15" y2="9"/></svg> New Agent</button>
+
+        <div class="dash-section">
+          <div class="dash-sec-head">
+            <div class="dash-sec-title">Your Agents</div>
+          </div>
+          <div class="agent-list" id="agent-list"></div>
+        </div>
+      </div>
+
+      <!-- Tab: Usage -->
+      <div class="dash-panel" id="panel-usage">
+        <div class="usage-stats">
+          <div class="usage-stat">
+            <div class="usage-stat-label">Total tokens in</div>
+            <div class="usage-stat-value" id="usage-in">0</div>
+          </div>
+          <div class="usage-stat">
+            <div class="usage-stat-label">Total tokens out</div>
+            <div class="usage-stat-value" id="usage-out">0</div>
+          </div>
+          <div class="usage-stat">
+            <div class="usage-stat-label">Total cost</div>
+            <div class="usage-stat-value sm" id="usage-cost">$0.00</div>
+          </div>
+          <div class="usage-stat">
+            <div class="usage-stat-label">API requests</div>
+            <div class="usage-stat-value sm" id="usage-reqs">0</div>
+          </div>
+        </div>
+
+        <div class="usage-limit">
+          <div class="usage-limit-label"><span>Daily usage</span><span id="usage-daily-pct">0%</span></div>
+          <div class="usage-limit-bar"><div class="usage-limit-fill" id="usage-daily-fill" style="width:0%"></div></div>
+        </div>
+        <div class="usage-limit" style="margin-bottom:20px">
+          <div class="usage-limit-label"><span>Monthly usage</span><span id="usage-monthly-pct">0%</span></div>
+          <div class="usage-limit-bar"><div class="usage-limit-fill" id="usage-monthly-fill" style="width:0%"></div></div>
+        </div>
+
+        <div class="usage-chart-wrap">
+          <div class="usage-chart-head">
+            <div class="usage-chart-title">Token usage</div>
+            <div class="usage-chart-sub">Includes both API and Console</div>
+          </div>
+          <div class="usage-chart"><canvas id="usage-canvas"></canvas></div>
+          <div class="usage-legend" id="usage-legend"></div>
+        </div>
+
+        <div class="dash-sec-head"><div class="dash-sec-title">Usage by model</div></div>
+        <div class="usage-models" id="usage-models"></div>
+      </div>
+
+      <!-- Tab: Billing -->
+      <div class="dash-panel" id="panel-billing">
+        <div class="bill-balance">
+          <div class="bill-balance-label">Credit balance</div>
+          <div class="bill-balance-val" id="bill-balance">$0.00</div>
+          <div class="bill-balance-sub">Available for usage</div>
+        </div>
+
+        <button class="bill-buy" onclick="haptic('heavy');openNumpad()"><span class="shine"></span><svg viewBox="0 0 24 24"><path d="M12 2v20M17 7H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg> Buy credits</button>
+
+        <div class="dash-sec-head"><div class="dash-sec-title">Payment history</div></div>
+        <div class="bill-invoices" id="bill-invoices">
+          <div class="bill-inv-head"><span>Date</span><span>Method</span><span style="text-align:right">Amount</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="dash-tabs">
+      <div class="dash-tab-pill" id="tab-pill"></div>
+      <div class="dash-tab active" onclick="haptic('select');switchDashTab(this,0)"><div class="dash-tab-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div><span>Agents</span></div>
+      <div class="dash-tab" onclick="haptic('select');switchDashTab(this,1)"><div class="dash-tab-ic"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div><span>Usage</span></div>
+      <div class="dash-tab" onclick="haptic('select');switchDashTab(this,2)"><div class="dash-tab-ic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg></div><span>Billing</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Dropdown Menu -->
+<div class="dropdown-ov" id="dropdown-ov" onclick="if(event.target===this){haptic('light');toggleDropdown();}">
+  <div class="dropdown">
+    <div class="dropdown-item" onclick="haptic('medium');openLink('https://t.me/RentClaw')"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>Channel</div>
+    <div class="dropdown-sep"></div>
+    <div class="dropdown-item" onclick="haptic('medium');openLink('https://t.me/reliconaman')"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Support</div>
+  </div>
+</div>
+
+<!-- Numpad Screen -->
+<div class="numpad-screen" id="numpad-screen">
+  <div class="numpad-head"></div>
+  <div class="numpad-amount-wrap">
+    <div class="numpad-val" id="numpad-val">$0</div>
+    <div class="numpad-sub">Balance: <span id="numpad-balance">$5.75</span></div>
+  </div>
+  <div class="numpad-grid">
+    <div class="numpad-key" onclick="numpadPress('1')">1</div>
+    <div class="numpad-key" onclick="numpadPress('2')">2</div>
+    <div class="numpad-key" onclick="numpadPress('3')">3</div>
+    <div class="numpad-key" onclick="numpadPress('4')">4</div>
+    <div class="numpad-key" onclick="numpadPress('5')">5</div>
+    <div class="numpad-key" onclick="numpadPress('6')">6</div>
+    <div class="numpad-key" onclick="numpadPress('7')">7</div>
+    <div class="numpad-key" onclick="numpadPress('8')">8</div>
+    <div class="numpad-key" onclick="numpadPress('9')">9</div>
+    <div class="numpad-key dim" onclick="numpadPress('.')">.</div>
+    <div class="numpad-key" onclick="numpadPress('0')">0</div>
+    <div class="numpad-key" onclick="numpadPress('del')"><svg viewBox="0 0 24 24"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg></div>
+  </div>
+  <div class="numpad-bottom">
+    <button class="btn" id="numpad-buy-btn" onclick="haptic('heavy');numpadBuy()" style="opacity:0.4;pointer-events:none;"><span class="shine"></span>Buy</button>
+  </div>
+</div>
+
+<!-- Payment Method Screen -->
+<div class="pay-screen" id="pay-screen">
+  <div class="pay-head"></div>
+  <div class="pay-body">
+    <div class="pay-method" onclick="haptic('select');selectPay(this,'stars')">
+      <div class="pay-method-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+      <div class="pay-method-info"><div class="pay-method-name">Telegram Stars</div><div class="pay-method-desc">Pay with your Stars balance</div></div>
+      <div class="pay-radio"><div class="pay-radio-dot"></div></div>
+    </div>
+    <div class="pay-method" onclick="haptic('select');selectPay(this,'cryptobot')">
+      <div class="pay-method-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><circle cx="12" cy="12" r="3"/><path d="M2 10h2M20 10h2"/></svg></div>
+      <div class="pay-method-info"><div class="pay-method-name">Crypto Bot</div><div class="pay-method-desc">USDT via @CryptoBot (+3% fee)</div></div>
+      <div class="pay-radio"><div class="pay-radio-dot"></div></div>
+    </div>
+    <div class="pay-method" onclick="haptic('select');selectPay(this,'usdt')">
+      <div class="pay-method-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#26A17B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 10h8M12 10v7M9 7h6"/></svg></div>
+      <div class="pay-method-info"><div class="pay-method-name">USDT</div><div class="pay-method-desc">TON · ETH · TRON · BSC</div></div>
+      <div class="pay-radio"><div class="pay-radio-dot"></div></div>
+    </div>
+    <div class="pay-method" onclick="haptic('select');selectPay(this,'usdc')">
+      <div class="pay-method-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2775CA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v2M12 16v2M9 9.5a3 3 0 015.5 1c0 2-3.5 2-3.5 4"/></svg></div>
+      <div class="pay-method-info"><div class="pay-method-name">USDC</div><div class="pay-method-desc">Arbitrum network</div></div>
+      <div class="pay-radio"><div class="pay-radio-dot"></div></div>
+    </div>
+    <div class="pay-method pay-method-disabled" style="cursor:default">
+      <div class="pay-method-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B35" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V4h5a5 5 0 010 10H7M5 14h8M5 17h6"/></svg></div>
+      <div class="pay-method-info"><div class="pay-method-name">RUB <span class="pay-soon">Soon</span></div><div class="pay-method-desc">Bank card — coming soon</div></div>
+      <div class="pay-radio" style="opacity:0.3"><div class="pay-radio-dot"></div></div>
+    </div>
+  </div>
+  <div class="pay-bottom">
+    <button class="btn" id="pay-continue-btn" onclick="haptic('heavy');continuePay()" style="opacity:0.4;pointer-events:none;"><span class="shine"></span>Continue</button>
+  </div>
+</div>
+
+<!-- Network Selection Screen -->
+<div class="net-screen" id="net-screen">
+  <div class="pay-head"></div>
+  <div class="pay-body" id="net-options"></div>
+  <div class="pay-bottom">
+    <button class="btn" id="net-continue-btn" onclick="haptic('heavy');proceedNetwork()" style="opacity:0.4;pointer-events:none;"><span class="shine"></span>Continue</button>
+  </div>
+</div>
+
+<!-- Method Selection Screen (Manual vs WalletConnect) -->
+<div class="method-screen" id="method-screen">
+  <div class="pay-head"></div>
+  <div class="pay-body">
+    <div class="method-option" onclick="haptic('select');selectMethod(this,'manual')">
+      <div class="method-option-ic manual-ic">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF6B35" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>
+      </div>
+      <div class="method-option-info">
+        <div class="method-option-name">Address + Comment</div>
+        <div class="method-option-desc">Copy address and send manually from any wallet or exchange</div>
+      </div>
+      <div class="pay-radio"><div class="pay-radio-dot"></div></div>
+    </div>
+    <div class="method-option" onclick="haptic('select');selectMethod(this,'walletconnect')">
+      <div class="method-option-ic wc-ic">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 8.5c2.8-2.8 7.2-2.8 10 0"/><path d="M4 6c3.9-3.9 10.1-3.9 14 0"/><path d="M9 11c1.7-1.7 4.3-1.7 6 0"/><circle cx="12" cy="14" r="1.5" fill="#3B82F6"/></svg>
+      </div>
+      <div class="method-option-info">
+        <div class="method-option-name">WalletConnect</div>
+        <div class="method-option-desc">Connect MetaMask, Trust Wallet or any WC-compatible wallet</div>
+      </div>
+      <div class="pay-radio"><div class="pay-radio-dot"></div></div>
+    </div>
+  </div>
+  <div class="pay-bottom">
+    <button class="btn" id="method-continue-btn" onclick="haptic('heavy');proceedMethod()" style="opacity:0.4;pointer-events:none;"><span class="shine"></span>Continue</button>
+  </div>
+</div>
+
+<!-- WalletConnect Payment Screen -->
+<div class="wc-screen" id="wc-screen">
+  <div class="pay-head"></div>
+  <div class="pay-body">
+    <div class="addr-amount-card">
+      <div class="addr-amount-label">Amount to send</div>
+      <div class="addr-amount-val" id="wc-amount">$0.00</div>
+      <div class="addr-amount-sub" id="wc-token-label">USDT (Ethereum)</div>
+    </div>
+
+    <div class="wc-wallet-card" id="wc-wallet-card">
+      <div class="wc-wallet-dot disconnected" id="wc-dot"></div>
+      <div class="wc-wallet-info">
+        <div class="wc-wallet-name" id="wc-wallet-name">No wallet connected</div>
+        <div class="wc-wallet-addr" id="wc-wallet-addr">Connect a wallet to continue</div>
+      </div>
+      <div class="wc-disconnect" id="wc-disconnect" style="display:none" onclick="haptic('light');disconnectWc()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64A9 9 0 005.64 18.36M5.64 5.64A9 9 0 0018.36 18.36"/><line x1="12" y1="2" x2="12" y2="6"/></svg>
+      </div>
+    </div>
+
+    <div id="wc-status-msg" class="wc-status-msg" style="display:none"></div>
+
+    <div class="addr-warning">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF6B35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p>Ensure your wallet has enough tokens and native coins for gas. Transaction is irreversible.</p>
+    </div>
+  </div>
+  <div class="pay-bottom" id="wc-bottom">
+    <button class="btn" id="wc-action-btn" onclick="haptic('heavy');wcAction()"><span class="shine"></span>Connect Wallet</button>
+  </div>
+</div>
+
+<!-- WalletConnect QR / Deep-link Overlay -->
+<div class="wc-qr-overlay" id="wc-qr-overlay" onclick="handleWcQrOverlayClick(event)">
+  <div class="wc-qr-sheet" id="wc-qr-sheet">
+    <div class="wc-qr-handle"></div>
+    <div class="wc-qr-title">Connect Wallet</div>
+    <div class="wc-qr-sub" id="wc-qr-sub">Scan with your wallet app or tap below to open</div>
+    <div class="wc-qr-canvas" id="wc-qr-canvas">
+      <div class="wc-qr-loading" id="wc-qr-loading">
+        <div class="wc-qr-spinner"></div>
+        <span style="font-size:12px;color:var(--t2);">Generating QR…</span>
+      </div>
+    </div>
+    <div class="wc-qr-wallets" id="wc-qr-wallets"></div>
+    <div class="wc-qr-divider">or</div>
+    <div class="wc-qr-bottom-row">
+      <div class="wc-qr-copy-btn" id="wc-qr-copy-btn" onclick="haptic('light');copyWcUri()">Copy URI</div>
+      <div class="wc-qr-cancel-btn" onclick="haptic('light');cancelWcConnect()">Cancel</div>
+    </div>
+  </div>
+</div>
+
+<!-- Address Copy Screen -->
+<div class="addr-screen" id="addr-screen">
+  <div class="pay-head"></div>
+  <div class="pay-body">
+    <div class="addr-amount-card">
+      <div class="addr-amount-label">Amount to send</div>
+      <div class="addr-amount-val" id="addr-amount">$0.00</div>
+      <div class="addr-amount-sub" id="addr-token-label">USDT</div>
+    </div>
+
+    <div class="addr-field-label">Address</div>
+    <div class="addr-copy-wrap">
+      <div class="addr-field" id="addr-address-field">—</div>
+      <button class="addr-copy-btn" id="addr-copy-addr-btn" onclick="copyField('addr','addr-copy-addr-btn')">COPY</button>
+    </div>
+
+    <div class="addr-field-label">Payment reference</div>
+    <div class="addr-copy-wrap">
+      <div class="addr-field" id="addr-comment-field">—</div>
+      <button class="addr-copy-btn" id="addr-copy-comment-btn" onclick="copyField('comment','addr-copy-comment-btn')">COPY</button>
+    </div>
+
+    <div class="addr-warning">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF6B35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p>Copy both the address and the reference exactly. Sending to the wrong address or omitting the reference may result in permanent loss of funds.</p>
+    </div>
+
+    <div id="addr-pending-wrap" style="display:none">
+      <div class="pay-pending">
+        <div class="pay-pending-ic">⏳</div>
+        <h3>Waiting for payment</h3>
+        <p>We'll credit your balance automatically once the transaction is confirmed on-chain.</p>
+      </div>
+    </div>
+  </div>
+  <div class="pay-bottom" id="addr-bottom">
+    <button class="btn" onclick="haptic('medium');markManualSent()"><span class="shine"></span>I've sent the payment</button>
+  </div>
+</div>
+
+<!-- TON Connect Screen -->
+<div class="ton-screen" id="ton-screen">
+  <div class="pay-head"></div>
+  <div class="pay-body">
+    <div class="addr-amount-card">
+      <div class="addr-amount-label">Amount to send</div>
+      <div class="addr-amount-val" id="ton-amount">$0.00</div>
+      <div class="addr-amount-sub">USDT (TON network)</div>
+    </div>
+
+    <div class="ton-wallet-card" id="ton-wallet-card">
+      <div class="ton-wallet-dot disconnected" id="ton-dot"></div>
+      <div class="ton-wallet-info">
+        <div class="ton-wallet-name" id="ton-wallet-name">No wallet connected</div>
+        <div class="ton-wallet-addr" id="ton-wallet-addr">Connect a wallet to continue</div>
+      </div>
+      <div class="ton-disconnect" id="ton-disconnect" style="display:none" onclick="haptic('light');disconnectTon()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64A9 9 0 005.64 18.36M5.64 5.64A9 9 0 0018.36 18.36"/><line x1="12" y1="2" x2="12" y2="6"/></svg>
+      </div>
+    </div>
+
+    <div id="ton-status-msg" class="ton-status-msg" style="display:none"></div>
+
+    <div class="addr-warning">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF6B35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <p>Make sure your wallet has enough USDT (TON) and TON for gas (~0.05 TON). Transaction is irreversible.</p>
+    </div>
+  </div>
+  <div class="pay-bottom" id="ton-bottom">
+    <button class="btn" id="ton-action-btn" onclick="haptic('heavy');tonAction()"><span class="shine"></span>Connect Wallet</button>
+  </div>
+</div>
+
+<!-- Popup -->
+<div class="ov" id="ov">
+  <div class="sh">
+    <div class="sh-h"></div>
+    <h3 class="sh-t" id="ov-t">Select Model</h3>
+    <div id="ov-b"></div>
+  </div>
+</div>
+
+<script>
+// Telegram WebApp Init — fullscreen, haptics, closing confirmation
+var tgApp = window.Telegram && window.Telegram.WebApp;
+if (tgApp) {
+  tgApp.ready();
+  tgApp.expand();
+  try { tgApp.requestFullscreen(); } catch(e) {}
+  try { tgApp.enableClosingConfirmation(); } catch(e) {}
+  try { tgApp.disableVerticalSwipes(); } catch(e) {}
+  tgApp.setHeaderColor('#0a0a0f');
+  tgApp.setBackgroundColor('#0a0a0f');
+}
+var tgHaptic = tgApp && tgApp.HapticFeedback;
+function haptic(type) {
+  if (!tgHaptic) return;
+  if (type === 'heavy') tgHaptic.impactOccurred('heavy');
+  else if (type === 'medium') tgHaptic.impactOccurred('medium');
+  else if (type === 'light') tgHaptic.impactOccurred('light');
+  else if (type === 'soft') tgHaptic.impactOccurred('soft');
+  else if (type === 'select') tgHaptic.selectionChanged();
+  else if (type === 'success') tgHaptic.notificationOccurred('success');
+  else if (type === 'error') tgHaptic.notificationOccurred('error');
+}
+// Navigation history for back button
+var navHistory = [];
+
+// Back map: which screen to go back to from current
+var backMap = {1:0, 2:1, 3:2, 4:3, 5:4, 6:5, 'routing':4};
+
+function go(n){
+  haptic('heavy');
+  var c=document.querySelector('.screen.on');
+  var t=n==='routing'?document.getElementById('p-routing'):document.getElementById('p-'+n);
+  // Track history
+  var currentId = c ? c.id.replace('p-','') : 'landing';
+  navHistory.push(currentId);
+  if(c){c.classList.remove('on');c.classList.add('out');setTimeout(()=>c.classList.remove('out'),500);}
+  t.classList.add('on');var sb=t.querySelector('.screen-body');if(sb)sb.scrollTop=0;
+  updateTgBackButton(n);
+}
+
+function bk(n){
+  haptic('medium');
+  var c=document.querySelector('.screen.on');
+  var t=n===0||n==='landing'?document.getElementById('p-landing'):n==='routing'?document.getElementById('p-routing'):document.getElementById('p-'+n);
+  if(c){c.classList.remove('on');c.style.transform='translateY(12px)';c.style.opacity='0';setTimeout(()=>{c.style.transform='';c.style.opacity='';},500);}
+  t.style.transform='translateY(-12px)';t.classList.add('on');requestAnimationFrame(()=>{t.style.transform='';});t.scrollTop=0;
+  updateTgBackButton(n);
+}
+
+function goBack(){
+  var prev = navHistory.pop();
+  if(prev !== undefined){
+    bk(prev === 'landing' ? 0 : prev);
+  }
+}
+
+function updateTgBackButton(currentScreen){
+  if(!tgApp || !tgApp.BackButton) return;
+  if(currentScreen === 0 || currentScreen === 'landing'){
+    tgApp.BackButton.hide();
+  } else {
+    tgApp.BackButton.show();
+  }
+}
+
+// Wire up Telegram BackButton
+if(tgApp && tgApp.BackButton){
+  tgApp.BackButton.onClick(function(){
+    if (overlayScreen === 'wc') { haptic('light'); closeWcScreen(); return; }
+    if (overlayScreen === 'ton') { haptic('light'); closeTonScreen(); return; }
+    if (overlayScreen === 'addr') { haptic('light'); closeAddrScreen(); return; }
+    if (overlayScreen === 'method') { haptic('light'); closeMethodScreen(); return; }
+    if (overlayScreen === 'net') { haptic('light'); closeNetScreen(); return; }
+    if (overlayScreen === 'pay') { haptic('light'); closePayScreen(); return; }
+    if (overlayScreen === 'numpad') { haptic('light'); closeNumpad(); return; }
+    goBack();
+  });
+}
+function sel(el,cls){haptic('select');el.closest('.sec').querySelectorAll('.'+cls).forEach(c=>c.classList.remove('on'));el.classList.add('on');}
+function tg(el){haptic('light');el.classList.toggle('on');}
+function lp(el,custom){haptic('select');el.closest('.sec').querySelectorAll('.lm').forEach(c=>c.classList.remove('sl'));el.classList.add('sl');if(custom)setTimeout(()=>go('routing'),300);}
+
+const md={
+  coding:[{n:'Claude Opus 4.6',r:1,i:'👑'},{n:'Kimi K2.5',r:1,i:'🌙'},{n:'Codex 5.3',r:0,i:'💎'},{n:'Claude Sonnet 4.6',r:0,i:'🧠'},{n:'Claude Haiku 4.5',r:0,i:'⚡'}],
+  everyday:[{n:'Claude Sonnet 4.6',r:1,i:'🧠'},{n:'Codex 5.3',r:1,i:'💎'},{n:'Claude Opus 4.6',r:0,i:'👑'},{n:'Kimi K2.5',r:0,i:'🌙'},{n:'Claude Haiku 4.5',r:0,i:'⚡'}],
+  cron:[{n:'Claude Haiku 4.5',r:1,i:'⚡'},{n:'Claude Sonnet 4.6',r:0,i:'🧠'},{n:'Kimi K2.5',r:0,i:'🌙'},{n:'Codex 5.3',r:0,i:'💎'},{n:'Claude Opus 4.6',r:0,i:'👑'}]
+};
+let ct='';
+function op(type){
+  haptic('light');
+  ct=type;
+  const titles={coding:'💻 Coding',everyday:'📋 Everyday',cron:'⏰ Cron'};
+  document.getElementById('ov-t').textContent=titles[type]+' Model';
+  document.getElementById('ov-b').innerHTML=md[type].map(m=>`<div class="lm" onclick="pm(this,'${m.n}')"><div class="lm-a" style="background:var(--bg2);">${m.i}</div><div class="lm-d"><h4>${m.n} ${m.r?'<span class=\\"tg tg-r\\">RECOMMENDED</span>':''}</h4></div><div class="rd"></div></div>`).join('');
+  document.getElementById('ov').classList.add('sh');
+}
+function pm(el,name){
+  haptic('select');
+  el.closest('#ov-b').querySelectorAll('.lm').forEach(c=>c.classList.remove('sl'));el.classList.add('sl');
+  document.getElementById('r-'+ct).textContent=name;
+  setTimeout(()=>document.getElementById('ov').classList.remove('sh'),300);
+}
+document.getElementById('ov').addEventListener('click',function(e){if(e.target===this)this.classList.remove('sh');});
+const API_BASE = '';
+
+const goalMap = {'Business Automation':'business','Social Media':'social','Development':'development','Research & Analytics':'research','Personal Assistant':'personal'};
+const capKeys = ['browser','social','voice','docs','calendar','analytics','youtube'];
+const modelKeys = ['haiku','sonnet','opus','codex','kimi','custom'];
+const proactivityMap = {'Only when asked':'passive','Smart nudges':'smart','Full autopilot':'autopilot'};
+
+function collectFormData() {
+  var fd = {};
+  // Step 1: description
+  var ta = document.querySelector('#p-1 textarea.inp');
+  fd.description = ta ? ta.value : '';
+  // Step 2: goal
+  var goalEl = document.querySelector('#p-2 .gl.on h4');
+  fd.goal = goalEl ? (goalMap[goalEl.textContent] || 'personal') : 'personal';
+  // Step 3: capabilities
+  fd.capabilities = [];
+  document.querySelectorAll('#p-3 .tw').forEach(function(tw, idx) {
+    if (tw.classList.contains('on') && capKeys[idx]) fd.capabilities.push(capKeys[idx]);
+  });
+  // Step 4: botToken
+  var tokenInp = document.querySelector('#p-4 .api-w .inp');
+  fd.botToken = tokenInp ? tokenInp.value : '';
+  // Step 4: model
+  var lmEls = document.querySelectorAll('#p-4 .lm');
+  fd.model = 'sonnet';
+  lmEls.forEach(function(el, idx) {
+    if (el.classList.contains('sl') && modelKeys[idx]) fd.model = modelKeys[idx];
+  });
+  // Step 5: name
+  var nameInp = document.querySelector('#p-5 .inp');
+  fd.name = nameInp ? nameInp.value : 'Agent';
+  // Step 5: proactivity
+  var prEl = document.querySelector('#p-5 .pr.on h4');
+  if (prEl) {
+    var prText = prEl.textContent.replace(/^[^\s]+\s/, '').trim();
+    fd.proactivity = proactivityMap[prText] || 'smart';
+  } else {
+    fd.proactivity = 'smart';
+  }
+  return fd;
+}
+
+let deploying = false;
+
+function dep() {
+  if (deploying) return;
+  haptic('heavy');
+  deploying = true;
+
+  const btn = document.getElementById('dbtn');
+  const track = document.getElementById('dbtn-track');
+  const text = document.getElementById('dbtn-text');
+  const shine = document.getElementById('dbtn-shine');
+
+  // Enter loading state
+  btn.classList.add('loading');
+  shine.style.display = 'none';
+  text.textContent = '0%';
+  track.style.width = '0%';
+
+  function onStep(step, total, message, done, error) {
+    const pct = Math.round((step / total) * 100);
+    track.style.width = pct + '%';
+    btn.style.setProperty('--track-w', btn.offsetWidth * pct / 100 + 'px');
+
+    if (error) {
+      haptic('error');
+      text.textContent = '❌ Error';
+      btn.classList.remove('loading');
+      btn.style.background = 'linear-gradient(135deg,#FF4444,#AA0000)';
+      setTimeout(() => {
+        deploying = false;
+        btn.classList.remove('loading');
+        btn.style.background = '';
+        shine.style.display = '';
+        text.textContent = 'Born your Agent';
+        track.style.width = '0%';
+      }, 3000);
+      return;
+    }
+
+    if (done) {
+      haptic('success');
+      track.style.width = '100%';
+      text.textContent = '100%';
+
+      // Save agent to local list
+      addDeployedAgent(formData);
+
+      setTimeout(() => {
+        btn.classList.remove('loading');
+        btn.classList.add('success');
+        track.style.width = '0%';
+        track.style.background = 'transparent';
+        text.textContent = '✅ Agent is Live!';
+        // Auto-navigate to dashboard after 1.5s
+        setTimeout(function(){ goToDash(); }, 1500);
+      }, 600);
+      return;
+    }
+
+    text.textContent = pct + '%';
+  }
+
+  // Collect form data and call real API
+  var formData = collectFormData();
+  realDeploy(formData, onStep);
+}
+
+// Real API deploy
+async function realDeploy(formData, onStep) {
+  // Build auth headers — use TMA initData if available, else dev fallback
+  var headers = { 'Content-Type': 'application/json' };
+  if (tgApp && tgApp.initData) {
+    headers['x-telegram-init-data'] = tgApp.initData;
+  } else {
+    headers['x-dev-user-id'] = '12345';
+  }
+
+  try {
+    const res = await fetch(API_BASE + '/api/deploy', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(formData),
+    });
+    if (!res.ok) {
+      var errText = await res.text();
+      try { errText = JSON.parse(errText).error; } catch(e) {}
+      onStep(0, 6, errText || 'Server error ' + res.status, false, true);
+      return;
+    }
+    const data = await res.json();
+    if (data.error) { onStep(0, 6, data.error, false, true); return; }
+
+    // Poll status
+    const agentId = data.agentId;
+    const poll = setInterval(async () => {
+      try {
+        const sr = await fetch(API_BASE + '/api/status/' + agentId, { headers: headers });
+        const st = await sr.json();
+        onStep(st.step, st.total, st.message, st.done, st.error);
+        if (st.done || st.error) clearInterval(poll);
+      } catch(e) {
+        onStep(0, 6, 'Connection lost', false, true);
+        clearInterval(poll);
+      }
+    }, 1500);
+  } catch(e) {
+    console.error('Deploy fetch failed:', e.message);
+    onStep(0, 6, 'Network error: ' + e.message, false, true);
+  }
+}
+
+// Simulation fallback
+function simulateDeploy(onStep) {
+  const steps = [
+    { step:1, total:6, msg:'Connecting to server...', delay:800 },
+    { step:2, total:6, msg:'Checking Docker...', delay:1200 },
+    { step:3, total:6, msg:'Preparing workspace...', delay:900 },
+    { step:4, total:6, msg:'Writing configuration...', delay:700 },
+    { step:5, total:6, msg:'Deploying agent...', delay:2500 },
+    { step:6, total:6, msg:'Verifying...', delay:1500 },
+  ];
+  let i = 0;
+  function next() {
+    if (i >= steps.length) { onStep(6, 6, 'Agent is live!', true, false); return; }
+    const s = steps[i];
+    onStep(s.step, s.total, s.msg, false, false);
+    i++;
+    setTimeout(next, s.delay);
+  }
+  setTimeout(next, 400);
+}
+document.addEventListener('touchmove',function(e){if(!e.target.closest('.screen'))e.preventDefault();},{passive:false});
+
+// === Dashboard ===
+
+// Agent storage
+function getAgents() {
+  try { return JSON.parse(localStorage.getItem('ryc_agents') || '[]'); } catch(e) { return []; }
+}
+function saveAgents(list) {
+  localStorage.setItem('ryc_agents', JSON.stringify(list));
+}
+
+// Get bot username from token via Telegram API
+async function getBotUsername(token) {
+  try {
+    var res = await fetch('https://api.telegram.org/bot' + token + '/getMe');
+    var data = await res.json();
+    if (data.ok && data.result && data.result.username) return data.result.username;
+  } catch(e) {}
+  return null;
+}
+
+// Add agent after successful deploy
+async function addDeployedAgent(formData) {
+  var username = await getBotUsername(formData.botToken);
+  var agent = {
+    id: Date.now().toString(36),
+    name: formData.name || 'Agent',
+    description: formData.description || '',
+    model: formData.model || 'sonnet',
+    botUsername: username || '',
+    botToken: formData.botToken || '',
+    deployedAt: new Date().toISOString(),
+  };
+  var list = getAgents();
+  list.unshift(agent);
+  saveAgents(list);
+  renderAgents();
+  return agent;
+}
+
+// Render agent list
+function renderAgents() {
+  var list = getAgents();
+  var container = document.getElementById('agent-list');
+  if (!container) return;
+  // Update hero count
+  var countEl = document.getElementById('dash-count');
+  if (countEl) countEl.innerHTML = list.length + ' <span>agent' + (list.length !== 1 ? 's' : '') + '</span>';
+  var statusEl = document.getElementById('dash-status');
+  if (statusEl) {
+    if (list.length > 0) {
+      statusEl.className = 'dash-status ok';
+      statusEl.innerHTML = '<span class="dot-live" style="width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(34,197,94,0.5);"></span> All systems online';
+    } else {
+      statusEl.className = 'dash-status off';
+      statusEl.textContent = 'No active agents';
+    }
+  }
+  if (!list.length) {
+    container.innerHTML = '<div class="agent-empty"><div class="agent-empty-ic">🦞</div><p>No agents yet.<br>Deploy your first one!</p></div>';
+    return;
+  }
+  var modelLabels = {haiku:'Haiku 4.5',sonnet:'Sonnet 4.6',opus:'Opus 4.6',codex:'Codex 5.3',kimi:'Kimi K2.5',custom:'Multi-route'};
+  container.innerHTML = list.map(function(a) {
+    var initial = a.name ? a.name[0].toUpperCase() : '?';
+    var desc = a.description || 'AI Agent';
+    if (desc.length > 45) desc = desc.substring(0, 45) + '...';
+    var mLabel = modelLabels[a.model] || a.model || 'Sonnet';
+    var onclick = a.botUsername ? ' onclick="haptic(\'medium\');openBot(\'' + a.botUsername + '\')"' : '';
+    return '<div class="agent-card"' + onclick + '>' +
+      '<div class="agent-ava">' + initial + '</div>' +
+      '<div class="agent-info"><div class="agent-name">' + a.name + '</div><div class="agent-desc">' + desc + '</div></div>' +
+      '<div class="agent-right"><div class="agent-model">' + mLabel + '</div><div class="agent-stat"><span class="dot-live"></span> Online</div></div>' +
+      '</div>';
+  }).join('');
+}
+
+function openBot(username) {
+  if (tgApp) {
+    tgApp.openTelegramLink('https://t.me/' + username);
+  } else {
+    window.open('https://t.me/' + username, '_blank');
+  }
+}
+
+// Go to dashboard
+function goToDash() {
+  haptic('heavy');
+  renderAgents();
+  var c = document.querySelector('.screen.on');
+  var t = document.getElementById('p-dash');
+  if (c) { c.classList.remove('on'); c.classList.add('out'); setTimeout(function(){ c.classList.remove('out'); }, 500); }
+  t.classList.add('on');
+  navHistory = [];
+  if (tgApp && tgApp.BackButton) tgApp.BackButton.hide();
+  // Init pill position
+  setTimeout(function(){ movePill(0); }, 100);
+}
+
+// New agent — reset form and go to step 1
+function newAgent() {
+  deploying = false;
+  var btn = document.getElementById('dbtn');
+  var track = document.getElementById('dbtn-track');
+  var text = document.getElementById('dbtn-text');
+  var shine = document.getElementById('dbtn-shine');
+  btn.classList.remove('loading','success');
+  btn.style.background = '';
+  track.style.width = '0%';
+  track.style.background = '';
+  text.textContent = 'Born your Agent';
+  shine.style.display = '';
+  // Restore original onclick (it gets overwritten after successful deploy)
+  btn.onclick = function(){ dep(); };
+  // Clear form fields
+  var ta = document.querySelector('#p-1 textarea.inp');
+  if (ta) ta.value = '';
+  var tokenInp = document.querySelector('#p-4 .api-w .inp');
+  if (tokenInp) tokenInp.value = '';
+  var nameInp = document.querySelector('#p-5 .inp');
+  if (nameInp) { nameInp.value = ''; document.getElementById('na').textContent = '?'; }
+  // Reset goal selection
+  document.querySelectorAll('#p-2 .gl').forEach(function(g){ g.classList.remove('on'); });
+  // Reset capabilities
+  document.querySelectorAll('#p-3 .tw').forEach(function(t){ t.classList.remove('on'); });
+  // Reset model selection
+  document.querySelectorAll('#p-4 .lm').forEach(function(l){ l.classList.remove('sl'); });
+  // Reset proactivity selection
+  document.querySelectorAll('#p-5 .pr').forEach(function(p){ p.classList.remove('on'); });
+  go(1);
+}
+
+// Dropdown menu
+function toggleDropdown() {
+  document.getElementById('dropdown-ov').classList.toggle('open');
+}
+function openLink(url) {
+  toggleDropdown();
+  setTimeout(function(){
+    if (tgApp) tgApp.openTelegramLink(url);
+    else window.open(url, '_blank');
+  }, 200);
+}
+
+// Liquid Glass tab bar
+var panelIds = ['panel-agents','panel-usage','panel-billing'];
+function switchDashTab(el, idx) {
+  // Safety: close any lingering payment overlays
+  closeAllOverlays();
+  document.querySelectorAll('.dash-tab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  movePill(idx);
+  // Switch panels
+  panelIds.forEach(function(id, i) {
+    var p = document.getElementById(id);
+    if (p) { p.classList.toggle('active', i === idx); }
+  });
+  // Show hamburger only on Agents tab
+  var hb = document.querySelector('.dash-hamburger');
+  if (hb) hb.style.display = idx === 0 ? '' : 'none';
+  if (idx === 1) fetchUsage();
+  if (idx === 2) fetchBilling();
+}
+function movePill(idx) {
+  var tabs = document.querySelectorAll('.dash-tab');
+  var pill = document.getElementById('tab-pill');
+  if (!pill || !tabs[idx]) return;
+  var tab = tabs[idx];
+  var container = tab.parentElement;
+  var cRect = container.getBoundingClientRect();
+  var tRect = tab.getBoundingClientRect();
+  pill.style.left = (tRect.left - cRect.left) + 'px';
+  pill.style.width = tRect.width + 'px';
+}
+// Init pill position after render
+setTimeout(function(){ movePill(0); }, 100);
+window.addEventListener('resize', function(){ var a = document.querySelector('.dash-tab.active'); if(a){ var tabs = Array.from(document.querySelectorAll('.dash-tab')); movePill(tabs.indexOf(a)); }});
+
+// === Usage ===
+var MODEL_COLORS = {
+  'claude-haiku-4-5-20241022': '#8B5CF6',
+  'claude-haiku-4-5-latest': '#8B5CF6',
+  'claude-sonnet-4-20250514': '#3B82F6',
+  'claude-sonnet-4-5-20250514': '#3B82F6',
+  'claude-opus-4-20250514': '#EC4899',
+  'moonshot-v1-128k': '#F59E0B',
+  'kimi-k2-0711': '#F59E0B',
+  'gpt-4o': '#10B981',
+};
+var MODEL_LABELS = {
+  'claude-haiku-4-5-20241022': 'Haiku 4.5',
+  'claude-haiku-4-5-latest': 'Haiku 4.5',
+  'claude-sonnet-4-20250514': 'Sonnet 4',
+  'claude-sonnet-4-5-20250514': 'Sonnet 4.5',
+  'claude-opus-4-20250514': 'Opus 4',
+  'moonshot-v1-128k': 'Kimi K2.5',
+  'kimi-k2-0711': 'Kimi K2.5',
+  'gpt-4o': 'GPT-4o',
+};
+
+function fmtNum(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return n.toString();
+}
+
+var usageInterval = null;
+function fetchUsage() {
+  var headers = {};
+  if (tgApp && tgApp.initData) {
+    headers['x-telegram-init-data'] = tgApp.initData;
+  } else {
+    headers['x-dev-user-id'] = '12345';
+  }
+  fetch(API_BASE + '/api/usage', { headers: headers })
+    .then(function(r){ return r.json(); })
+    .then(function(data){ renderUsage(data); })
+    .catch(function(e){ console.warn('Usage fetch error:', e); });
+
+  // Auto-refresh every 15s while on Usage tab
+  clearInterval(usageInterval);
+  usageInterval = setInterval(function(){
+    var panel = document.getElementById('panel-usage');
+    if (panel && panel.classList.contains('active')) {
+      fetch(API_BASE + '/api/usage', { headers: headers })
+        .then(function(r){ return r.json(); })
+        .then(function(data){ renderUsage(data); })
+        .catch(function(){});
+    } else {
+      clearInterval(usageInterval);
+    }
+  }, 15000);
+}
+
+function renderUsage(data) {
+  // Stat cards
+  document.getElementById('usage-in').textContent = fmtNum(data.total.total_in || 0);
+  document.getElementById('usage-out').textContent = fmtNum(data.total.total_out || 0);
+  document.getElementById('usage-cost').textContent = '$' + (data.total.total_cost || 0).toFixed(2);
+  document.getElementById('usage-reqs').textContent = fmtNum(data.total.total_requests || 0);
+
+  // Limit bars
+  var dPct = data.daily.limit > 0 ? Math.min(100, Math.round(data.daily.total_tokens / data.daily.limit * 100)) : 0;
+  var mPct = data.monthly.limit > 0 ? Math.min(100, Math.round(data.monthly.total_tokens / data.monthly.limit * 100)) : 0;
+  document.getElementById('usage-daily-pct').textContent = fmtNum(data.daily.total_tokens) + ' / ' + fmtNum(data.daily.limit);
+  document.getElementById('usage-daily-fill').style.width = dPct + '%';
+  document.getElementById('usage-monthly-pct').textContent = fmtNum(data.monthly.total_tokens) + ' / ' + fmtNum(data.monthly.limit);
+  document.getElementById('usage-monthly-fill').style.width = mPct + '%';
+
+  // Chart
+  renderUsageChart(data.chart || []);
+
+  // Models breakdown
+  renderUsageModels(data.models || []);
+}
+
+function renderUsageChart(chartData) {
+  var canvas = document.getElementById('usage-canvas');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio || 1;
+  var rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  var W = rect.width, H = rect.height;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Group data by day
+  var days = {};
+  var modelSet = {};
+  chartData.forEach(function(r) {
+    if (!days[r.day]) days[r.day] = {};
+    days[r.day][r.model] = (days[r.day][r.model] || 0) + r.input_tokens + r.output_tokens;
+    modelSet[r.model] = true;
+  });
+
+  var dayKeys = Object.keys(days).sort();
+  var models = Object.keys(modelSet);
+
+  // If empty, show placeholder
+  if (dayKeys.length === 0) {
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.font = '500 13px Inter, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No usage data yet', W/2, H/2);
+
+    document.getElementById('usage-legend').innerHTML = '';
+    return;
+  }
+
+  // Find max
+  var maxVal = 0;
+  dayKeys.forEach(function(d) {
+    var sum = 0;
+    models.forEach(function(m){ sum += (days[d][m] || 0); });
+    if (sum > maxVal) maxVal = sum;
+  });
+  if (maxVal === 0) maxVal = 1;
+
+  // Draw grid lines
+  var padL = 50, padR = 10, padT = 10, padB = 30;
+  var chartW = W - padL - padR;
+  var chartH = H - padT - padB;
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  ctx.font = '500 10px Inter, -apple-system, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  for (var g = 0; g <= 4; g++) {
+    var gy = padT + chartH - (chartH * g / 4);
+    ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(W - padR, gy); ctx.stroke();
+    var label = fmtNum(Math.round(maxVal * g / 4));
+    ctx.fillText(label, padL - 6, gy + 3);
+  }
+
+  // Draw bars
+  var barGroupW = chartW / dayKeys.length;
+  var barW = Math.min(barGroupW * 0.7, 28);
+  dayKeys.forEach(function(d, i) {
+    var x = padL + i * barGroupW + (barGroupW - barW) / 2;
+    var yOffset = 0;
+    models.forEach(function(m) {
+      var val = days[d][m] || 0;
+      var barH = (val / maxVal) * chartH;
+      var color = MODEL_COLORS[m] || '#6366F1';
+      // Rounded top for last segment
+      var y = padT + chartH - yOffset - barH;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      var r = Math.min(4, barW/2, barH/2);
+      if (yOffset === 0 && barH > 0) {
+        // Bottom bar — flat bottom, maybe rounded top
+        ctx.roundRect(x, y, barW, barH, [r, r, 0, 0]);
+      } else if (barH > 0) {
+        ctx.roundRect(x, y, barW, barH, [r, r, 0, 0]);
+      }
+      ctx.fill();
+      yOffset += barH;
+    });
+
+    // X axis label
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.textAlign = 'center';
+    ctx.font = '500 9px Inter, -apple-system, sans-serif';
+    var parts = d.split('-');
+    var month = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(parts[1])-1];
+    ctx.fillText(month + ' ' + parseInt(parts[2]), x + barW/2, H - 6);
+  });
+
+  // Legend
+  var legendEl = document.getElementById('usage-legend');
+  legendEl.innerHTML = models.map(function(m) {
+    var color = MODEL_COLORS[m] || '#6366F1';
+    var label = MODEL_LABELS[m] || m;
+    return '<div class="usage-legend-item"><div class="usage-legend-dot" style="background:' + color + '"></div>' + label + '</div>';
+  }).join('');
+}
+
+function renderUsageModels(models) {
+  var el = document.getElementById('usage-models');
+  if (!models.length) {
+    el.innerHTML = '<div style="padding:24px;text-align:center;font-size:13px;color:var(--t3)">No model usage yet</div>';
+    return;
+  }
+  el.innerHTML = models.map(function(m) {
+    var color = MODEL_COLORS[m.model] || '#6366F1';
+    var label = MODEL_LABELS[m.model] || m.model;
+    var tokens = (m.input_tokens || 0) + (m.output_tokens || 0);
+    return '<div class="usage-model-row">' +
+      '<div class="usage-model-dot" style="background:' + color + '"></div>' +
+      '<div class="usage-model-info"><div class="usage-model-name">' + label + '</div>' +
+      '<div class="usage-model-tokens">' + fmtNum(tokens) + ' tokens &middot; ' + m.requests + ' requests</div></div>' +
+      '<div class="usage-model-cost">$' + (m.cost || 0).toFixed(3) + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+// === Numpad / Billing / Payment ===
+var numpadRaw = '';
+var numpadAmount = 0;
+var selectedPayMethod = '';
+var overlayScreen = ''; // 'numpad' | 'pay' | 'net' | 'method' | 'addr' | 'ton' | 'wc'
+
+// Current payment state
+var currentPaymentId = null;
+var currentPaymentComment = null;
+var currentPaymentNetwork = null;
+var selectedNetwork = '';
+var selectedMethod = ''; // 'manual' | 'walletconnect'
+var addrCameFromMethod = false;
+var payPollInterval = null;
+
+// Auth headers helper
+function getHeaders() {
+  var h = { 'Content-Type': 'application/json' };
+  if (tgApp && tgApp.initData) h['x-telegram-init-data'] = tgApp.initData;
+  else h['x-dev-user-id'] = '12345';
+  return h;
+}
+
+function updateOverlayBack() {
+  if (!tgApp || !tgApp.BackButton) return;
+  if (overlayScreen) tgApp.BackButton.show();
+  else tgApp.BackButton.hide();
+}
+
+// ── Numpad ──────────────────────────────────────────────────────────────────
+
+function openNumpad() {
+  numpadRaw = '';
+  numpadAmount = 0;
+  document.getElementById('numpad-val').textContent = '$0';
+  document.getElementById('numpad-balance').textContent = document.getElementById('bill-balance').textContent;
+  var btn = document.getElementById('numpad-buy-btn');
+  btn.style.opacity = '0.4'; btn.style.pointerEvents = 'none';
+  document.getElementById('numpad-screen').classList.add('open');
+  overlayScreen = 'numpad';
+  updateOverlayBack();
+}
+function closeNumpad() {
+  document.getElementById('numpad-screen').classList.remove('open');
+  overlayScreen = '';
+  updateOverlayBack();
+}
+function numpadPress(key) {
+  haptic('light');
+  if (key === 'del') {
+    numpadRaw = numpadRaw.slice(0, -1);
+  } else if (key === '.') {
+    if (numpadRaw.indexOf('.') !== -1) return;
+    if (numpadRaw === '') numpadRaw = '0';
+    numpadRaw += '.';
+  } else {
+    var dotIdx = numpadRaw.indexOf('.');
+    if (dotIdx !== -1 && numpadRaw.length - dotIdx > 2) return;
+    if (numpadRaw.length > 8) return;
+    numpadRaw += key;
+  }
+  var display = numpadRaw || '0';
+  numpadAmount = parseFloat(display) || 0;
+  var valEl = document.getElementById('numpad-val');
+  valEl.textContent = '$' + display;
+  valEl.classList.add('pop');
+  setTimeout(function(){ valEl.classList.remove('pop'); }, 100);
+  var btn = document.getElementById('numpad-buy-btn');
+  btn.style.opacity = numpadAmount > 0 ? '1' : '0.4';
+  btn.style.pointerEvents = numpadAmount > 0 ? 'auto' : 'none';
+}
+function numpadBuy() {
+  if (numpadAmount <= 0) return;
+  openPayScreen();
+}
+
+// ── Pay method screen ────────────────────────────────────────────────────────
+
+function openPayScreen() {
+  selectedPayMethod = '';
+  document.querySelectorAll('.pay-method:not(.pay-method-disabled)').forEach(function(m){ m.classList.remove('selected'); });
+  var btn = document.getElementById('pay-continue-btn');
+  btn.style.opacity = '0.4'; btn.style.pointerEvents = 'none';
+  document.getElementById('pay-screen').classList.add('open');
+  overlayScreen = 'pay';
+  updateOverlayBack();
+}
+function closePayScreen() {
+  document.getElementById('pay-screen').classList.remove('open');
+  overlayScreen = 'numpad';
+  updateOverlayBack();
+}
+function selectPay(el, method) {
+  selectedPayMethod = method;
+  document.querySelectorAll('.pay-method').forEach(function(m){ m.classList.remove('selected'); });
+  el.classList.add('selected');
+  var btn = document.getElementById('pay-continue-btn');
+  btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+}
+
+// ── continuePay — routes by selected method ──────────────────────────────────
+
+async function continuePay() {
+  if (!selectedPayMethod || numpadAmount <= 0) return;
+  var btn = document.getElementById('pay-continue-btn');
+  btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none';
+  btn.querySelector('.shine') && (btn.innerHTML = '<span class="shine"></span>Processing…');
+
+  try {
+    if (selectedPayMethod === 'stars') {
+      await doTgStars();
+    } else if (selectedPayMethod === 'cryptobot') {
+      await doCryptoBot();
+    } else if (selectedPayMethod === 'usdt') {
+      closePayScreen();
+      showNetScreen('usdt');
+    } else if (selectedPayMethod === 'usdc') {
+      closePayScreen();
+      showNetScreen('usdc');
+    }
+  } catch(e) {
+    console.error('continuePay error:', e);
+    haptic('error');
+  } finally {
+    // Only restore the button if the pay screen is still open.
+    // For Stars/CryptoBot the screen is closed inside doTgStars/doCryptoBot,
+    // so restoring pointer-events here would leave an invisible clickable button.
+    if (document.getElementById('pay-screen').classList.contains('open')) {
+      btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+      btn.innerHTML = '<span class="shine"></span>Continue';
+    }
+  }
+}
+
+// ── Telegram Stars ───────────────────────────────────────────────────────────
+
+async function doTgStars() {
+  var res = await fetch(API_BASE + '/api/payments/tg-stars', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ amount_usd: numpadAmount }),
+  });
+  var data = await res.json();
+  if (data.error) { haptic('error'); return; }
+
+  currentPaymentId = data.payment_id;
+
+  // Reset selectedPayMethod BEFORE closing screens so that any ghost-click
+  // on the pay-continue-btn (which keeps pointer-events:auto from the finally block)
+  // hits continuePay() which returns early because selectedPayMethod is now ''.
+  selectedPayMethod = '';
+
+  // Close all overlay screens cleanly
+  closeAllOverlays();
+
+  // Explicitly lock the pay button — the finally block in continuePay() may
+  // restore pointer-events:auto on it even after the screen is closed,
+  // making it clickable through the invisible overlay. Lock it here.
+  var payBtn = document.getElementById('pay-continue-btn');
+  if (payBtn) { payBtn.style.pointerEvents = 'none'; payBtn.style.opacity = '0.4'; }
+
+  if (tgApp && tgApp.openInvoice) {
+    tgApp.openInvoice(data.invoice_url, function(status) {
+      if (status === 'paid') {
+        haptic('success');
+        // Poll for confirmed balance update (webhook may arrive with slight delay)
+        startPollPayment(data.payment_id, function() { fetchBilling(); });
+        setTimeout(fetchBilling, 2000);
+      } else {
+        // Cancelled or failed — clean up payment state
+        currentPaymentId = null;
+        if (payPollInterval) { clearInterval(payPollInterval); payPollInterval = null; }
+      }
+    });
+  } else if (tgApp) {
+    tgApp.openTelegramLink(data.invoice_url);
+    // Poll for payment confirmation since we have no callback in this branch
+    startPollPayment(data.payment_id, function() { fetchBilling(); });
+  }
+}
+
+// ── CryptoBot ────────────────────────────────────────────────────────────────
+
+async function doCryptoBot() {
+  var res = await fetch(API_BASE + '/api/payments/cryptobot', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ amount_usd: numpadAmount }),
+  });
+  var data = await res.json();
+  if (data.error) { haptic('error'); return; }
+
+  currentPaymentId = data.payment_id;
+
+  closeAllOverlays();
+
+  if (tgApp) tgApp.openTelegramLink(data.pay_url);
+  else window.open(data.pay_url, '_blank');
+
+  startPollPayment(currentPaymentId, function() { fetchBilling(); });
+}
+
+// ── Network selection screen ─────────────────────────────────────────────────
+
+var NETWORK_OPTS = {
+  usdt: [
+    { id: 'ton',  label: 'TON Network',  sub: 'MyTonWallet / Tonkeeper', icon: '💎', useTon: true },
+    { id: 'eth',  label: 'Ethereum',     sub: 'ERC-20 USDT', icon: '⟠' },
+    { id: 'tron', label: 'TRON',         sub: 'TRC-20 USDT', icon: '🔴' },
+    { id: 'bsc',  label: 'BSC',          sub: 'BEP-20 USDT', icon: '🟡' },
+  ],
+  usdc: [
+    { id: 'arbitrum', label: 'Arbitrum', sub: 'ARB USDC', icon: '🔵' },
+  ],
+};
+
+var NET_ADDRESSES = {
+  ton:      'UQB7qFrYpqToPCM23hDZGckEpOFC5N1fPTWoGiZ0HgKdaV8y',
+  eth:      '0x9dd5Cd88890b8EDfF25c0b1478ba1f38556B7d4C',
+  tron:     'TXmmyvjDkZRs5dA31GfpEAxSCQbswYup7D',
+  bsc:      '0x9dd5Cd88890b8EDfF25c0b1478ba1f38556B7d4C',
+  arbitrum: '0x9dd5Cd88890b8EDfF25c0b1478ba1f38556B7d4C',
+};
+
+function showNetScreen(token) {
+  currentPaymentNetwork = token; // 'usdt' or 'usdc'
+  selectedNetwork = '';
+
+  var opts = NETWORK_OPTS[token] || [];
+  document.getElementById('net-options').innerHTML = opts.map(function(o) {
+    return '<div class="net-option" data-net="' + o.id + '" onclick="haptic(\'select\');selectNetwork(this,\'' + o.id + '\')">' +
+      '<div class="net-option-ic" style="background:rgba(255,255,255,0.06)">' + o.icon + '</div>' +
+      '<div class="net-option-info"><div class="net-option-name">' + o.label + '</div><div class="net-option-sub">' + o.sub + '</div></div>' +
+      '<div class="net-radio"><div class="net-radio-dot"></div></div>' +
+      '</div>';
+  }).join('');
+
+  var btn = document.getElementById('net-continue-btn');
+  btn.style.opacity = '0.4'; btn.style.pointerEvents = 'none';
+
+  document.getElementById('net-screen').classList.add('open');
+  overlayScreen = 'net';
+  updateOverlayBack();
+}
+function closeNetScreen() {
+  document.getElementById('net-screen').classList.remove('open');
+  overlayScreen = 'pay';
+  document.getElementById('pay-screen').classList.add('open');
+  updateOverlayBack();
+}
+function selectNetwork(el, netId) {
+  selectedNetwork = netId;
+  document.querySelectorAll('.net-option').forEach(function(o){ o.classList.remove('selected'); });
+  el.classList.add('selected');
+  var btn = document.getElementById('net-continue-btn');
+  btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+}
+async function proceedNetwork() {
+  if (!selectedNetwork) return;
+  var token = currentPaymentNetwork; // 'usdt' or 'usdc'
+
+  // Check if TON (use wallet flow)
+  var opts = NETWORK_OPTS[token] || [];
+  var opt = opts.find(function(o){ return o.id === selectedNetwork; });
+  if (opt && opt.useTon) {
+    document.getElementById('net-screen').classList.remove('open');
+    await showTonScreen();
+    return;
+  }
+
+  // EVM networks (eth, bsc, arbitrum) → show method selection (manual vs WC)
+  if (['eth', 'bsc', 'arbitrum'].includes(selectedNetwork)) {
+    document.getElementById('net-screen').classList.remove('open');
+    showMethodScreen(selectedNetwork, token);
+    return;
+  }
+
+  // TRON and others → direct to manual addr-screen (WC not supported for TRON)
+  var btn = document.getElementById('net-continue-btn');
+  btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none';
+  try {
+    var res = await fetch(API_BASE + '/api/payments/create', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ amount_usd: numpadAmount, network: selectedNetwork, token: token }),
+    });
+    var data = await res.json();
+    if (data.error) { haptic('error'); return; }
+    currentPaymentId = data.payment_id;
+    currentPaymentComment = data.comment;
+    addrCameFromMethod = false;
+    document.getElementById('net-screen').classList.remove('open');
+    showAddrScreen(selectedNetwork, token, data.comment);
+  } finally {
+    btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+  }
+}
+
+// ── Address copy screen ──────────────────────────────────────────────────────
+
+function showAddrScreen(network, token, comment) {
+  var addr = NET_ADDRESSES[network] || '—';
+  var tokenLabel = token.toUpperCase() + ' (' + network.toUpperCase() + ')';
+
+  document.getElementById('addr-amount').textContent = '$' + numpadAmount.toFixed(2);
+  document.getElementById('addr-token-label').textContent = tokenLabel;
+  document.getElementById('addr-address-field').textContent = addr;
+  document.getElementById('addr-comment-field').textContent = comment;
+  document.getElementById('addr-pending-wrap').style.display = 'none';
+  document.getElementById('addr-bottom').style.display = '';
+
+  document.getElementById('addr-screen').classList.add('open');
+  overlayScreen = 'addr';
+  updateOverlayBack();
+}
+function closeAddrScreen() {
+  if (payPollInterval) { clearInterval(payPollInterval); payPollInterval = null; }
+  document.getElementById('addr-screen').classList.remove('open');
+  // If came from method-screen (EVM), go back there; otherwise go back to net-screen
+  if (addrCameFromMethod) {
+    overlayScreen = 'method';
+    document.getElementById('method-screen').classList.add('open');
+  } else {
+    overlayScreen = 'net';
+    document.getElementById('net-screen').classList.add('open');
+  }
+  updateOverlayBack();
+}
+function copyField(which, btnId) {
+  haptic('light');
+  var text = which === 'addr'
+    ? document.getElementById('addr-address-field').textContent
+    : document.getElementById('addr-comment-field').textContent;
+  navigator.clipboard.writeText(text).catch(function(){});
+  var btn = document.getElementById(btnId);
+  btn.textContent = '✓ DONE'; btn.classList.add('copied');
+  setTimeout(function(){ btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
+}
+function markManualSent() {
+  haptic('medium');
+  document.getElementById('addr-bottom').style.display = 'none';
+  document.getElementById('addr-pending-wrap').style.display = 'block';
+  startPollPayment(currentPaymentId, function() {
+    closeAllOverlays();
+    fetchBilling();
+  });
+}
+
+// ── Payment polling ──────────────────────────────────────────────────────────
+
+function closeAllOverlays() {
+  if (payPollInterval) { clearInterval(payPollInterval); payPollInterval = null; }
+  ['wc-screen','ton-screen','addr-screen','method-screen','net-screen','pay-screen','numpad-screen'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('open');
+  });
+  overlayScreen = '';
+  updateOverlayBack();
+}
+
+function startPollPayment(paymentId, onConfirmed) {
+  if (payPollInterval) clearInterval(payPollInterval);
+  var attempts = 0;
+  payPollInterval = setInterval(async function() {
+    attempts++;
+    if (attempts > 240) { clearInterval(payPollInterval); payPollInterval = null; return; } // 20 min max
+    try {
+      var res = await fetch(API_BASE + '/api/payments/status/' + paymentId, { headers: getHeaders() });
+      var data = await res.json();
+      if (data.status === 'confirmed') {
+        clearInterval(payPollInterval); payPollInterval = null;
+        haptic('success');
+        if (onConfirmed) onConfirmed();
+        else fetchBilling();
+      }
+    } catch(e) {}
+  }, 5000);
+}
+
+// ── TON Connect screen ───────────────────────────────────────────────────────
+
+var tonUI = null;
+var tonWalletInfo = null;
+
+function initTonConnect() {
+  if (tonUI) return;
+  try {
+    var Ctor = null;
+    if (typeof TON_CONNECT_UI !== 'undefined' && TON_CONNECT_UI.TonConnectUI) {
+      Ctor = TON_CONNECT_UI.TonConnectUI;
+    } else if (typeof TonConnectUI !== 'undefined') {
+      Ctor = TonConnectUI;
+    } else if (typeof TONConnectUI !== 'undefined') {
+      Ctor = TONConnectUI;
+    }
+    if (!Ctor) {
+      console.warn('TON Connect UI library not found');
+      return;
+    }
+    tonUI = new Ctor({
+      manifestUrl: 'https://rentyourclaw.vercel.app/.well-known/tonconnect-manifest.json',
+    });
+    tonUI.onStatusChange(function(wallet) {
+      tonWalletInfo = wallet;
+      updateTonWalletUI();
+    });
+    console.log('TON Connect initialized OK');
+  } catch(e) {
+    console.warn('TON Connect init failed:', e.message, e);
+  }
+}
+
+function updateTonWalletUI() {
+  var dot = document.getElementById('ton-dot');
+  var name = document.getElementById('ton-wallet-name');
+  var addr = document.getElementById('ton-wallet-addr');
+  var actionBtn = document.getElementById('ton-action-btn');
+  var discBtn = document.getElementById('ton-disconnect');
+  if (!dot || !name || !addr || !actionBtn) return;
+
+  if (tonWalletInfo && tonWalletInfo.account) {
+    var rawAddr = tonWalletInfo.account.address || '';
+    var shortAddr = rawAddr.length > 20 ? rawAddr.slice(0, 10) + '…' + rawAddr.slice(-8) : rawAddr;
+    dot.className = 'ton-wallet-dot connected';
+    name.textContent = tonWalletInfo.device && tonWalletInfo.device.appName
+      ? tonWalletInfo.device.appName
+      : 'Wallet connected';
+    addr.textContent = shortAddr;
+    actionBtn.innerHTML = '<span class="shine"></span>Send ' + numpadAmount.toFixed(2) + ' USDT';
+    if (discBtn) discBtn.style.display = '';
+  } else {
+    dot.className = 'ton-wallet-dot disconnected';
+    name.textContent = 'No wallet connected';
+    addr.textContent = 'Connect a wallet to continue';
+    actionBtn.innerHTML = '<span class="shine"></span>Connect Wallet';
+    if (discBtn) discBtn.style.display = 'none';
+  }
+}
+
+async function disconnectTon() {
+  if (!tonUI) return;
+  try {
+    await tonUI.disconnect();
+  } catch(e) {
+    console.warn('TON disconnect error:', e.message);
+  }
+  tonWalletInfo = null;
+  updateTonWalletUI();
+}
+
+async function showTonScreen() {
+  initTonConnect();
+
+  // Show screen immediately (preserve user gesture context for openModal)
+  document.getElementById('ton-amount').textContent = '$' + numpadAmount.toFixed(2);
+  document.getElementById('ton-status-msg').style.display = 'none';
+  document.getElementById('ton-bottom').style.display = '';
+  updateTonWalletUI();
+  document.getElementById('ton-screen').classList.add('open');
+  overlayScreen = 'ton';
+  updateOverlayBack();
+
+  // Create payment intent in background
+  try {
+    var res = await fetch(API_BASE + '/api/payments/create', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ amount_usd: numpadAmount, network: 'ton', token: 'usdt' }),
+    });
+    var data = await res.json();
+    if (data.error) { haptic('error'); return; }
+    currentPaymentId = data.payment_id;
+    currentPaymentComment = data.comment;
+  } catch(e) {
+    console.error('Failed to create TON payment:', e);
+  }
+}
+function closeTonScreen() {
+  if (payPollInterval) { clearInterval(payPollInterval); payPollInterval = null; }
+  document.getElementById('ton-screen').classList.remove('open');
+  overlayScreen = 'net';
+  document.getElementById('net-screen').classList.add('open');
+  updateOverlayBack();
+}
+
+async function tonAction() {
+  if (!tonUI) return;
+
+  if (!tonWalletInfo || !tonWalletInfo.account) {
+    // Connect wallet
+    try {
+      console.log('Opening TON Connect modal...');
+      if (tonUI.openModal) {
+        await tonUI.openModal();
+      } else if (tonUI.connectWallet) {
+        await tonUI.connectWallet();
+      }
+    } catch(e) {
+      console.warn('TON connect modal error:', e.message, e);
+      haptic('error');
+    }
+    return;
+  }
+
+  // Send USDT
+  var btn = document.getElementById('ton-action-btn');
+  btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none';
+  btn.innerHTML = '<span class="shine"></span>Building transaction…';
+
+  try {
+    var userAddr = tonWalletInfo.account.address;
+    var amountUnits = Math.round(numpadAmount * 1e6); // USDT 6 decimals
+    var DEST = 'UQB7qFrYpqToPCM23hDZGckEpOFC5N1fPTWoGiZ0HgKdaV8y';
+    var USDT_MASTER = 'EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs';
+
+    // Try to find sender's USDT jetton wallet via tonapi
+    var jettonWalletAddr = null;
+    try {
+      var jettonsRes = await fetch('https://tonapi.io/v2/accounts/' + encodeURIComponent(userAddr) + '/jettons?currencies=usd');
+      var jettonsData = await jettonsRes.json();
+      var usdtJetton = (jettonsData.balances || []).find(function(b){
+        return (b.jetton && b.jetton.symbol === 'USDT');
+      });
+      if (usdtJetton && usdtJetton.wallet_address) {
+        jettonWalletAddr = typeof usdtJetton.wallet_address === 'string'
+          ? usdtJetton.wallet_address
+          : usdtJetton.wallet_address.address;
+      }
+    } catch(e) {
+      console.warn('Jetton lookup failed, trying direct:', e.message);
+    }
+
+    // If no jetton wallet found (custodial wallets like @wallet),
+    // compute it from the USDT master contract
+    if (!jettonWalletAddr) {
+      try {
+        var tw = new TonWeb(new TonWeb.HttpProvider('https://toncenter.com/api/v2/jsonRPC'));
+        var jettonMinter = new TonWeb.token.jetton.JettonMinter(tw.provider, {
+          address: USDT_MASTER
+        });
+        var jettonWalletAddress = await jettonMinter.getJettonWalletAddress(
+          new TonWeb.utils.Address(userAddr)
+        );
+        jettonWalletAddr = jettonWalletAddress.toString(true, true, true);
+      } catch(e2) {
+        console.warn('Jetton wallet computation failed:', e2.message);
+      }
+    }
+
+    if (!jettonWalletAddr) {
+      throw new Error('Could not resolve USDT wallet. Make sure your wallet has USDT on TON network.');
+    }
+
+    var comment = currentPaymentComment || '';
+    var payload = await buildTonUsdtPayload(amountUnits, userAddr, comment);
+
+    btn.innerHTML = '<span class="shine"></span>Confirm in wallet…';
+
+    await tonUI.sendTransaction({
+      validUntil: Math.floor(Date.now() / 1000) + 600,
+      messages: [{
+        address: jettonWalletAddr,
+        amount: '50000000', // 0.05 TON for gas
+        payload: payload,
+      }],
+    });
+
+    // Transaction sent — show pending
+    document.getElementById('ton-bottom').style.display = 'none';
+    var msg = document.getElementById('ton-status-msg');
+    msg.style.display = 'block';
+    msg.innerHTML = '<div class="pay-pending"><div class="pay-pending-ic">⏳</div><h3>Transaction sent</h3><p>Waiting for blockchain confirmation. Your balance will be updated automatically.</p></div>';
+    haptic('success');
+    startPollPayment(currentPaymentId, function(){
+      closeAllOverlays();
+      fetchBilling();
+    });
+  } catch(e) {
+    haptic('error');
+    var msg = document.getElementById('ton-status-msg');
+    msg.style.display = 'block';
+    msg.textContent = '⚠️ ' + (e.message || 'Transaction failed');
+    btn.innerHTML = '<span class="shine"></span>Try Again';
+    btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+  }
+}
+
+// Build jetton transfer BOC using TonWeb
+async function buildTonUsdtPayload(amountUnits, senderRawAddr, comment) {
+  if (typeof TonWeb === 'undefined') throw new Error('TonWeb not loaded');
+  var DEST = 'UQB7qFrYpqToPCM23hDZGckEpOFC5N1fPTWoGiZ0HgKdaV8y';
+
+  // Forward payload cell: text comment
+  var forwardCell = new TonWeb.boc.Cell();
+  forwardCell.bits.writeUint(0, 32); // text comment prefix
+  var commentBytes = new TextEncoder().encode(comment);
+  for (var i = 0; i < commentBytes.length; i++) {
+    forwardCell.bits.writeUint(commentBytes[i], 8);
+  }
+
+  // Main transfer body
+  var body = new TonWeb.boc.Cell();
+  body.bits.writeUint(0x0f8a7ea5, 32);                         // jetton transfer op
+  body.bits.writeUint(0, 64);                                   // query_id
+  body.bits.writeCoins(new TonWeb.utils.BN(String(amountUnits))); // amount
+  body.bits.writeAddress(new TonWeb.utils.Address(DEST));       // destination
+  body.bits.writeAddress(new TonWeb.utils.Address(senderRawAddr)); // response_destination
+  body.bits.writeBit(0);                                        // no custom_payload
+  body.bits.writeCoins(new TonWeb.utils.BN('1'));               // forward_ton_amount (1 nanoton)
+  body.bits.writeBit(1);                                        // forward_payload as ref
+  body.refs.push(forwardCell);
+
+  var boc = await body.toBoc(false);
+  return TonWeb.utils.bytesToBase64(boc);
+}
+
+// ── Method selection screen (Manual vs WalletConnect) ────────────────────────
+
+function showMethodScreen(network, token) {
+  selectedMethod = '';
+  document.querySelectorAll('.method-option').forEach(function(o){ o.classList.remove('selected'); });
+  var btn = document.getElementById('method-continue-btn');
+  btn.style.opacity = '0.4'; btn.style.pointerEvents = 'none';
+  document.getElementById('method-screen').classList.add('open');
+  overlayScreen = 'method';
+  updateOverlayBack();
+}
+function closeMethodScreen() {
+  document.getElementById('method-screen').classList.remove('open');
+  overlayScreen = 'net';
+  document.getElementById('net-screen').classList.add('open');
+  updateOverlayBack();
+}
+function selectMethod(el, method) {
+  selectedMethod = method;
+  document.querySelectorAll('.method-option').forEach(function(o){ o.classList.remove('selected'); });
+  el.classList.add('selected');
+  var btn = document.getElementById('method-continue-btn');
+  btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+}
+async function proceedMethod() {
+  if (!selectedMethod) return;
+  var btn = document.getElementById('method-continue-btn');
+  btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none';
+  var token = currentPaymentNetwork;
+
+  try {
+    if (selectedMethod === 'manual') {
+      // Create payment intent and show addr-screen
+      var res = await fetch(API_BASE + '/api/payments/create', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ amount_usd: numpadAmount, network: selectedNetwork, token: token }),
+      });
+      var data = await res.json();
+      if (data.error) { haptic('error'); return; }
+      currentPaymentId = data.payment_id;
+      currentPaymentComment = data.comment;
+      addrCameFromMethod = true;
+      document.getElementById('method-screen').classList.remove('open');
+      showAddrScreen(selectedNetwork, token, data.comment);
+    } else if (selectedMethod === 'walletconnect') {
+      // Create payment intent and show wc-screen
+      var res = await fetch(API_BASE + '/api/payments/create', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ amount_usd: numpadAmount, network: selectedNetwork, token: token }),
+      });
+      var data = await res.json();
+      if (data.error) { haptic('error'); return; }
+      currentPaymentId = data.payment_id;
+      currentPaymentComment = data.comment;
+      document.getElementById('method-screen').classList.remove('open');
+      showWcScreen(selectedNetwork, token);
+    }
+  } catch(e) {
+    console.error('proceedMethod error:', e);
+    haptic('error');
+  } finally {
+    btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+  }
+}
+
+// ── WalletConnect EVM Screen ─────────────────────────────────────────────────
+
+var wcProvider = null;
+var wcAccounts = [];
+var wcChainId = null;
+var currentWcUri = '';
+
+// Project ID — register at https://cloud.reown.com/ to get yours
+var WC_PROJECT_ID = 'a043247a4960e87434ecacc08540c9e9';
+
+var WC_CHAIN_CONFIG = {
+  eth:      { chainId: 1,     name: 'Ethereum',  contract: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6,  token: 'USDT', rpc: 'https://ethereum-rpc.publicnode.com' },
+  bsc:      { chainId: 56,    name: 'BNB Chain',  contract: '0x55d398326f99059fF775485246999027B3197955', decimals: 18, token: 'USDT', rpc: 'https://bsc-rpc.publicnode.com' },
+  arbitrum: { chainId: 42161, name: 'Arbitrum',   contract: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', decimals: 6,  token: 'USDC', rpc: 'https://arbitrum-one-rpc.publicnode.com' },
+};
+
+var WC_DEST_ADDR = '0x9dd5Cd88890b8EDfF25c0b1478ba1f38556B7d4C';
+
+async function initWcProvider(networkId) {
+  var cfg = WC_CHAIN_CONFIG[networkId];
+  if (!cfg) throw new Error('Unsupported network: ' + networkId);
+
+  var EthProvider = window.WCEthProvider;
+  if (!EthProvider || typeof EthProvider.init !== 'function') {
+    throw new Error('WalletConnect SDK not loaded — reload the page and try again.');
+  }
+  console.log('[WC] initWcProvider: EthProvider OK, chainId=', cfg.chainId);
+
+  // If provider exists but on wrong chain, disconnect first
+  if (wcProvider && wcChainId !== cfg.chainId) {
+    try { await wcProvider.disconnect(); } catch(e) {}
+    wcProvider = null;
+    wcAccounts = [];
+    wcChainId = null;
+  }
+
+  if (wcProvider) return wcProvider;
+
+  var rpcMap = {};
+  rpcMap[cfg.chainId] = cfg.rpc;
+
+  console.log('[WC] Calling EthProvider.init with projectId=', WC_PROJECT_ID, 'chainId=', cfg.chainId);
+  wcProvider = await EthProvider.init({
+    projectId: WC_PROJECT_ID,
+    chains: [cfg.chainId],
+    optionalChains: [1, 56, 42161],
+    showQrModal: false,   // We handle the QR/deeplinks ourselves
+    rpcMap: rpcMap,
+    metadata: {
+      name: 'RentYourClaw',
+      description: 'Deploy AI agents in Telegram',
+      url: 'https://rentyourclaw.vercel.app',
+      icons: ['https://rentyourclaw.vercel.app/icon.svg'],
+    },
+  });
+  console.log('[WC] EthProvider.init done, provider=', typeof wcProvider);
+
+  // Display URI event — fires when connect() is called, gives us the WC URI
+  wcProvider.on('display_uri', function(uri) {
+    console.log('[WC] display_uri fired, uri length=', uri ? uri.length : 0, 'preview=', uri ? uri.slice(0, 40) : '');
+    currentWcUri = uri;
+    showWcQrOverlay(uri);
+  });
+
+  wcProvider.on('accountsChanged', function(accounts) {
+    wcAccounts = accounts || [];
+    // Auto-close QR overlay when wallet connects
+    if (wcAccounts.length > 0) closeWcQrOverlay();
+    updateWcWalletUI();
+  });
+
+  wcProvider.on('chainChanged', function(chainId) {
+    wcChainId = parseInt(chainId, 16) || parseInt(chainId, 10) || chainId;
+    updateWcWalletUI();
+  });
+
+  wcProvider.on('disconnect', function() {
+    wcAccounts = [];
+    wcChainId = null;
+    closeWcQrOverlay();
+    updateWcWalletUI();
+  });
+
+  return wcProvider;
+}
+
+// ── WalletConnect QR / DeepLink overlay ──────────────────────────────────────
+
+var WC_WALLETS = [
+  { name: 'MetaMask',     icon: '🦊', universal: 'https://metamask.app.link/wc',    scheme: 'metamask://wc' },
+  { name: 'Trust',        icon: '🛡️',  universal: 'https://link.trustwallet.com/wc', scheme: 'trust://wc'    },
+  { name: 'Rainbow',      icon: '🌈', universal: 'https://rnbwapp.com/wc',           scheme: 'rainbow://wc'  },
+  { name: '1inch',        icon: '🔮', universal: 'https://wallet.1inch.io/wc',       scheme: 'oneinch://wc'  },
+];
+
+function buildWalletDeepLink(wallet, uri) {
+  var encoded = encodeURIComponent(uri);
+  // Try universal link first (more reliable on iOS/Android)
+  return wallet.universal + '?uri=' + encoded;
+}
+
+function showWcQrOverlay(uri) {
+  var overlay = document.getElementById('wc-qr-overlay');
+  var canvas  = document.getElementById('wc-qr-canvas');
+  var loading = document.getElementById('wc-qr-loading');
+  var wallets = document.getElementById('wc-qr-wallets');
+  var sub     = document.getElementById('wc-qr-sub');
+
+  var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+                 (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
+
+  // Reset canvas area
+  canvas.innerHTML = '';
+  loading.style.display = 'flex';
+  canvas.appendChild(loading);
+
+  // Populate wallet deep-links
+  wallets.innerHTML = WC_WALLETS.map(function(w) {
+    var link = buildWalletDeepLink(w, uri);
+    return '<a href="' + link + '" target="_blank" rel="noopener" class="wc-qr-wallet" onclick="haptic(\'select\')">' +
+           '<div class="wc-qr-wallet-ic">' + w.icon + '</div>' +
+           '<div class="wc-qr-wallet-name">' + w.name + '</div></a>';
+  }).join('');
+
+  if (isMobile) {
+    sub.textContent = 'Tap your wallet app to connect';
+    canvas.style.display = 'none';
+  } else {
+    sub.textContent = 'Scan with your mobile wallet or click below';
+    canvas.style.display = '';
+    // Generate QR code
+    if (window.QRCode) {
+      var qrCanvas = document.createElement('canvas');
+      QRCode.toCanvas(qrCanvas, uri, {
+        width: 220,
+        margin: 2,
+        color: { dark: '#ffffff', light: '#101014' },
+        errorCorrectionLevel: 'M',
+      }, function(err) {
+        if (err) {
+          loading.style.display = 'none';
+          var fallback = document.createElement('div');
+          fallback.style.cssText = 'padding:16px;font-size:11px;color:var(--t2);text-align:center;word-break:break-all;';
+          fallback.textContent = uri;
+          canvas.appendChild(fallback);
+        } else {
+          loading.style.display = 'none';
+          canvas.appendChild(qrCanvas);
+        }
+      });
+    } else {
+      loading.style.display = 'none';
+      var fallback = document.createElement('div');
+      fallback.style.cssText = 'padding:16px;font-size:11px;color:var(--t2);text-align:center;word-break:break-all;';
+      fallback.textContent = uri;
+      canvas.appendChild(fallback);
+    }
+  }
+
+  overlay.classList.add('open');
+}
+
+function closeWcQrOverlay() {
+  document.getElementById('wc-qr-overlay').classList.remove('open');
+}
+
+function handleWcQrOverlayClick(e) {
+  // Close if tapping the dark backdrop (not the sheet itself)
+  if (e.target === document.getElementById('wc-qr-overlay')) {
+    cancelWcConnect();
+  }
+}
+
+function cancelWcConnect() {
+  closeWcQrOverlay();
+  // Disconnect pending session so provider.connect() rejects
+  if (wcProvider) {
+    try { wcProvider.disconnect(); } catch(e) {}
+    wcProvider = null;
+    wcAccounts = [];
+    wcChainId = null;
+  }
+  // Restore button
+  var btn = document.getElementById('wc-action-btn');
+  if (btn) { btn.innerHTML = '<span class="shine"></span>Connect Wallet'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+}
+
+function copyWcUri() {
+  if (!currentWcUri) return;
+  var btn = document.getElementById('wc-qr-copy-btn');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(currentWcUri).then(function() {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(function() { btn.textContent = 'Copy URI'; btn.classList.remove('copied'); }, 2000);
+    }).catch(function() {
+      btn.textContent = 'Copy URI';
+    });
+  } else {
+    // Fallback: select a textarea
+    var ta = document.createElement('textarea');
+    ta.value = currentWcUri;
+    ta.style.cssText = 'position:fixed;top:-9999px;';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(function() { btn.textContent = 'Copy URI'; btn.classList.remove('copied'); }, 2000);
+  }
+}
+
+function showWcScreen(network, token) {
+  var cfg = WC_CHAIN_CONFIG[network];
+  if (!cfg) return;
+
+  document.getElementById('wc-amount').textContent = '$' + numpadAmount.toFixed(2);
+  document.getElementById('wc-token-label').textContent = cfg.token + ' (' + cfg.name + ')';
+  document.getElementById('wc-status-msg').style.display = 'none';
+  document.getElementById('wc-bottom').style.display = '';
+  updateWcWalletUI();
+
+  document.getElementById('wc-screen').classList.add('open');
+  overlayScreen = 'wc';
+  updateOverlayBack();
+}
+
+function closeWcScreen() {
+  if (payPollInterval) { clearInterval(payPollInterval); payPollInterval = null; }
+  document.getElementById('wc-screen').classList.remove('open');
+  overlayScreen = 'method';
+  document.getElementById('method-screen').classList.add('open');
+  updateOverlayBack();
+}
+
+function updateWcWalletUI() {
+  var dot = document.getElementById('wc-dot');
+  var nameEl = document.getElementById('wc-wallet-name');
+  var addrEl = document.getElementById('wc-wallet-addr');
+  var actionBtn = document.getElementById('wc-action-btn');
+  var discBtn = document.getElementById('wc-disconnect');
+  if (!dot || !nameEl || !addrEl || !actionBtn) return;
+
+  if (wcAccounts.length > 0) {
+    var addr = wcAccounts[0];
+    var short = addr.slice(0, 8) + '...' + addr.slice(-6);
+    dot.className = 'wc-wallet-dot connected';
+    nameEl.textContent = 'Wallet connected';
+    addrEl.textContent = short;
+    var cfg = WC_CHAIN_CONFIG[selectedNetwork] || {};
+    actionBtn.innerHTML = '<span class="shine"></span>Send ' + numpadAmount.toFixed(2) + ' ' + (cfg.token || 'USDT');
+    if (discBtn) discBtn.style.display = '';
+  } else {
+    dot.className = 'wc-wallet-dot disconnected';
+    nameEl.textContent = 'No wallet connected';
+    addrEl.textContent = 'Connect a wallet to continue';
+    actionBtn.innerHTML = '<span class="shine"></span>Connect Wallet';
+    if (discBtn) discBtn.style.display = 'none';
+  }
+}
+
+async function disconnectWc() {
+  if (!wcProvider) return;
+  try { await wcProvider.disconnect(); } catch(e) {}
+  wcProvider = null;
+  wcAccounts = [];
+  wcChainId = null;
+  updateWcWalletUI();
+}
+
+async function wcAction() {
+  var cfg = WC_CHAIN_CONFIG[selectedNetwork];
+  if (!cfg) return;
+
+  var btn = document.getElementById('wc-action-btn');
+  var statusMsg = document.getElementById('wc-status-msg');
+
+  if (wcAccounts.length === 0) {
+    // ── Injected wallet (window.ethereum) fast path ──────────────────────────
+    // Works when user opens Mini App inside MetaMask / Trust browser, or desktop with extension.
+    if (window.ethereum && !wcProvider) {
+      btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none';
+      btn.innerHTML = '<span class="shine"></span>Connecting...';
+      try {
+        console.log('[WC] window.ethereum detected — using injected provider');
+        var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (!accounts || accounts.length === 0) throw new Error('No accounts returned');
+        wcAccounts = accounts;
+        wcChainId = parseInt(await window.ethereum.request({ method: 'eth_chainId' }), 16);
+        console.log('[WC] injected wallet connected, accounts=', wcAccounts, 'chainId=', wcChainId);
+        // Use window.ethereum for future requests
+        wcProvider = window.ethereum;
+        updateWcWalletUI();
+        return;
+      } catch(e) {
+        console.warn('[WC] injected wallet error:', e.message);
+        // Fall through to WalletConnect if user rejected or no accounts
+        wcProvider = null; wcAccounts = []; wcChainId = null;
+        btn.innerHTML = '<span class="shine"></span>Connect Wallet';
+        btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+        if (!e.message || (!e.message.includes('rejected') && !e.message.includes('cancel'))) {
+          statusMsg.style.display = 'block';
+          statusMsg.textContent = 'Wallet error: ' + (e.message || JSON.stringify(e));
+        }
+        return;
+      }
+    }
+
+    // ── WalletConnect flow ────────────────────────────────────────────────────
+    btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none';
+    btn.innerHTML = '<span class="shine"></span>Connecting...';
+    statusMsg.style.display = 'none';
+    try {
+      console.log('[WC] wcAction: WalletConnect flow, network=', selectedNetwork);
+      var provider = await initWcProvider(selectedNetwork);
+      console.log('[WC] Calling provider.connect()...');
+      await provider.connect();
+      wcAccounts = provider.accounts || [];
+      wcChainId = provider.chainId;
+      console.log('[WC] connect() resolved, accounts=', wcAccounts, 'chainId=', wcChainId);
+      closeWcQrOverlay();
+      updateWcWalletUI();
+    } catch(e) {
+      // Extract real error text from any error shape
+      var errText = e && (e.message || e.error || e.description || (typeof e === 'string' ? e : null));
+      if (!errText && e) {
+        try { errText = JSON.stringify(e); } catch(_) { errText = String(e); }
+      }
+      console.warn('[WC] connect error:', errText, e);
+      closeWcQrOverlay();
+      var cancelled = errText && (
+        errText.includes('rejected') || errText.includes('cancel') ||
+        errText.includes('closed')   || errText.includes('dismiss') ||
+        errText.includes('User rejected') || errText.includes('Connection request reset')
+      );
+      if (!cancelled) {
+        statusMsg.style.display = 'block';
+        statusMsg.textContent = errText || 'Connection failed. Please try again.';
+      }
+      wcProvider = null; wcAccounts = []; wcChainId = null;
+      btn.innerHTML = '<span class="shine"></span>Connect Wallet';
+      btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+    }
+    return;
+  }
+
+  // Send ERC-20 transfer
+  btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none';
+  btn.innerHTML = '<span class="shine"></span>Building transaction...';
+
+  try {
+    // Ensure correct chain
+    var currentChain = wcChainId;
+    if (currentChain !== cfg.chainId) {
+      btn.innerHTML = '<span class="shine"></span>Switching network...';
+      try {
+        await wcProvider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x' + cfg.chainId.toString(16) }],
+        });
+      } catch(switchErr) {
+        console.warn('Chain switch failed:', switchErr.message);
+        throw new Error('Please switch to ' + cfg.name + ' in your wallet and try again.');
+      }
+    }
+
+    // Encode ERC-20 transfer(address,uint256) = 0xa9059cbb
+    var amountUnits = encodeTokenAmount(numpadAmount, cfg.decimals);
+    var transferData = encodeERC20Transfer(WC_DEST_ADDR, amountUnits);
+
+    btn.innerHTML = '<span class="shine"></span>Confirm in wallet...';
+
+    var txHash = await wcProvider.request({
+      method: 'eth_sendTransaction',
+      params: [{
+        from: wcAccounts[0],
+        to: cfg.contract,
+        data: transferData,
+        value: '0x0',
+      }],
+    });
+
+    // Transaction sent! Submit txHash to backend for fast verification
+    try {
+      await fetch(API_BASE + '/api/payments/submit-tx', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({
+          payment_id: currentPaymentId,
+          tx_hash: txHash,
+          sender_address: wcAccounts[0],
+        }),
+      });
+    } catch(e) {
+      console.warn('Failed to submit txHash to backend:', e.message);
+    }
+
+    // Show pending state
+    document.getElementById('wc-bottom').style.display = 'none';
+    var msg = document.getElementById('wc-status-msg');
+    msg.style.display = 'block';
+    msg.innerHTML = '<div class="pay-pending"><div class="pay-pending-ic">&#9203;</div><h3>Transaction sent</h3><p>Waiting for blockchain confirmation. Your balance will be updated automatically.</p></div>';
+    haptic('success');
+    startPollPayment(currentPaymentId, function() {
+      closeAllOverlays();
+      fetchBilling();
+    });
+
+  } catch(e) {
+    haptic('error');
+    var msg = document.getElementById('wc-status-msg');
+    msg.style.display = 'block';
+    if (e.message && (e.message.includes('rejected') || e.message.includes('denied') || e.message.includes('cancel'))) {
+      msg.textContent = 'Transaction cancelled by user.';
+    } else {
+      msg.textContent = (e.message || 'Transaction failed. Please try again.');
+    }
+    btn.innerHTML = '<span class="shine"></span>Try Again';
+    btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+  }
+}
+
+// Encode token amount to decimal string in minimal units (wei-like)
+function encodeTokenAmount(usdAmount, decimals) {
+  // Convert to cents (integer) to avoid floating point, then scale to token decimals
+  var cents = Math.round(usdAmount * 100);
+  if (decimals <= 2) {
+    // e.g. decimals=2: cents is already the value
+    return String(cents);
+  }
+  // Multiply cents by 10^(decimals-2) using BigInt to avoid overflow
+  var result = BigInt(cents) * BigInt(10) ** BigInt(decimals - 2);
+  return result.toString();
+}
+
+// Encode ERC-20 transfer(address to, uint256 amount) call data
+function encodeERC20Transfer(toAddress, amountDecimalStr) {
+  // Function selector: transfer(address,uint256) = 0xa9059cbb
+  var selector = 'a9059cbb';
+
+  // Pad address to 32 bytes (remove 0x prefix, left-pad with zeros)
+  var addrHex = toAddress.replace('0x', '').toLowerCase();
+  var paddedAddr = addrHex.padStart(64, '0');
+
+  // Convert decimal string to hex, pad to 32 bytes
+  var amountHex = BigInt(amountDecimalStr).toString(16);
+  var paddedAmount = amountHex.padStart(64, '0');
+
+  return '0x' + selector + paddedAddr + paddedAmount;
+}
+
+// ── Billing ──────────────────────────────────────────────────────────────────
+
+var NETWORK_LABELS = { ton:'TON', eth:'ETH', bsc:'BSC', tron:'TRON', arbitrum:'ARB', stars:'Stars', cryptobot:'CryptoBot', unknown:'Crypto' };
+
+async function fetchBilling() {
+  try {
+    var res = await fetch(API_BASE + '/api/billing', { headers: getHeaders() });
+    var data = await res.json();
+    renderBillingData(data);
+  } catch(e) {
+    console.warn('Billing fetch error:', e.message);
+  }
+}
+
+function renderBillingData(data) {
+  var balanceCents = data.balance_cents || 0;
+  var balStr = '$' + (balanceCents / 100).toFixed(2);
+  document.getElementById('bill-balance').textContent = balStr;
+  var numBalEl = document.getElementById('numpad-balance');
+  if (numBalEl) numBalEl.textContent = balStr;
+
+  var payments = data.payments || [];
+  var container = document.getElementById('bill-invoices');
+  if (!container) return;
+
+  var rows = payments.filter(function(p){ return p.status === 'confirmed'; }).map(function(p) {
+    var d = new Date(p.confirmed_at || p.created_at);
+    var dateStr = d.toLocaleDateString('ru-RU');
+    var method = NETWORK_LABELS[p.network] || p.network;
+    return '<div class="bill-inv-row">' +
+      '<div class="bill-inv-date">' + dateStr + '</div>' +
+      '<div class="bill-inv-type">' + method + '</div>' +
+      '<div class="bill-inv-cost">+$' + parseFloat(p.amount_usd).toFixed(2) + '</div>' +
+      '</div>';
+  }).join('');
+
+  container.innerHTML = '<div class="bill-inv-head"><span>Date</span><span>Method</span><span style="text-align:right">Amount</span></div>' +
+    (rows || '<div style="padding:24px;text-align:center;font-size:13px;color:var(--t3)">No payments yet</div>');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+// Init: render agents on load
+renderAgents();
+
+// Init TON Connect early so modal is ready when user clicks
+initTonConnect();
+
+// Auto-open dashboard if user already has agents
+if (getAgents().length > 0) {
+  setTimeout(function(){ goToDash(); }, 200);
+}
+
+// Fetch billing on startup (when dashboard is shown)
+setTimeout(function(){ fetchBilling(); }, 1000);
+</script>
+</body>
+</html>

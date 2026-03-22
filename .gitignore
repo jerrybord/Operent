@@ -1,0 +1,5 @@
+.vercel
+.env
+backend/.env
+**/.env
+*.env
