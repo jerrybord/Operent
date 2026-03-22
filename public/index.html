@@ -2546,80 +2546,82 @@ function startWcSessionPoll() {
   }, 2000);
 }
 
-// ── WalletConnect QR / DeepLink overlay ──────────────────────────────────────
+// ── Wallet Deep Links (EIP-681, no WC relay needed) ──────────────────────────
+
+var WC_DEST_ADDR = '0x9dd5Cd88890b8EDfF25c0b1478ba1f38556B7d4C';
+var _wcWalletLinks = []; // EIP-681 links indexed by wallet slot
 
 var WC_WALLETS = [
-  { name: 'MetaMask',     icon: '🦊', universal: 'https://metamask.app.link/wc',    scheme: 'metamask://wc' },
-  { name: 'Trust',        icon: '🛡️',  universal: 'https://link.trustwallet.com/wc', scheme: 'trust://wc'    },
-  { name: 'Rainbow',      icon: '🌈', universal: 'https://rnbwapp.com/wc',           scheme: 'rainbow://wc'  },
-  { name: '1inch',        icon: '🔮', universal: 'https://wallet.1inch.io/wc',       scheme: 'oneinch://wc'  },
+  { name: 'MetaMask', icon: '🦊', buildLink: function(cfg, units) {
+    return 'https://metamask.app.link/send/' + cfg.contract + '@' + cfg.chainId +
+           '/transfer?address=' + WC_DEST_ADDR + '&uint256=' + units;
+  }},
+  { name: 'Trust',    icon: '🛡️', buildLink: function(cfg, units) {
+    return 'https://link.trustwallet.com/send?coin=60&token_id=' + cfg.contract +
+           '&address=' + WC_DEST_ADDR + '&amount=' + units;
+  }},
+  { name: 'Rainbow',  icon: '🌈', buildLink: function(cfg, units) {
+    return 'https://rnbwapp.com/send?address=' + cfg.contract + '@' + cfg.chainId +
+           '/transfer?address=' + WC_DEST_ADDR + '&uint256=' + units;
+  }},
+  { name: 'Coinbase', icon: '🔵', buildLink: function(cfg, units) {
+    return 'https://go.cb-wallet.io/send?chain_id=' + cfg.chainId +
+           '&address=' + cfg.contract + '&to=' + WC_DEST_ADDR + '&value=' + units;
+  }},
 ];
 
-function buildWalletDeepLink(wallet, uri) {
-  var encoded = encodeURIComponent(uri);
-  // Try universal link first (more reliable on iOS/Android)
-  return wallet.universal + '?uri=' + encoded;
+// BigInt-safe token amount encoding (avoids float precision loss on 18-decimal tokens)
+function buildEip681Amount(usdAmount, decimals) {
+  var cents = Math.round(usdAmount * 100);
+  return (BigInt(cents) * BigInt(10) ** BigInt(decimals - 2)).toString();
 }
 
-function showWcQrOverlay(uri) {
+// Open wallet URL via Telegram.WebApp.openLink (handles HTTPS universal links correctly)
+function openWalletLink(idx) {
+  var url = _wcWalletLinks[idx];
+  if (!url) return;
+  haptic('select');
+  if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+    try { window.Telegram.WebApp.openLink(url); return; } catch(e) { console.warn('[WC] openLink failed:', e.message); }
+  }
+  window.open(url, '_blank', 'noopener');
+}
+
+function showWcQrOverlay(cfg, amountUnits) {
   var overlay = document.getElementById('wc-qr-overlay');
   var canvas  = document.getElementById('wc-qr-canvas');
-  var loading = document.getElementById('wc-qr-loading');
   var wallets = document.getElementById('wc-qr-wallets');
   var sub     = document.getElementById('wc-qr-sub');
+  var titleEl = document.querySelector('#wc-qr-sheet .wc-qr-title');
+  var copyBtn = document.getElementById('wc-qr-copy-btn');
 
-  var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
-                 (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.platform));
+  if (titleEl) titleEl.textContent = 'Send ' + cfg.token + ' · $' + numpadAmount.toFixed(2);
+  sub.textContent = 'Tap your wallet — it will open with the payment pre-filled. Then confirm in the wallet app.';
+  canvas.style.display = 'none';
 
-  // Reset canvas area
-  canvas.innerHTML = '';
-  loading.style.display = 'flex';
-  canvas.appendChild(loading);
-
-  // Populate wallet deep-links
-  wallets.innerHTML = WC_WALLETS.map(function(w) {
-    var link = buildWalletDeepLink(w, uri);
-    return '<a href="' + link + '" target="_blank" rel="noopener" class="wc-qr-wallet" onclick="haptic(\'select\')">' +
+  _wcWalletLinks = [];
+  wallets.innerHTML = WC_WALLETS.map(function(w, i) {
+    var link = w.buildLink(cfg, amountUnits);
+    _wcWalletLinks[i] = link;
+    return '<div class="wc-qr-wallet" onclick="openWalletLink(' + i + ')">' +
            '<div class="wc-qr-wallet-ic">' + w.icon + '</div>' +
-           '<div class="wc-qr-wallet-name">' + w.name + '</div></a>';
+           '<div class="wc-qr-wallet-name">' + w.name + '</div></div>';
   }).join('');
 
-  if (isMobile) {
-    sub.textContent = 'Tap your wallet app to connect';
-    canvas.style.display = 'none';
-  } else {
-    sub.textContent = 'Scan with your mobile wallet or click below';
-    canvas.style.display = '';
-    // Generate QR code
-    if (window.QRCode) {
-      var qrCanvas = document.createElement('canvas');
-      QRCode.toCanvas(qrCanvas, uri, {
-        width: 220,
-        margin: 2,
-        color: { dark: '#ffffff', light: '#101014' },
-        errorCorrectionLevel: 'M',
-      }, function(err) {
-        if (err) {
-          loading.style.display = 'none';
-          var fallback = document.createElement('div');
-          fallback.style.cssText = 'padding:16px;font-size:11px;color:var(--t2);text-align:center;word-break:break-all;';
-          fallback.textContent = uri;
-          canvas.appendChild(fallback);
-        } else {
-          loading.style.display = 'none';
-          canvas.appendChild(qrCanvas);
-        }
-      });
-    } else {
-      loading.style.display = 'none';
-      var fallback = document.createElement('div');
-      fallback.style.cssText = 'padding:16px;font-size:11px;color:var(--t2);text-align:center;word-break:break-all;';
-      fallback.textContent = uri;
-      canvas.appendChild(fallback);
-    }
+  if (copyBtn) {
+    copyBtn.textContent = "I've Sent";
+    copyBtn.onclick = function() { haptic('success'); confirmWcSent(); };
   }
-
   overlay.classList.add('open');
+}
+
+function confirmWcSent() {
+  closeWcQrOverlay();
+  document.getElementById('wc-bottom').style.display = 'none';
+  var msg = document.getElementById('wc-status-msg');
+  msg.style.display = 'block';
+  msg.innerHTML = '<div class="pay-pending"><div class="pay-pending-ic">&#9203;</div><h3>Transaction sent</h3><p>Waiting for blockchain confirmation. Your balance will be updated automatically.</p></div>';
+  startPollPayment(currentPaymentId, function() { closeAllOverlays(); fetchBilling(); });
 }
 
 function closeWcQrOverlay() {
@@ -2640,7 +2642,7 @@ function cancelWcConnect() {
   wcAccounts = [];
   wcChainId = null;
   var btn = document.getElementById('wc-action-btn');
-  if (btn) { btn.innerHTML = '<span class="shine"></span>Connect Wallet'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+  if (btn) { updateWcWalletUI(); btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
 }
 
 function copyWcUri() {
@@ -2701,22 +2703,12 @@ function updateWcWalletUI() {
   var discBtn = document.getElementById('wc-disconnect');
   if (!dot || !nameEl || !addrEl || !actionBtn) return;
 
-  if (wcAccounts.length > 0) {
-    var addr = wcAccounts[0];
-    var short = addr.slice(0, 8) + '...' + addr.slice(-6);
-    dot.className = 'wc-wallet-dot connected';
-    nameEl.textContent = 'Wallet connected';
-    addrEl.textContent = short;
-    var cfg = WC_CHAIN_CONFIG[selectedNetwork] || {};
-    actionBtn.innerHTML = '<span class="shine"></span>Send ' + numpadAmount.toFixed(2) + ' ' + (cfg.token || 'USDT');
-    if (discBtn) discBtn.style.display = '';
-  } else {
-    dot.className = 'wc-wallet-dot disconnected';
-    nameEl.textContent = 'No wallet connected';
-    addrEl.textContent = 'Connect a wallet to continue';
-    actionBtn.innerHTML = '<span class="shine"></span>Connect Wallet';
-    if (discBtn) discBtn.style.display = 'none';
-  }
+  var cfg = WC_CHAIN_CONFIG[selectedNetwork] || {};
+  dot.className = 'wc-wallet-dot disconnected';
+  nameEl.textContent = 'Direct wallet payment';
+  addrEl.textContent = 'Tap below to open your wallet app';
+  actionBtn.innerHTML = '<span class="shine"></span>Open Wallet & Pay ' + numpadAmount.toFixed(2) + ' ' + (cfg.token || 'USDT');
+  if (discBtn) discBtn.style.display = 'none';
 }
 
 function disconnectWc() {
@@ -2727,84 +2719,15 @@ function disconnectWc() {
   updateWcWalletUI();
 }
 
-async function wcAction() {
+function wcAction() {
   var cfg = WC_CHAIN_CONFIG[selectedNetwork];
-  if (!cfg) return;
-
-  var btn = document.getElementById('wc-action-btn');
-  var statusMsg = document.getElementById('wc-status-msg');
-
-  if (wcAccounts.length === 0) {
-    // ── Backend WC session: relay WebSocket runs on VPS, not Telegram WebView ──
-    btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none';
-    btn.innerHTML = '<span class="shine"></span>Creating session...';
-    statusMsg.style.display = 'none';
-    try {
-      var resp = await fetch(API_BASE + '/api/payments/wc-session', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ network: selectedNetwork }),
-      });
-      var data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Failed to create WC session');
-
-      wcSessionId = data.session_id;
-      currentWcUri = data.uri;
-      showWcQrOverlay(data.uri);
-      btn.innerHTML = '<span class="shine"></span>Waiting for wallet...';
-      startWcSessionPoll();
-    } catch(e) {
-      btn.innerHTML = '<span class="shine"></span>Connect Wallet';
-      btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
-      statusMsg.style.display = 'block';
-      statusMsg.textContent = e.message || 'Failed to start WalletConnect. Please try again.';
-    }
+  if (!cfg || !currentPaymentId) {
+    var msg = document.getElementById('wc-status-msg');
+    if (msg) { msg.style.display = 'block'; msg.textContent = 'Payment not initialized. Please go back and try again.'; }
     return;
   }
-
-  // ── Wallet connected — send ERC-20 via backend ────────────────────────────
-  btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none';
-  btn.innerHTML = '<span class="shine"></span>Confirm in wallet...';
-  statusMsg.style.display = 'none';
-  try {
-    var txResp = await fetch(API_BASE + '/api/payments/wc-tx', {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ session_id: wcSessionId, amount_usd: numpadAmount }),
-    });
-    var txData = await txResp.json();
-    if (!txResp.ok) throw new Error(txData.error || 'Transaction failed');
-
-    var txHash = txData.tx_hash;
-    var fromAddr = txData.from_addr;
-
-    // Submit tx hash for fast scanner trigger
-    try {
-      await fetch(API_BASE + '/api/payments/submit-tx', {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ payment_id: currentPaymentId, tx_hash: txHash, sender_address: fromAddr }),
-      });
-    } catch(_) {}
-
-    document.getElementById('wc-bottom').style.display = 'none';
-    var msg = document.getElementById('wc-status-msg');
-    msg.style.display = 'block';
-    msg.innerHTML = '<div class="pay-pending"><div class="pay-pending-ic">&#9203;</div><h3>Transaction sent</h3><p>Waiting for blockchain confirmation. Your balance will be updated automatically.</p></div>';
-    haptic('success');
-    startPollPayment(currentPaymentId, function() { closeAllOverlays(); fetchBilling(); });
-  } catch(e) {
-    haptic('error');
-    var msg = document.getElementById('wc-status-msg');
-    msg.style.display = 'block';
-    if (e.message && (e.message.includes('rejected') || e.message.includes('denied') || e.message.includes('cancel'))) {
-      msg.textContent = 'Transaction cancelled by user.';
-    } else {
-      msg.textContent = e.message || 'Transaction failed. Please try again.';
-    }
-    btn.innerHTML = '<span class="shine"></span>Try Again';
-    btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
-  }
+  var amountUnits = buildEip681Amount(numpadAmount, cfg.decimals);
+  showWcQrOverlay(cfg, amountUnits);
 }
 
 
