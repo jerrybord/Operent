@@ -7,29 +7,7 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://unpkg.com/@tonconnect/ui@2.4.2/dist/tonconnect-ui.min.js"></script>
 <script src="https://unpkg.com/tonweb@0.0.66/dist/tonweb.js"></script>
-<!-- Node.js globals required by WalletConnect UMD bundle (process.env.NODE_ENV etc.) -->
-<script>
-window.process = window.process || {
-  env: { NODE_ENV: 'production', DEBUG: '' },
-  version: 'v18.0.0', versions: {}, platform: 'browser', browser: true,
-  nextTick: function(fn, a, b) { setTimeout(function(){ fn(a,b); }, 0); },
-};
-window.addEventListener('error', function(e) {
-  // Log full details for cross-origin script errors
-  console.error('[LOAD-ERR]', e.message || 'Script error', '|', e.filename, 'line', e.lineno, e.error);
-}, true);
-</script>
-<!-- WalletConnect EthereumProvider — local copy, avoids CDN ORB issues -->
-<script src="/wc-provider.js"></script>
-<script>
-(function() {
-  var mod = window['@walletconnect/ethereum-provider'];
-  var EP = mod && (mod.EthereumProvider || mod.default);
-  // Expose on window.WCEthProvider for uniform access
-  window.WCEthProvider = (EP && typeof EP.init === 'function') ? EP : null;
-  console.log('[WC-LOAD]', window.WCEthProvider ? 'OK — EthereumProvider ready' : 'FAILED — mod keys: ' + JSON.stringify(Object.keys(mod || {})));
-})();
-</script>
+
 <script src="/qrcode.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -2518,90 +2496,54 @@ async function proceedMethod() {
   }
 }
 
-// ── WalletConnect EVM Screen ─────────────────────────────────────────────────
+// ── WalletConnect EVM Screen (backend relay) ─────────────────────────────────
+// WC relay WebSocket runs on VPS (Node.js), not in Telegram WebView.
+// Frontend just calls REST endpoints and polls for status.
 
-var wcProvider = null;
+var wcSessionId = null;
 var wcAccounts = [];
 var wcChainId = null;
 var currentWcUri = '';
-
-// Project ID — register at https://cloud.reown.com/ to get yours
-var WC_PROJECT_ID = 'a043247a4960e87434ecacc08540c9e9';
+var wcPollInterval = null;
 
 var WC_CHAIN_CONFIG = {
-  eth:      { chainId: 1,     name: 'Ethereum',  contract: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6,  token: 'USDT', rpc: 'https://ethereum-rpc.publicnode.com' },
-  bsc:      { chainId: 56,    name: 'BNB Chain',  contract: '0x55d398326f99059fF775485246999027B3197955', decimals: 18, token: 'USDT', rpc: 'https://bsc-rpc.publicnode.com' },
-  arbitrum: { chainId: 42161, name: 'Arbitrum',   contract: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', decimals: 6,  token: 'USDC', rpc: 'https://arbitrum-one-rpc.publicnode.com' },
+  eth:      { chainId: 1,     name: 'Ethereum',  contract: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6,  token: 'USDT' },
+  bsc:      { chainId: 56,    name: 'BNB Chain',  contract: '0x55d398326f99059fF775485246999027B3197955', decimals: 18, token: 'USDT' },
+  arbitrum: { chainId: 42161, name: 'Arbitrum',   contract: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', decimals: 6,  token: 'USDC' },
 };
 
-var WC_DEST_ADDR = '0x9dd5Cd88890b8EDfF25c0b1478ba1f38556B7d4C';
+function stopWcSessionPoll() {
+  if (wcPollInterval) { clearInterval(wcPollInterval); wcPollInterval = null; }
+}
 
-async function initWcProvider(networkId) {
-  var cfg = WC_CHAIN_CONFIG[networkId];
-  if (!cfg) throw new Error('Unsupported network: ' + networkId);
-
-  var EthProvider = window.WCEthProvider;
-  if (!EthProvider || typeof EthProvider.init !== 'function') {
-    throw new Error('WalletConnect SDK not loaded — reload the page and try again.');
-  }
-  console.log('[WC] initWcProvider: EthProvider OK, chainId=', cfg.chainId);
-
-  // If provider exists but on wrong chain, disconnect first
-  if (wcProvider && wcChainId !== cfg.chainId) {
-    try { await wcProvider.disconnect(); } catch(e) {}
-    wcProvider = null;
-    wcAccounts = [];
-    wcChainId = null;
-  }
-
-  if (wcProvider) return wcProvider;
-
-  var rpcMap = {};
-  rpcMap[cfg.chainId] = cfg.rpc;
-
-  console.log('[WC] Calling EthProvider.init with projectId=', WC_PROJECT_ID, 'chainId=', cfg.chainId);
-  wcProvider = await EthProvider.init({
-    projectId: WC_PROJECT_ID,
-    chains: [cfg.chainId],
-    optionalChains: [1, 56, 42161],
-    showQrModal: false,   // We handle the QR/deeplinks ourselves
-    rpcMap: rpcMap,
-    metadata: {
-      name: 'RentYourClaw',
-      description: 'Deploy AI agents in Telegram',
-      url: 'https://rentyourclaw.vercel.app',
-      icons: ['https://rentyourclaw.vercel.app/icon.svg'],
-    },
-  });
-  console.log('[WC] EthProvider.init done, provider=', typeof wcProvider);
-
-  // Display URI event — fires when connect() is called, gives us the WC URI
-  wcProvider.on('display_uri', function(uri) {
-    console.log('[WC] display_uri fired, uri length=', uri ? uri.length : 0, 'preview=', uri ? uri.slice(0, 40) : '');
-    currentWcUri = uri;
-    showWcQrOverlay(uri);
-  });
-
-  wcProvider.on('accountsChanged', function(accounts) {
-    wcAccounts = accounts || [];
-    // Auto-close QR overlay when wallet connects
-    if (wcAccounts.length > 0) closeWcQrOverlay();
-    updateWcWalletUI();
-  });
-
-  wcProvider.on('chainChanged', function(chainId) {
-    wcChainId = parseInt(chainId, 16) || parseInt(chainId, 10) || chainId;
-    updateWcWalletUI();
-  });
-
-  wcProvider.on('disconnect', function() {
-    wcAccounts = [];
-    wcChainId = null;
-    closeWcQrOverlay();
-    updateWcWalletUI();
-  });
-
-  return wcProvider;
+function startWcSessionPoll() {
+  stopWcSessionPoll();
+  wcPollInterval = setInterval(async function() {
+    if (!wcSessionId) { stopWcSessionPoll(); return; }
+    try {
+      var resp = await fetch(API_BASE + '/api/payments/wc-session/' + wcSessionId, { headers: getHeaders() });
+      var data = await resp.json();
+      if (data.status === 'connected') {
+        stopWcSessionPoll();
+        wcAccounts = data.accounts || [];
+        wcChainId = data.chain_id;
+        closeWcQrOverlay();
+        updateWcWalletUI();
+        haptic('success');
+      } else if (data.status === 'failed' || data.status === 'expired') {
+        stopWcSessionPoll();
+        closeWcQrOverlay();
+        wcSessionId = null;
+        var btn = document.getElementById('wc-action-btn');
+        var statusMsg = document.getElementById('wc-status-msg');
+        if (btn) { btn.innerHTML = '<span class="shine"></span>Connect Wallet'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
+        if (statusMsg) { statusMsg.style.display = 'block'; statusMsg.textContent = data.error || (data.status === 'expired' ? 'Session expired. Please try again.' : 'Connection failed. Please try again.'); }
+      }
+      // status === 'pending' → keep polling
+    } catch(e) {
+      console.warn('[WC] session poll error:', e.message);
+    }
+  }, 2000);
 }
 
 // ── WalletConnect QR / DeepLink overlay ──────────────────────────────────────
@@ -2693,14 +2635,10 @@ function handleWcQrOverlayClick(e) {
 
 function cancelWcConnect() {
   closeWcQrOverlay();
-  // Disconnect pending session so provider.connect() rejects
-  if (wcProvider) {
-    try { wcProvider.disconnect(); } catch(e) {}
-    wcProvider = null;
-    wcAccounts = [];
-    wcChainId = null;
-  }
-  // Restore button
+  stopWcSessionPoll();
+  wcSessionId = null;
+  wcAccounts = [];
+  wcChainId = null;
   var btn = document.getElementById('wc-action-btn');
   if (btn) { btn.innerHTML = '<span class="shine"></span>Connect Wallet'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
 }
@@ -2748,6 +2686,7 @@ function showWcScreen(network, token) {
 
 function closeWcScreen() {
   if (payPollInterval) { clearInterval(payPollInterval); payPollInterval = null; }
+  stopWcSessionPoll();
   document.getElementById('wc-screen').classList.remove('open');
   overlayScreen = 'method';
   document.getElementById('method-screen').classList.add('open');
@@ -2780,10 +2719,9 @@ function updateWcWalletUI() {
   }
 }
 
-async function disconnectWc() {
-  if (!wcProvider) return;
-  try { await wcProvider.disconnect(); } catch(e) {}
-  wcProvider = null;
+function disconnectWc() {
+  stopWcSessionPoll();
+  wcSessionId = null;
   wcAccounts = [];
   wcChainId = null;
   updateWcWalletUI();
@@ -2797,136 +2735,64 @@ async function wcAction() {
   var statusMsg = document.getElementById('wc-status-msg');
 
   if (wcAccounts.length === 0) {
-    // ── Injected wallet (window.ethereum) fast path ──────────────────────────
-    // Works when user opens Mini App inside MetaMask / Trust browser, or desktop with extension.
-    if (window.ethereum && !wcProvider) {
-      btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none';
-      btn.innerHTML = '<span class="shine"></span>Connecting...';
-      try {
-        console.log('[WC] window.ethereum detected — using injected provider');
-        var accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        if (!accounts || accounts.length === 0) throw new Error('No accounts returned');
-        wcAccounts = accounts;
-        wcChainId = parseInt(await window.ethereum.request({ method: 'eth_chainId' }), 16);
-        console.log('[WC] injected wallet connected, accounts=', wcAccounts, 'chainId=', wcChainId);
-        // Use window.ethereum for future requests
-        wcProvider = window.ethereum;
-        updateWcWalletUI();
-        return;
-      } catch(e) {
-        console.warn('[WC] injected wallet error:', e.message);
-        // Fall through to WalletConnect if user rejected or no accounts
-        wcProvider = null; wcAccounts = []; wcChainId = null;
-        btn.innerHTML = '<span class="shine"></span>Connect Wallet';
-        btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
-        if (!e.message || (!e.message.includes('rejected') && !e.message.includes('cancel'))) {
-          statusMsg.style.display = 'block';
-          statusMsg.textContent = 'Wallet error: ' + (e.message || JSON.stringify(e));
-        }
-        return;
-      }
-    }
-
-    // ── WalletConnect flow ────────────────────────────────────────────────────
+    // ── Backend WC session: relay WebSocket runs on VPS, not Telegram WebView ──
     btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none';
-    btn.innerHTML = '<span class="shine"></span>Connecting...';
+    btn.innerHTML = '<span class="shine"></span>Creating session...';
     statusMsg.style.display = 'none';
     try {
-      console.log('[WC] wcAction: WalletConnect flow, network=', selectedNetwork);
-      var provider = await initWcProvider(selectedNetwork);
-      console.log('[WC] Calling provider.connect()...');
-      await provider.connect();
-      wcAccounts = provider.accounts || [];
-      wcChainId = provider.chainId;
-      console.log('[WC] connect() resolved, accounts=', wcAccounts, 'chainId=', wcChainId);
-      closeWcQrOverlay();
-      updateWcWalletUI();
+      var resp = await fetch(API_BASE + '/api/payments/wc-session', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ network: selectedNetwork }),
+      });
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Failed to create WC session');
+
+      wcSessionId = data.session_id;
+      currentWcUri = data.uri;
+      showWcQrOverlay(data.uri);
+      btn.innerHTML = '<span class="shine"></span>Waiting for wallet...';
+      startWcSessionPoll();
     } catch(e) {
-      // Extract real error text from any error shape
-      var errText = e && (e.message || e.error || e.description || (typeof e === 'string' ? e : null));
-      if (!errText && e) {
-        try { errText = JSON.stringify(e); } catch(_) { errText = String(e); }
-      }
-      console.warn('[WC] connect error:', errText, e);
-      closeWcQrOverlay();
-      var cancelled = errText && (
-        errText.includes('rejected') || errText.includes('cancel') ||
-        errText.includes('closed')   || errText.includes('dismiss') ||
-        errText.includes('User rejected') || errText.includes('Connection request reset')
-      );
-      if (!cancelled) {
-        statusMsg.style.display = 'block';
-        statusMsg.textContent = errText || 'Connection failed. Please try again.';
-      }
-      wcProvider = null; wcAccounts = []; wcChainId = null;
       btn.innerHTML = '<span class="shine"></span>Connect Wallet';
       btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
+      statusMsg.style.display = 'block';
+      statusMsg.textContent = e.message || 'Failed to start WalletConnect. Please try again.';
     }
     return;
   }
 
-  // Send ERC-20 transfer
+  // ── Wallet connected — send ERC-20 via backend ────────────────────────────
   btn.style.opacity = '0.6'; btn.style.pointerEvents = 'none';
-  btn.innerHTML = '<span class="shine"></span>Building transaction...';
-
+  btn.innerHTML = '<span class="shine"></span>Confirm in wallet...';
+  statusMsg.style.display = 'none';
   try {
-    // Ensure correct chain
-    var currentChain = wcChainId;
-    if (currentChain !== cfg.chainId) {
-      btn.innerHTML = '<span class="shine"></span>Switching network...';
-      try {
-        await wcProvider.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x' + cfg.chainId.toString(16) }],
-        });
-      } catch(switchErr) {
-        console.warn('Chain switch failed:', switchErr.message);
-        throw new Error('Please switch to ' + cfg.name + ' in your wallet and try again.');
-      }
-    }
-
-    // Encode ERC-20 transfer(address,uint256) = 0xa9059cbb
-    var amountUnits = encodeTokenAmount(numpadAmount, cfg.decimals);
-    var transferData = encodeERC20Transfer(WC_DEST_ADDR, amountUnits);
-
-    btn.innerHTML = '<span class="shine"></span>Confirm in wallet...';
-
-    var txHash = await wcProvider.request({
-      method: 'eth_sendTransaction',
-      params: [{
-        from: wcAccounts[0],
-        to: cfg.contract,
-        data: transferData,
-        value: '0x0',
-      }],
+    var txResp = await fetch(API_BASE + '/api/payments/wc-tx', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ session_id: wcSessionId, amount_usd: numpadAmount }),
     });
+    var txData = await txResp.json();
+    if (!txResp.ok) throw new Error(txData.error || 'Transaction failed');
 
-    // Transaction sent! Submit txHash to backend for fast verification
+    var txHash = txData.tx_hash;
+    var fromAddr = txData.from_addr;
+
+    // Submit tx hash for fast scanner trigger
     try {
       await fetch(API_BASE + '/api/payments/submit-tx', {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({
-          payment_id: currentPaymentId,
-          tx_hash: txHash,
-          sender_address: wcAccounts[0],
-        }),
+        body: JSON.stringify({ payment_id: currentPaymentId, tx_hash: txHash, sender_address: fromAddr }),
       });
-    } catch(e) {
-      console.warn('Failed to submit txHash to backend:', e.message);
-    }
+    } catch(_) {}
 
-    // Show pending state
     document.getElementById('wc-bottom').style.display = 'none';
     var msg = document.getElementById('wc-status-msg');
     msg.style.display = 'block';
     msg.innerHTML = '<div class="pay-pending"><div class="pay-pending-ic">&#9203;</div><h3>Transaction sent</h3><p>Waiting for blockchain confirmation. Your balance will be updated automatically.</p></div>';
     haptic('success');
-    startPollPayment(currentPaymentId, function() {
-      closeAllOverlays();
-      fetchBilling();
-    });
-
+    startPollPayment(currentPaymentId, function() { closeAllOverlays(); fetchBilling(); });
   } catch(e) {
     haptic('error');
     var msg = document.getElementById('wc-status-msg');
@@ -2934,41 +2800,13 @@ async function wcAction() {
     if (e.message && (e.message.includes('rejected') || e.message.includes('denied') || e.message.includes('cancel'))) {
       msg.textContent = 'Transaction cancelled by user.';
     } else {
-      msg.textContent = (e.message || 'Transaction failed. Please try again.');
+      msg.textContent = e.message || 'Transaction failed. Please try again.';
     }
     btn.innerHTML = '<span class="shine"></span>Try Again';
     btn.style.opacity = '1'; btn.style.pointerEvents = 'auto';
   }
 }
 
-// Encode token amount to decimal string in minimal units (wei-like)
-function encodeTokenAmount(usdAmount, decimals) {
-  // Convert to cents (integer) to avoid floating point, then scale to token decimals
-  var cents = Math.round(usdAmount * 100);
-  if (decimals <= 2) {
-    // e.g. decimals=2: cents is already the value
-    return String(cents);
-  }
-  // Multiply cents by 10^(decimals-2) using BigInt to avoid overflow
-  var result = BigInt(cents) * BigInt(10) ** BigInt(decimals - 2);
-  return result.toString();
-}
-
-// Encode ERC-20 transfer(address to, uint256 amount) call data
-function encodeERC20Transfer(toAddress, amountDecimalStr) {
-  // Function selector: transfer(address,uint256) = 0xa9059cbb
-  var selector = 'a9059cbb';
-
-  // Pad address to 32 bytes (remove 0x prefix, left-pad with zeros)
-  var addrHex = toAddress.replace('0x', '').toLowerCase();
-  var paddedAddr = addrHex.padStart(64, '0');
-
-  // Convert decimal string to hex, pad to 32 bytes
-  var amountHex = BigInt(amountDecimalStr).toString(16);
-  var paddedAmount = amountHex.padStart(64, '0');
-
-  return '0x' + selector + paddedAddr + paddedAmount;
-}
 
 // ── Billing ──────────────────────────────────────────────────────────────────
 

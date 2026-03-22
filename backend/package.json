@@ -1,0 +1,22 @@
+{
+  "name": "rentyourclaw-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RentYourClaw — automated OpenClaw agent deployment service",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "ssh2": "^1.16.0",
+    "better-sqlite3": "^11.7.0",
+    "dotenv": "^16.4.7",
+    "helmet": "^8.0.0",
+    "express-rate-limit": "^7.5.0",
+    "http-proxy-middleware": "^3.0.3",
+    "@walletconnect/sign-client": "^2.17.0"
+  }
+}
