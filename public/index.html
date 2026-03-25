@@ -1711,6 +1711,10 @@ var MODEL_COLORS = {
   'claude-sonnet-4-20250514': '#3B82F6',
   'claude-sonnet-4-5-20250514': '#3B82F6',
   'claude-opus-4-20250514': '#EC4899',
+  // Bare model IDs (stored by llm-proxy when no suffix given)
+  'claude-haiku-4-5': '#8B5CF6',
+  'claude-sonnet-4-6': '#3B82F6',
+  'claude-opus-4-6': '#EC4899',
 };
 var MODEL_LABELS = {
   'claude-haiku-4-5-latest': 'Haiku 4.5',
@@ -1727,6 +1731,10 @@ var MODEL_LABELS = {
   'claude-sonnet-4-20250514': 'Sonnet 4.6',
   'claude-sonnet-4-5-20250514': 'Sonnet 4.6',
   'claude-opus-4-20250514': 'Opus 4.6',
+  // Bare model IDs
+  'claude-haiku-4-5': 'Haiku 4.5',
+  'claude-sonnet-4-6': 'Sonnet 4.6',
+  'claude-opus-4-6': 'Opus 4.6',
 };
 
 function fmtNum(n) {
@@ -1826,6 +1834,7 @@ function renderUsageChart(chartData) {
   var ctx = canvas.getContext('2d');
   var dpr = window.devicePixelRatio || 1;
   var rect = canvas.parentElement.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
   canvas.width = rect.width * dpr;
   canvas.height = rect.height * dpr;
   ctx.scale(dpr, dpr);
@@ -1899,7 +1908,7 @@ function renderUsageChart(chartData) {
       ctx.fillStyle = MODEL_COLORS[seg.model] || '#6366F1';
       ctx.beginPath();
       if (si === segs.length - 1) {
-        var r = Math.min(4, barW / 2, seg.barH / 2);
+        var r = Math.max(0, Math.min(4, barW / 2, seg.barH / 2));
         ctx.roundRect(x, y, barW, seg.barH, [r, r, 0, 0]);
       } else {
         ctx.rect(x, y, barW, seg.barH);
