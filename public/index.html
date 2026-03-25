@@ -35,6 +35,8 @@
   html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,'SF Pro Display','Inter',sans-serif;-webkit-font-smoothing:antialiased;touch-action:pan-y;overscroll-behavior:none;user-select:none;-webkit-user-select:none;}
 
   #app{width:100%;height:100%;position:relative;overflow:hidden;max-width:430px;margin:0 auto;}
+  *{scrollbar-width:none;}
+  *::-webkit-scrollbar{display:none;}
 
   /* Animated mesh gradient background */
   .mesh-bg{position:fixed;top:0;left:50%;transform:translateX(-50%);width:430px;height:100%;pointer-events:none;z-index:0;overflow:hidden;}
@@ -417,6 +419,37 @@
   .usage-empty-ic{font-size:36px;margin-bottom:12px;opacity:0.3;}
   .usage-empty p{font-size:13px;color:var(--t3);line-height:1.5;}
 
+  .usage-period-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+  .usage-period-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;padding:14px 16px;}
+  .usage-period-label{font-size:11px;color:var(--t3);font-weight:500;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em;}
+  .usage-period-tokens{font-size:20px;font-weight:800;letter-spacing:-0.5px;line-height:1.1;}
+  .usage-period-cost{font-size:12px;color:var(--t2);margin-top:4px;font-weight:500;}
+  .usage-period-bar{height:3px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden;margin-top:10px;}
+  .usage-period-fill{height:100%;border-radius:2px;transition:width 0.6s cubic-bezier(0.16,1,0.3,1);}
+  .usage-period-card:nth-child(1) .usage-period-fill{background:var(--blue);}
+  .usage-period-card:nth-child(2) .usage-period-fill{background:var(--green);}
+
+  .usage-agents{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:20px;}
+  .usage-agent-row{display:flex;align-items:center;gap:12px;padding:14px 16px;}
+  .usage-agent-row+.usage-agent-row{border-top:1px solid var(--border);}
+  .usage-agent-icon{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;}
+  .usage-agent-info{flex:1;min-width:0;}
+  .usage-agent-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .usage-agent-meta{display:flex;align-items:center;gap:6px;margin-top:3px;}
+  .usage-agent-model{font-size:10px;color:var(--t3);font-weight:500;background:rgba(255,255,255,0.05);border-radius:4px;padding:2px 6px;}
+  .usage-agent-reqs{font-size:11px;color:var(--t3);}
+  .usage-agent-right{text-align:right;flex-shrink:0;}
+  .usage-agent-cost{font-size:14px;font-weight:700;}
+  .usage-agent-tokens{font-size:11px;color:var(--t2);margin-top:2px;}
+
+  .usage-model-tokens-detail{font-size:10px;color:var(--t3);margin-top:2px;}
+  .usage-model-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;background:rgba(255,255,255,0.05);border-radius:4px;padding:2px 6px;margin-left:6px;color:var(--t3);vertical-align:middle;font-weight:500;}
+
+  .usage-balance-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:14px;margin-bottom:20px;}
+  .usage-balance-left{font-size:12px;color:var(--t2);font-weight:500;}
+  .usage-balance-val{font-size:16px;font-weight:800;color:var(--green);}
+  .usage-balance-spent{font-size:11px;color:var(--t3);margin-top:1px;}
+
   /* Billing */
   .bill-balance{
     position:relative;overflow:hidden;
@@ -450,6 +483,8 @@
   .bill-inv-date{font-size:13px;font-weight:500;color:var(--text);}
   .bill-inv-type{font-size:13px;color:var(--t2);}
   .bill-inv-cost{font-size:14px;font-weight:700;color:var(--green);text-align:right;}
+  .bill-inv-cost.bill-inv-charge{color:#ff6b6b;font-weight:600;font-size:13px;}
+  .bill-inv-cost.bill-inv-deposit{color:var(--green);}
 
   /* Numpad screen */
   .numpad-screen{position:fixed;top:0;left:0;width:100%;height:100%;z-index:99;background:var(--bg);display:none;flex-direction:column;transform:translateY(20px);transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1),transform 0.35s cubic-bezier(0.16,1,0.3,1);}
@@ -536,7 +571,11 @@
   .wc-qr-sub{font-size:12px;color:var(--t2);text-align:center;margin-bottom:18px;line-height:1.4;}
   .wc-qr-canvas{display:flex;justify-content:center;margin-bottom:18px;}
   .wc-qr-canvas canvas{border-radius:12px;border:1px solid var(--border);}
-  .wc-qr-wallets{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px;}
+  .wc-qr-wallets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+  .wc-qr-connecting{text-align:center;padding:24px 16px;color:var(--t2);font-size:13px;}
+  .wc-connected-state{display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 16px;margin-bottom:12px;}
+  .wc-connected-ic{width:48px;height:48px;border-radius:50%;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--green);}
+  .wc-connected-txt{font-size:13px;color:var(--t2);text-align:center;line-height:1.5;}
   .wc-qr-wallet{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:8px 4px;border-radius:12px;transition:background 0.15s;}
   .wc-qr-wallet:active{background:rgba(255,255,255,0.07);}
   .wc-qr-wallet-ic{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid var(--border);background:rgba(255,255,255,0.04);}
@@ -841,45 +880,74 @@
 
       <!-- Tab: Usage -->
       <div class="dash-panel" id="panel-usage">
+
+        <!-- Balance row -->
+        <div class="usage-balance-row">
+          <div>
+            <div class="usage-balance-left">Credit balance</div>
+            <div class="usage-balance-spent" id="usage-spent-label">—</div>
+          </div>
+          <div class="usage-balance-val" id="usage-balance-val">$0.00</div>
+        </div>
+
+        <!-- Top 4 stat cards -->
         <div class="usage-stats">
           <div class="usage-stat">
-            <div class="usage-stat-label">Total tokens in</div>
+            <div class="usage-stat-label">Input tokens</div>
             <div class="usage-stat-value" id="usage-in">0</div>
+            <div class="usage-stat-sub" id="usage-in-cost"></div>
           </div>
           <div class="usage-stat">
-            <div class="usage-stat-label">Total tokens out</div>
+            <div class="usage-stat-label">Output tokens</div>
             <div class="usage-stat-value" id="usage-out">0</div>
+            <div class="usage-stat-sub" id="usage-out-cost"></div>
           </div>
           <div class="usage-stat">
             <div class="usage-stat-label">Total cost</div>
             <div class="usage-stat-value sm" id="usage-cost">$0.00</div>
+            <div class="usage-stat-sub" id="usage-cost-sub"></div>
           </div>
           <div class="usage-stat">
             <div class="usage-stat-label">API requests</div>
             <div class="usage-stat-value sm" id="usage-reqs">0</div>
+            <div class="usage-stat-sub" id="usage-agents-count"></div>
           </div>
         </div>
 
-        <div class="usage-limit">
-          <div class="usage-limit-label"><span>Daily usage</span><span id="usage-daily-pct">0%</span></div>
-          <div class="usage-limit-bar"><div class="usage-limit-fill" id="usage-daily-fill" style="width:0%"></div></div>
-        </div>
-        <div class="usage-limit" style="margin-bottom:20px">
-          <div class="usage-limit-label"><span>Monthly usage</span><span id="usage-monthly-pct">0%</span></div>
-          <div class="usage-limit-bar"><div class="usage-limit-fill" id="usage-monthly-fill" style="width:0%"></div></div>
+        <!-- Period cards: Today & This Month -->
+        <div class="usage-period-grid">
+          <div class="usage-period-card">
+            <div class="usage-period-label">Today</div>
+            <div class="usage-period-tokens" id="usage-daily-tokens">0</div>
+            <div class="usage-period-cost" id="usage-daily-cost">$0.00</div>
+            <div class="usage-period-bar"><div class="usage-period-fill" id="usage-daily-fill" style="width:0%"></div></div>
+          </div>
+          <div class="usage-period-card">
+            <div class="usage-period-label">This month</div>
+            <div class="usage-period-tokens" id="usage-monthly-tokens">0</div>
+            <div class="usage-period-cost" id="usage-monthly-cost">$0.00</div>
+            <div class="usage-period-bar"><div class="usage-period-fill" id="usage-monthly-fill" style="width:0%"></div></div>
+          </div>
         </div>
 
+        <!-- Chart: 30-day token history -->
         <div class="usage-chart-wrap">
           <div class="usage-chart-head">
-            <div class="usage-chart-title">Token usage</div>
-            <div class="usage-chart-sub">Includes both API and Console</div>
+            <div class="usage-chart-title">Token usage — last 30 days</div>
+            <div class="usage-chart-sub" id="usage-chart-sub">by model</div>
           </div>
           <div class="usage-chart"><canvas id="usage-canvas"></canvas></div>
           <div class="usage-legend" id="usage-legend"></div>
         </div>
 
-        <div class="dash-sec-head"><div class="dash-sec-title">Usage by model</div></div>
+        <!-- Usage by model -->
+        <div class="dash-sec-head"><div class="dash-sec-title">By model</div></div>
         <div class="usage-models" id="usage-models"></div>
+
+        <!-- Usage by agent -->
+        <div class="dash-sec-head" style="margin-top:20px"><div class="dash-sec-title">By agent</div></div>
+        <div class="usage-agents" id="usage-agents"></div>
+
       </div>
 
       <!-- Tab: Billing -->
@@ -1055,19 +1123,15 @@
 <div class="wc-qr-overlay" id="wc-qr-overlay" onclick="handleWcQrOverlayClick(event)">
   <div class="wc-qr-sheet" id="wc-qr-sheet">
     <div class="wc-qr-handle"></div>
-    <div class="wc-qr-title">Connect Wallet</div>
-    <div class="wc-qr-sub" id="wc-qr-sub">Scan with your wallet app or tap below to open</div>
-    <div class="wc-qr-canvas" id="wc-qr-canvas">
-      <div class="wc-qr-loading" id="wc-qr-loading">
-        <div class="wc-qr-spinner"></div>
-        <span style="font-size:12px;color:var(--t2);">Generating QR…</span>
-      </div>
-    </div>
+    <div class="wc-qr-title" id="wc-qr-title">Connect Wallet</div>
+    <div class="wc-qr-sub" id="wc-qr-sub">Connecting to WalletConnect…</div>
     <div class="wc-qr-wallets" id="wc-qr-wallets"></div>
-    <div class="wc-qr-divider">or</div>
+    <div id="wc-connected-state" class="wc-connected-state" style="display:none">
+      <div class="wc-connected-ic">✓</div>
+      <div class="wc-connected-txt" id="wc-connected-txt">Wallet connected! Sending payment request…</div>
+    </div>
     <div class="wc-qr-bottom-row">
-      <div class="wc-qr-copy-btn" id="wc-qr-copy-btn" onclick="haptic('light');copyWcUri()">Copy URI</div>
-      <div class="wc-qr-cancel-btn" onclick="haptic('light');cancelWcConnect()">Cancel</div>
+      <div class="wc-qr-cancel-btn" id="wc-qr-cancel-btn" onclick="haptic('light');cancelWcConnect()">Cancel</div>
     </div>
   </div>
 </div>
@@ -1265,6 +1329,14 @@ const capKeys = ['browser','social','voice','docs','calendar','analytics','youtu
 const modelKeys = ['haiku','sonnet','opus','codex','kimi','custom'];
 const proactivityMap = {'Only when asked':'passive','Smart nudges':'smart','Full autopilot':'autopilot'};
 
+var routingNameToKey = {
+  'Claude Haiku 4.5': 'haiku',
+  'Claude Sonnet 4.6': 'sonnet',
+  'Claude Opus 4.6': 'opus',
+  'Codex 5.3': 'codex',
+  'Kimi K2.5': 'kimi',
+};
+
 function collectFormData() {
   var fd = {};
   // Step 1: description
@@ -1287,6 +1359,17 @@ function collectFormData() {
   lmEls.forEach(function(el, idx) {
     if (el.classList.contains('sl') && modelKeys[idx]) fd.model = modelKeys[idx];
   });
+  // Routing: collect per-task model selections if Custom Routing is chosen
+  if (fd.model === 'custom') {
+    fd.routing = {};
+    ['coding', 'everyday', 'cron'].forEach(function(task) {
+      var el = document.getElementById('r-' + task);
+      if (el) {
+        var name = el.textContent.trim();
+        fd.routing[task] = routingNameToKey[name] || 'sonnet';
+      }
+    });
+  }
   // Step 5: name
   var nameInp = document.querySelector('#p-5 .inp');
   fd.name = nameInp ? nameInp.value : 'Agent';
@@ -1613,24 +1696,37 @@ window.addEventListener('resize', function(){ var a = document.querySelector('.d
 
 // === Usage ===
 var MODEL_COLORS = {
-  'claude-haiku-4-5-20241022': '#8B5CF6',
+  // Current model IDs
   'claude-haiku-4-5-latest': '#8B5CF6',
-  'claude-sonnet-4-20250514': '#3B82F6',
-  'claude-sonnet-4-5-20250514': '#3B82F6',
-  'claude-opus-4-20250514': '#EC4899',
+  'claude-haiku-4-5-20251001': '#8B5CF6',
+  'claude-sonnet-4-6-latest': '#3B82F6',
+  'claude-sonnet-4-6-20250514': '#3B82F6',
+  'claude-opus-4-6-latest': '#EC4899',
+  'claude-opus-4-6-20250514': '#EC4899',
   'moonshot-v1-128k': '#F59E0B',
   'kimi-k2-0711': '#F59E0B',
   'gpt-4o': '#10B981',
+  // Legacy model IDs (existing usage_log entries)
+  'claude-haiku-4-5-20241022': '#8B5CF6',
+  'claude-sonnet-4-20250514': '#3B82F6',
+  'claude-sonnet-4-5-20250514': '#3B82F6',
+  'claude-opus-4-20250514': '#EC4899',
 };
 var MODEL_LABELS = {
-  'claude-haiku-4-5-20241022': 'Haiku 4.5',
   'claude-haiku-4-5-latest': 'Haiku 4.5',
-  'claude-sonnet-4-20250514': 'Sonnet 4',
-  'claude-sonnet-4-5-20250514': 'Sonnet 4.5',
-  'claude-opus-4-20250514': 'Opus 4',
+  'claude-haiku-4-5-20251001': 'Haiku 4.5',
+  'claude-sonnet-4-6-latest': 'Sonnet 4.6',
+  'claude-sonnet-4-6-20250514': 'Sonnet 4.6',
+  'claude-opus-4-6-latest': 'Opus 4.6',
+  'claude-opus-4-6-20250514': 'Opus 4.6',
   'moonshot-v1-128k': 'Kimi K2.5',
   'kimi-k2-0711': 'Kimi K2.5',
   'gpt-4o': 'GPT-4o',
+  // Legacy
+  'claude-haiku-4-5-20241022': 'Haiku 4.5',
+  'claude-sonnet-4-20250514': 'Sonnet 4.6',
+  'claude-sonnet-4-5-20250514': 'Sonnet 4.6',
+  'claude-opus-4-20250514': 'Opus 4.6',
 };
 
 function fmtNum(n) {
@@ -1669,25 +1765,59 @@ function fetchUsage() {
 }
 
 function renderUsage(data) {
-  // Stat cards
-  document.getElementById('usage-in').textContent = fmtNum(data.total.total_in || 0);
-  document.getElementById('usage-out').textContent = fmtNum(data.total.total_out || 0);
-  document.getElementById('usage-cost').textContent = '$' + (data.total.total_cost || 0).toFixed(2);
-  document.getElementById('usage-reqs').textContent = fmtNum(data.total.total_requests || 0);
+  var total = data.total || {};
+  var daily = data.daily || {};
+  var monthly = data.monthly || {};
+  var totalIn = total.total_in || 0;
+  var totalOut = total.total_out || 0;
+  var totalCost = total.total_cost || 0;
+  var totalReqs = total.total_requests || 0;
+  var balance = (data.balance_cents || 0) / 100;
+  var dailyTokens = daily.total_tokens || 0;
+  var dailyCost = daily.total_cost || 0;
+  var monthlyTokens = monthly.total_tokens || 0;
+  var monthlyCost = monthly.total_cost || 0;
 
-  // Limit bars
-  var dPct = data.daily.limit > 0 ? Math.min(100, Math.round(data.daily.total_tokens / data.daily.limit * 100)) : 0;
-  var mPct = data.monthly.limit > 0 ? Math.min(100, Math.round(data.monthly.total_tokens / data.monthly.limit * 100)) : 0;
-  document.getElementById('usage-daily-pct').textContent = fmtNum(data.daily.total_tokens) + ' / ' + fmtNum(data.daily.limit);
-  document.getElementById('usage-daily-fill').style.width = dPct + '%';
-  document.getElementById('usage-monthly-pct').textContent = fmtNum(data.monthly.total_tokens) + ' / ' + fmtNum(data.monthly.limit);
-  document.getElementById('usage-monthly-fill').style.width = mPct + '%';
+  // Balance row
+  document.getElementById('usage-balance-val').textContent = '$' + balance.toFixed(2);
+  document.getElementById('usage-spent-label').textContent = 'Spent this month: $' + monthlyCost.toFixed(3);
+
+  // Stat cards
+  document.getElementById('usage-in').textContent = fmtNum(totalIn);
+  document.getElementById('usage-out').textContent = fmtNum(totalOut);
+  document.getElementById('usage-cost').textContent = '$' + totalCost.toFixed(3);
+  document.getElementById('usage-reqs').textContent = fmtNum(totalReqs);
+  document.getElementById('usage-cost-sub').textContent = fmtNum(totalIn + totalOut) + ' total tokens';
+  document.getElementById('usage-agents-count').textContent = (data.agentCount || 0) + ' active agent' + ((data.agentCount || 0) === 1 ? '' : 's');
+
+  // Period cards
+  document.getElementById('usage-daily-tokens').textContent = fmtNum(dailyTokens) + ' tokens';
+  document.getElementById('usage-daily-cost').textContent = '$' + dailyCost.toFixed(4);
+  document.getElementById('usage-monthly-tokens').textContent = fmtNum(monthlyTokens) + ' tokens';
+  document.getElementById('usage-monthly-cost').textContent = '$' + monthlyCost.toFixed(3);
+
+  // Period bars: daily vs monthly (daily fills relative to monthly, monthly vs total)
+  var dailyPct = monthlyTokens > 0 ? Math.min(100, Math.round(dailyTokens / monthlyTokens * 100)) : (dailyTokens > 0 ? 100 : 0);
+  var monthlyPct = totalIn + totalOut > 0 ? Math.min(100, Math.round(monthlyTokens / (totalIn + totalOut) * 100)) : (monthlyTokens > 0 ? 100 : 0);
+  document.getElementById('usage-daily-fill').style.width = dailyPct + '%';
+  document.getElementById('usage-monthly-fill').style.width = monthlyPct + '%';
+
+  // Chart sub label: show unique models used
+  var models = data.models || [];
+  if (models.length > 0) {
+    document.getElementById('usage-chart-sub').textContent = models.map(function(m){ return MODEL_LABELS[m.model] || m.model; }).join(', ');
+  } else {
+    document.getElementById('usage-chart-sub').textContent = 'no data yet';
+  }
 
   // Chart
   renderUsageChart(data.chart || []);
 
   // Models breakdown
-  renderUsageModels(data.models || []);
+  renderUsageModels(models);
+
+  // Agents breakdown
+  renderUsageAgents(data.agents || []);
 }
 
 function renderUsageChart(chartData) {
@@ -1756,24 +1886,26 @@ function renderUsageChart(chartData) {
   var barW = Math.min(barGroupW * 0.7, 28);
   dayKeys.forEach(function(d, i) {
     var x = padL + i * barGroupW + (barGroupW - barW) / 2;
-    var yOffset = 0;
+    // Collect non-zero segments
+    var segs = [];
     models.forEach(function(m) {
       var val = days[d][m] || 0;
-      var barH = (val / maxVal) * chartH;
-      var color = MODEL_COLORS[m] || '#6366F1';
-      // Rounded top for last segment
-      var y = padT + chartH - yOffset - barH;
-      ctx.fillStyle = color;
+      if (val > 0) segs.push({ model: m, barH: (val / maxVal) * chartH });
+    });
+    // Draw bottom→top; only topmost segment gets rounded corners
+    var yOffset = 0;
+    segs.forEach(function(seg, si) {
+      var y = padT + chartH - yOffset - seg.barH;
+      ctx.fillStyle = MODEL_COLORS[seg.model] || '#6366F1';
       ctx.beginPath();
-      var r = Math.min(4, barW/2, barH/2);
-      if (yOffset === 0 && barH > 0) {
-        // Bottom bar — flat bottom, maybe rounded top
-        ctx.roundRect(x, y, barW, barH, [r, r, 0, 0]);
-      } else if (barH > 0) {
-        ctx.roundRect(x, y, barW, barH, [r, r, 0, 0]);
+      if (si === segs.length - 1) {
+        var r = Math.min(4, barW / 2, seg.barH / 2);
+        ctx.roundRect(x, y, barW, seg.barH, [r, r, 0, 0]);
+      } else {
+        ctx.rect(x, y, barW, seg.barH);
       }
       ctx.fill();
-      yOffset += barH;
+      yOffset += seg.barH;
     });
 
     // X axis label
@@ -1800,17 +1932,72 @@ function renderUsageModels(models) {
     el.innerHTML = '<div style="padding:24px;text-align:center;font-size:13px;color:var(--t3)">No model usage yet</div>';
     return;
   }
+  var totalCost = models.reduce(function(s, m){ return s + (m.cost || 0); }, 0);
   el.innerHTML = models.map(function(m) {
     var color = MODEL_COLORS[m.model] || '#6366F1';
     var label = MODEL_LABELS[m.model] || m.model;
-    var tokens = (m.input_tokens || 0) + (m.output_tokens || 0);
+    var inTok = m.input_tokens || 0;
+    var outTok = m.output_tokens || 0;
+    var tokens = inTok + outTok;
+    var pct = totalCost > 0 ? Math.round((m.cost || 0) / totalCost * 100) : 0;
     return '<div class="usage-model-row">' +
       '<div class="usage-model-dot" style="background:' + color + '"></div>' +
-      '<div class="usage-model-info"><div class="usage-model-name">' + label + '</div>' +
-      '<div class="usage-model-tokens">' + fmtNum(tokens) + ' tokens &middot; ' + m.requests + ' requests</div></div>' +
+      '<div class="usage-model-info">' +
+        '<div class="usage-model-name">' + label + '<span class="usage-model-badge">' + pct + '%</span></div>' +
+        '<div class="usage-model-tokens">' + fmtNum(tokens) + ' total &middot; ' + m.requests + ' req</div>' +
+        '<div class="usage-model-tokens-detail">↑ ' + fmtNum(inTok) + ' in &nbsp;↓ ' + fmtNum(outTok) + ' out</div>' +
+      '</div>' +
       '<div class="usage-model-cost">$' + (m.cost || 0).toFixed(3) + '</div>' +
       '</div>';
   }).join('');
+}
+
+function renderUsageAgents(agents) {
+  var el = document.getElementById('usage-agents');
+  if (!el) return;
+  var withUsage = agents.filter(function(a){ return (a.requests || 0) > 0; });
+  var noUsage = agents.filter(function(a){ return (a.requests || 0) === 0; });
+
+  if (!agents.length) {
+    el.innerHTML = '<div style="padding:24px;text-align:center;font-size:13px;color:var(--t3)">No agents yet</div>';
+    return;
+  }
+  if (!withUsage.length) {
+    el.innerHTML = '<div style="padding:24px;text-align:center;font-size:13px;color:var(--t3)">No usage from agents yet</div>';
+    return;
+  }
+
+  var rows = withUsage.map(function(a) {
+    var tokens = (a.input_tokens || 0) + (a.output_tokens || 0);
+    var modelLabel = MODEL_LABELS[a.default_model] || a.default_model || '—';
+    var modelColor = MODEL_COLORS[a.default_model] || '#6366F1';
+    var statusDot = a.status === 'active' ? '🟢' : a.status === 'stopped' ? '⭕' : '🔴';
+    return '<div class="usage-agent-row">' +
+      '<div class="usage-agent-icon">' + statusDot + '</div>' +
+      '<div class="usage-agent-info">' +
+        '<div class="usage-agent-name">' + escHtml(a.agent_name) + '</div>' +
+        '<div class="usage-agent-meta">' +
+          '<span class="usage-agent-model" style="border-color:' + modelColor + '20;color:' + modelColor + '">' + modelLabel + '</span>' +
+          '<span class="usage-agent-reqs">' + (a.requests || 0) + ' req</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="usage-agent-right">' +
+        '<div class="usage-agent-cost">$' + (a.cost || 0).toFixed(3) + '</div>' +
+        '<div class="usage-agent-tokens">' + fmtNum(tokens) + ' tokens</div>' +
+      '</div>' +
+      '</div>';
+  });
+
+  if (noUsage.length > 0) {
+    rows.push('<div style="padding:10px 16px;font-size:12px;color:var(--t3);border-top:1px solid var(--border)">' +
+      noUsage.length + ' agent' + (noUsage.length > 1 ? 's' : '') + ' with no usage yet</div>');
+  }
+
+  el.innerHTML = rows.join('');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // === Numpad / Billing / Payment ===
@@ -2021,7 +2208,7 @@ var NETWORK_OPTS = {
   usdt: [
     { id: 'ton',  label: 'TON Network',  sub: 'MyTonWallet / Tonkeeper', icon: '💎', useTon: true },
     { id: 'eth',  label: 'Ethereum',     sub: 'ERC-20 USDT', icon: '⟠' },
-    { id: 'tron', label: 'TRON',         sub: 'TRC-20 USDT', icon: '🔴' },
+    { id: 'tron', label: 'TRON',         sub: 'TRC-20 USDT', icon: '🔴', disabled: true, badge: 'soon' },
     { id: 'bsc',  label: 'BSC',          sub: 'BEP-20 USDT', icon: '🟡' },
   ],
   usdc: [
@@ -2043,6 +2230,12 @@ function showNetScreen(token) {
 
   var opts = NETWORK_OPTS[token] || [];
   document.getElementById('net-options').innerHTML = opts.map(function(o) {
+    if (o.disabled) {
+      return '<div class="net-option" style="opacity:0.4;pointer-events:none">' +
+        '<div class="net-option-ic" style="background:rgba(255,255,255,0.06)">' + o.icon + '</div>' +
+        '<div class="net-option-info"><div class="net-option-name">' + o.label + (o.badge ? ' <span style="font-size:10px;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:6px;margin-left:6px;vertical-align:middle">' + o.badge + '</span>' : '') + '</div><div class="net-option-sub">' + o.sub + '</div></div>' +
+        '</div>';
+    }
     return '<div class="net-option" data-net="' + o.id + '" onclick="haptic(\'select\');selectNetwork(this,\'' + o.id + '\')">' +
       '<div class="net-option-ic" style="background:rgba(255,255,255,0.06)">' + o.icon + '</div>' +
       '<div class="net-option-info"><div class="net-option-name">' + o.label + '</div><div class="net-option-sub">' + o.sub + '</div></div>' +
@@ -2527,16 +2720,43 @@ function startWcSessionPoll() {
         stopWcSessionPoll();
         wcAccounts = data.accounts || [];
         wcChainId = data.chain_id;
-        closeWcQrOverlay();
-        updateWcWalletUI();
         haptic('success');
+        // Show "connected" state, send tx automatically
+        var walletsEl = document.getElementById('wc-qr-wallets');
+        var connectedState = document.getElementById('wc-connected-state');
+        var connectedTxt = document.getElementById('wc-connected-txt');
+        var sub = document.getElementById('wc-qr-sub');
+        if (walletsEl) walletsEl.style.display = 'none';
+        if (sub) sub.textContent = 'Wallet connected!';
+        if (connectedState) connectedState.style.display = 'flex';
+        if (connectedTxt) connectedTxt.textContent = 'Confirm the payment in your wallet app…';
+        // Send ERC-20 tx via WC
+        try {
+          var txResp = await fetch(API_BASE + '/api/payments/wc-tx', {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ session_id: wcSessionId, amount_usd: numpadAmount, payment_id: currentPaymentId }),
+          });
+          var txData = await txResp.json();
+          if (txData.error) throw new Error(txData.error);
+          closeWcQrOverlay();
+          // Show pending confirmation
+          document.getElementById('wc-bottom').style.display = 'none';
+          var msg = document.getElementById('wc-status-msg');
+          if (msg) {
+            msg.style.display = 'block';
+            msg.innerHTML = '<div class="pay-pending"><div class="pay-pending-ic">&#9203;</div><h3>Transaction sent</h3><p>Waiting for blockchain confirmation. Your balance will be updated automatically.</p></div>';
+          }
+          startPollPayment(currentPaymentId, function() { closeAllOverlays(); fetchBilling(); });
+        } catch(txErr) {
+          if (connectedTxt) connectedTxt.textContent = 'Payment failed: ' + txErr.message;
+          if (connectedState) connectedState.querySelector('.wc-connected-ic').textContent = '✗';
+        }
       } else if (data.status === 'failed' || data.status === 'expired') {
         stopWcSessionPoll();
         closeWcQrOverlay();
         wcSessionId = null;
-        var btn = document.getElementById('wc-action-btn');
         var statusMsg = document.getElementById('wc-status-msg');
-        if (btn) { btn.innerHTML = '<span class="shine"></span>Connect Wallet'; btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
         if (statusMsg) { statusMsg.style.display = 'block'; statusMsg.textContent = data.error || (data.status === 'expired' ? 'Session expired. Please try again.' : 'Connection failed. Please try again.'); }
       }
       // status === 'pending' → keep polling
@@ -2546,60 +2766,43 @@ function startWcSessionPoll() {
   }, 2000);
 }
 
-// ── Wallet Deep Links (EIP-681, no WC relay needed) ──────────────────────────
+// ── WalletConnect URI Deep Links ──────────────────────────────────────────────
 
-var WC_DEST_ADDR = '0x9dd5Cd88890b8EDfF25c0b1478ba1f38556B7d4C';
-var _wcWalletLinks = []; // EIP-681 links indexed by wallet slot
+var _wcWalletLinks = [];
 
+// 9 wallets — all use wc?uri= format (WalletConnect v2 universal links)
 var WC_WALLETS = [
-  // Confirmed EIP-681 universal links
-  { name: 'MetaMask', icon: '🦊', buildLink: function(cfg, units, usd) {
-    return 'https://metamask.app.link/send/' + cfg.contract + '@' + cfg.chainId +
-           '/transfer?address=' + WC_DEST_ADDR + '&uint256=' + units;
+  { name: 'MetaMask', icon: '🦊', buildLink: function(uri) {
+    return 'https://metamask.app.link/wc?uri=' + encodeURIComponent(uri);
   }},
-  { name: 'Trust',    icon: '🛡️', buildLink: function(cfg, units, usd) {
-    return 'https://link.trustwallet.com/send?coin=60&token_id=' + cfg.contract +
-           '&address=' + WC_DEST_ADDR + '&amount=' + units;
+  { name: 'Trust',    icon: '🛡️', buildLink: function(uri) {
+    return 'https://link.trustwallet.com/wc?uri=' + encodeURIComponent(uri);
   }},
-  { name: 'Rainbow',  icon: '🌈', buildLink: function(cfg, units, usd) {
-    return 'https://rnbwapp.com/send?address=' + cfg.contract + '@' + cfg.chainId +
-           '/transfer?address=' + WC_DEST_ADDR + '&uint256=' + units;
+  { name: 'Rainbow',  icon: '🌈', buildLink: function(uri) {
+    return 'https://rnbwapp.com/wc?uri=' + encodeURIComponent(uri);
   }},
-  { name: 'Coinbase', icon: '🔵', buildLink: function(cfg, units, usd) {
-    return 'https://go.cb-wallet.io/send?chain_id=' + cfg.chainId +
-           '&address=' + cfg.contract + '&to=' + WC_DEST_ADDR + '&value=' + units;
+  { name: 'Coinbase', icon: '🔵', buildLink: function(uri) {
+    return 'https://go.cb-w.com/wc?uri=' + encodeURIComponent(uri);
   }},
-  // Additional wallets
-  { name: 'Zerion',   icon: '🌊', buildLink: function(cfg, units, usd) {
-    return 'https://app.zerion.io/send?to=' + WC_DEST_ADDR +
-           '&token=' + cfg.contract + '&chainId=' + cfg.chainId + '&amount=' + usd.toFixed(6);
+  { name: 'Zerion',   icon: '⚡', buildLink: function(uri) {
+    return 'https://app.zerion.io/wc?uri=' + encodeURIComponent(uri);
   }},
-  { name: 'SafePal',  icon: '🔐', buildLink: function(cfg, units, usd) {
-    return 'https://link.safepal.io/transfer?asset=' + cfg.token +
-           '&to=' + WC_DEST_ADDR + '&contractAddress=' + cfg.contract +
-           '&chainId=' + cfg.chainId + '&amount=' + usd.toFixed(6);
+  { name: 'OKX',      icon: '⭕', buildLink: function(uri) {
+    return 'https://www.okx.com/download?deeplink=' +
+           encodeURIComponent('okx://wallet/wc?uri=' + encodeURIComponent(uri));
   }},
-  { name: 'OKX',      icon: '⭕', buildLink: function(cfg, units, usd) {
-    return 'https://www.okx.com/web3/wallet/send?to=' + WC_DEST_ADDR +
-           '&tokenAddress=' + cfg.contract + '&chainId=' + cfg.chainId + '&amount=' + usd.toFixed(6);
+  { name: 'SafePal',  icon: '🔒', buildLink: function(uri) {
+    return 'https://link.safepal.io/wc?uri=' + encodeURIComponent(uri);
   }},
-  { name: 'Bybit',    icon: '🟡', buildLink: function(cfg, units, usd) {
-    return 'https://link.bybit.com/web3/navi?to=' + WC_DEST_ADDR +
-           '&contract=' + cfg.contract + '&chainId=' + cfg.chainId + '&amount=' + units;
+  { name: 'Bybit',    icon: '📊', buildLink: function(uri) {
+    return 'https://app.bybit.com/wallet/wc?uri=' + encodeURIComponent(uri);
   }},
-  { name: 'Tangem',   icon: '💳', buildLink: function(cfg, units, usd) {
-    return 'https://app.tangem.com/send?to=' + WC_DEST_ADDR +
-           '&contract=' + cfg.contract + '&chainId=' + cfg.chainId + '&amount=' + units;
+  { name: 'Tangem',   icon: '💳', buildLink: function(uri) {
+    return 'https://app.tangem.com/wc?uri=' + encodeURIComponent(uri);
   }},
 ];
 
-// BigInt-safe token amount encoding (avoids float precision loss on 18-decimal tokens)
-function buildEip681Amount(usdAmount, decimals) {
-  var cents = Math.round(usdAmount * 100);
-  return (BigInt(cents) * BigInt(10) ** BigInt(decimals - 2)).toString();
-}
-
-// Open wallet URL via Telegram.WebApp.openLink (handles HTTPS universal links correctly)
+// Open wallet via Telegram.WebApp.openLink (HTTPS only — works in Telegram WebView)
 function openWalletLink(idx) {
   var url = _wcWalletLinks[idx];
   if (!url) return;
@@ -2610,40 +2813,44 @@ function openWalletLink(idx) {
   window.open(url, '_blank', 'noopener');
 }
 
-function showWcQrOverlay(cfg, amountUnits) {
+function showWcQrOverlay(cfg) {
   var overlay = document.getElementById('wc-qr-overlay');
-  var canvas  = document.getElementById('wc-qr-canvas');
   var wallets = document.getElementById('wc-qr-wallets');
   var sub     = document.getElementById('wc-qr-sub');
-  var titleEl = document.querySelector('#wc-qr-sheet .wc-qr-title');
-  var copyBtn = document.getElementById('wc-qr-copy-btn');
+  var titleEl = document.getElementById('wc-qr-title');
+  var connectedState = document.getElementById('wc-connected-state');
 
-  if (titleEl) titleEl.textContent = 'Send ' + cfg.token + ' · $' + numpadAmount.toFixed(2);
-  sub.textContent = 'Tap your wallet — it will open with the payment pre-filled. Then confirm in the wallet app.';
-  canvas.style.display = 'none';
+  if (titleEl) titleEl.textContent = 'Connect Wallet · $' + numpadAmount.toFixed(2);
+  if (sub) sub.textContent = 'Creating WalletConnect session…';
+  if (wallets) wallets.innerHTML = '<div class="wc-qr-connecting">Connecting to relay…</div>';
+  if (wallets) wallets.style.display = '';
+  if (connectedState) connectedState.style.display = 'none';
 
+  overlay.classList.add('open');
+}
+
+function updateWcQrOverlayLinks(wcUri, cfg) {
+  var wallets = document.getElementById('wc-qr-wallets');
+  var sub     = document.getElementById('wc-qr-sub');
+  if (sub) sub.textContent = 'Choose your wallet — it will open and ask you to connect, then confirm the payment.';
   _wcWalletLinks = [];
-  wallets.innerHTML = WC_WALLETS.map(function(w, i) {
-    var link = w.buildLink(cfg, amountUnits, numpadAmount);
+  if (wallets) wallets.innerHTML = WC_WALLETS.map(function(w, i) {
+    var link = w.buildLink(wcUri);
     _wcWalletLinks[i] = link;
     return '<div class="wc-qr-wallet" onclick="openWalletLink(' + i + ')">' +
            '<div class="wc-qr-wallet-ic">' + w.icon + '</div>' +
            '<div class="wc-qr-wallet-name">' + w.name + '</div></div>';
   }).join('');
-
-  if (copyBtn) {
-    copyBtn.textContent = "I've Sent";
-    copyBtn.onclick = function() { haptic('success'); confirmWcSent(); };
-  }
-  overlay.classList.add('open');
 }
 
 function confirmWcSent() {
   closeWcQrOverlay();
   document.getElementById('wc-bottom').style.display = 'none';
   var msg = document.getElementById('wc-status-msg');
-  msg.style.display = 'block';
-  msg.innerHTML = '<div class="pay-pending"><div class="pay-pending-ic">&#9203;</div><h3>Transaction sent</h3><p>Waiting for blockchain confirmation. Your balance will be updated automatically.</p></div>';
+  if (msg) {
+    msg.style.display = 'block';
+    msg.innerHTML = '<div class="pay-pending"><div class="pay-pending-ic">&#9203;</div><h3>Transaction sent</h3><p>Waiting for blockchain confirmation. Your balance will be updated automatically.</p></div>';
+  }
   startPollPayment(currentPaymentId, function() { closeAllOverlays(); fetchBilling(); });
 }
 
@@ -2668,31 +2875,6 @@ function cancelWcConnect() {
   if (btn) { updateWcWalletUI(); btn.style.opacity = '1'; btn.style.pointerEvents = 'auto'; }
 }
 
-function copyWcUri() {
-  if (!currentWcUri) return;
-  var btn = document.getElementById('wc-qr-copy-btn');
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(currentWcUri).then(function() {
-      btn.textContent = 'Copied!';
-      btn.classList.add('copied');
-      setTimeout(function() { btn.textContent = 'Copy URI'; btn.classList.remove('copied'); }, 2000);
-    }).catch(function() {
-      btn.textContent = 'Copy URI';
-    });
-  } else {
-    // Fallback: select a textarea
-    var ta = document.createElement('textarea');
-    ta.value = currentWcUri;
-    ta.style.cssText = 'position:fixed;top:-9999px;';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    btn.textContent = 'Copied!';
-    btn.classList.add('copied');
-    setTimeout(function() { btn.textContent = 'Copy URI'; btn.classList.remove('copied'); }, 2000);
-  }
-}
 
 function showWcScreen(network, token) {
   var cfg = WC_CHAIN_CONFIG[network];
@@ -2727,11 +2909,19 @@ function updateWcWalletUI() {
   if (!dot || !nameEl || !addrEl || !actionBtn) return;
 
   var cfg = WC_CHAIN_CONFIG[selectedNetwork] || {};
-  dot.className = 'wc-wallet-dot disconnected';
-  nameEl.textContent = 'Direct wallet payment';
-  addrEl.textContent = 'Tap below to open your wallet app';
-  actionBtn.innerHTML = '<span class="shine"></span>Open Wallet & Pay ' + numpadAmount.toFixed(2) + ' ' + (cfg.token || 'USDT');
-  if (discBtn) discBtn.style.display = 'none';
+  if (wcAccounts && wcAccounts.length > 0) {
+    dot.className = 'wc-wallet-dot connected';
+    nameEl.textContent = 'Wallet connected';
+    addrEl.textContent = wcAccounts[0].slice(0,8) + '…' + wcAccounts[0].slice(-6);
+    actionBtn.innerHTML = '<span class="shine"></span>Send ' + numpadAmount.toFixed(2) + ' ' + (cfg.token || 'USDT');
+    if (discBtn) discBtn.style.display = '';
+  } else {
+    dot.className = 'wc-wallet-dot disconnected';
+    nameEl.textContent = 'WalletConnect';
+    addrEl.textContent = 'Connect your wallet to pay';
+    actionBtn.innerHTML = '<span class="shine"></span>Connect Wallet & Pay';
+    if (discBtn) discBtn.style.display = 'none';
+  }
 }
 
 function disconnectWc() {
@@ -2742,15 +2932,37 @@ function disconnectWc() {
   updateWcWalletUI();
 }
 
-function wcAction() {
+async function wcAction() {
   var cfg = WC_CHAIN_CONFIG[selectedNetwork];
   if (!cfg || !currentPaymentId) {
     var msg = document.getElementById('wc-status-msg');
     if (msg) { msg.style.display = 'block'; msg.textContent = 'Payment not initialized. Please go back and try again.'; }
     return;
   }
-  var amountUnits = buildEip681Amount(numpadAmount, cfg.decimals);
-  showWcQrOverlay(cfg, amountUnits);
+
+  // Show overlay immediately with loading state
+  showWcQrOverlay(cfg);
+
+  try {
+    var resp = await fetch(API_BASE + '/api/payments/wc-session', {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ network: selectedNetwork }),
+    });
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error);
+
+    wcSessionId = data.session_id;
+    currentWcUri = data.uri;
+
+    // Populate wallet buttons with the WC URI deep links
+    updateWcQrOverlayLinks(data.uri, cfg);
+    startWcSessionPoll();
+  } catch(e) {
+    closeWcQrOverlay();
+    var msg = document.getElementById('wc-status-msg');
+    if (msg) { msg.style.display = 'block'; msg.textContent = 'Failed to create session: ' + e.message; }
+  }
 }
 
 
@@ -2775,23 +2987,51 @@ function renderBillingData(data) {
   var numBalEl = document.getElementById('numpad-balance');
   if (numBalEl) numBalEl.textContent = balStr;
 
-  var payments = data.payments || [];
   var container = document.getElementById('bill-invoices');
   if (!container) return;
 
-  var rows = payments.filter(function(p){ return p.status === 'confirmed'; }).map(function(p) {
-    var d = new Date(p.confirmed_at || p.created_at);
-    var dateStr = d.toLocaleDateString('ru-RU');
-    var method = NETWORK_LABELS[p.network] || p.network;
+  // Build unified timeline: deposits (+) and usage charges (-)
+  var entries = [];
+
+  // Deposits
+  var payments = data.payments || [];
+  payments.filter(function(p){ return p.status === 'confirmed'; }).forEach(function(p) {
+    entries.push({
+      date: new Date(p.confirmed_at || p.created_at),
+      label: NETWORK_LABELS[p.network] || p.network,
+      amount: '+$' + parseFloat(p.amount_usd).toFixed(2),
+      cls: 'bill-inv-deposit',
+    });
+  });
+
+  // Usage charges
+  var charges = data.charges || [];
+  charges.forEach(function(c) {
+    if (c.cost_usd <= 0) return;
+    entries.push({
+      date: new Date(c.created_at),
+      label: (c.agent_name || 'Agent') + ' · ' + (c.model || '').replace('claude-','').replace('-latest','').replace(/-\d+$/,''),
+      amount: '-$' + parseFloat(c.cost_usd).toFixed(4),
+      cls: 'bill-inv-charge',
+    });
+  });
+
+  // Sort by date descending
+  entries.sort(function(a,b){ return b.date - a.date; });
+  // Limit to 50 entries
+  entries = entries.slice(0, 50);
+
+  var rows = entries.map(function(e) {
+    var dateStr = e.date.toLocaleDateString('ru-RU');
     return '<div class="bill-inv-row">' +
       '<div class="bill-inv-date">' + dateStr + '</div>' +
-      '<div class="bill-inv-type">' + method + '</div>' +
-      '<div class="bill-inv-cost">+$' + parseFloat(p.amount_usd).toFixed(2) + '</div>' +
+      '<div class="bill-inv-type" style="font-size:12px">' + e.label + '</div>' +
+      '<div class="bill-inv-cost ' + e.cls + '">' + e.amount + '</div>' +
       '</div>';
   }).join('');
 
-  container.innerHTML = '<div class="bill-inv-head"><span>Date</span><span>Method</span><span style="text-align:right">Amount</span></div>' +
-    (rows || '<div style="padding:24px;text-align:center;font-size:13px;color:var(--t3)">No payments yet</div>');
+  container.innerHTML = '<div class="bill-inv-head"><span>Date</span><span>Details</span><span style="text-align:right">Amount</span></div>' +
+    (rows || '<div style="padding:24px;text-align:center;font-size:13px;color:var(--t3)">No transactions yet</div>');
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────

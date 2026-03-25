@@ -235,15 +235,18 @@ app.get('/api/usage', authMiddleware, (req, res) => {
   const monthly = queries.getUserMonthlyUsage.get(user.id);
   const chart = queries.getUserUsageByDay.all(user.id);
   const models = queries.getUserUsageByModel.all(user.id);
-  const agents = queries.getUserAgents.all(user.id);
+  const agentUsage = queries.getUserUsageByAgent.all(user.id);
+  const activeAgents = agentUsage.filter(a => a.status === 'active');
 
   res.json({
     total,
-    daily: { ...daily, limit: parseInt(process.env.DAILY_TOKEN_LIMIT || '50000') * agents.length },
-    monthly: { ...monthly, limit: parseInt(process.env.MONTHLY_TOKEN_LIMIT || '1000000') * agents.length },
+    daily,
+    monthly,
     chart,
     models,
-    agentCount: agents.filter(a => a.status === 'active').length,
+    agents: agentUsage,
+    balance_cents: user.balance_cents || 0,
+    agentCount: activeAgents.length,
   });
 });
 
@@ -282,15 +285,17 @@ app.get('/api/agents/:id/logs', authMiddleware, async (req, res) => {
   }
 });
 
-// === Billing — balance + payment history ===
+// === Billing — balance + payment history + usage charges ===
 app.get('/api/billing', authMiddleware, (req, res) => {
   const user = queries.getUser.get(req.tgUser.id);
-  if (!user) return res.json({ balance_cents: 0, payments: [] });
+  if (!user) return res.json({ balance_cents: 0, payments: [], charges: [] });
 
   const payments = queries.getUserCryptoPayments.all(user.id);
+  const charges = queries.getUserUsageCharges.all(user.id);
   res.json({
     balance_cents: user.balance_cents || 0,
     payments,
+    charges,
   });
 });
 
@@ -492,11 +497,20 @@ app.get('/api/payments/wc-session/:id', authMiddleware, (req, res) => {
 
 // === WalletConnect — send ERC-20 transaction ===
 app.post('/api/payments/wc-tx', authMiddleware, async (req, res) => {
-  const { session_id, amount_usd } = req.body;
+  const { session_id, amount_usd, payment_id } = req.body;
   if (!session_id || !amount_usd) return res.status(400).json({ error: 'session_id and amount_usd required' });
   try {
     const { sendTransaction } = require('./lib/wc-manager');
     const result = await sendTransaction(session_id, amount_usd);
+    // Store tx hash in payment record so blockchain scanner can confirm it
+    if (payment_id) {
+      try {
+        queries.submitWcTxHash.run(result.txHash, result.fromAddr, payment_id);
+        console.log(`[WC] tx hash stored for payment ${payment_id}: ${result.txHash}`);
+      } catch(dbErr) {
+        console.warn('[WC] Failed to store tx hash in db:', dbErr.message);
+      }
+    }
     res.json({ ok: true, tx_hash: result.txHash, from_addr: result.fromAddr });
   } catch(e) {
     console.error('[WC] sendTransaction error:', e.message);
