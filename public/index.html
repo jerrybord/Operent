@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>RentYourClaw — Prototype 3: Premium Neon</title>
+<title>Operent — Deploy your AI Agent</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://unpkg.com/@tonconnect/ui@2.4.2/dist/tonconnect-ui.min.js"></script>
 <script src="https://unpkg.com/tonweb@0.0.66/dist/tonweb.js"></script>
@@ -980,7 +980,7 @@
 <!-- Dropdown Menu -->
 <div class="dropdown-ov" id="dropdown-ov" onclick="if(event.target===this){haptic('light');toggleDropdown();}">
   <div class="dropdown">
-    <div class="dropdown-item" onclick="haptic('medium');openLink('https://t.me/RentClaw')"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>Channel</div>
+    <div class="dropdown-item" onclick="haptic('medium');openLink('https://t.me/OperentAI')"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>Channel</div>
     <div class="dropdown-sep"></div>
     <div class="dropdown-item" onclick="haptic('medium');openLink('https://t.me/reliconaman')"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Support</div>
   </div>
@@ -2415,7 +2415,7 @@ function initTonConnect() {
       return;
     }
     tonUI = new Ctor({
-      manifestUrl: 'https://rentyourclaw.vercel.app/.well-known/tonconnect-manifest.json',
+      manifestUrl: 'https://operent.vercel.app/.well-known/tonconnect-manifest.json',
     });
     tonUI.onStatusChange(function(wallet) {
       tonWalletInfo = wallet;

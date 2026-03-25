@@ -125,7 +125,7 @@ You support scheduled (cron) tasks. When the user asks to schedule something rec
 When a cron task fires, you will receive a message prefixed with [SCHEDULED TASK] — execute it faithfully and send the result.` : '';
 
   const systemPrompt = [
-    `Your name is ${name}. You are an OpenClaw AI agent running on the RentYourClaw platform.`,
+    `Your name is ${name}. You are an AI agent running on the Operent platform.`,
     goalPrompt,
     description ? `User context: ${description}` : '',
     capabilityLines ? `\nYour enabled capabilities:\n${capabilityLines}` : '',

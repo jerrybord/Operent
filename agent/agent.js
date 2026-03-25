@@ -1,5 +1,5 @@
 /**
- * RentYourClaw Agent — Telegram Bot Runtime
+ * Operent Agent — Telegram Bot Runtime
  *
  * Runs inside Docker. Reads /root/.openclaw/openclaw.json and env vars.
  * Proxies LLM calls through the central backend for usage/billing tracking.
@@ -380,7 +380,7 @@ bot.on('message', async (msg) => {
       ? `\n\nJust tell me naturally if you want me to do something on a schedule — e.g. "Send me weather every morning at 8".`
       : '';
     bot.sendMessage(chatId,
-      `🦞 Hi! I am <b>${escHtml(AGENT_NAME)}</b>, your AI agent.${caps}${cronHint}\n\nPowered by @RentClawBot`,
+      `🤖 Hi! I am <b>${escHtml(AGENT_NAME)}</b>, your AI agent.${caps}${cronHint}\n\nPowered by @OperentBot`,
       { parse_mode: 'HTML' }
     ).catch(() => {});
     return;

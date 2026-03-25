@@ -1,5 +1,5 @@
 /**
- * RentYourClaw — Backend API Server (Multi-tenant)
+ * Operent — Backend API Server (Multi-tenant)
  *
  * Endpoints:
  *   POST /api/deploy          — Create & deploy a new agent
@@ -346,7 +346,7 @@ app.post('/api/payments/tg-stars', authMiddleware, async (req, res) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title: 'RentYourClaw Credits',
+        title: 'Operent Credits',
         description: `Top up $${parseFloat(amount_usd).toFixed(2)} to your balance`,
         payload: paymentId,
         provider_token: '',  // Must be empty for Telegram Stars (XTR)
@@ -396,10 +396,10 @@ app.post('/api/payments/cryptobot', authMiddleware, async (req, res) => {
       body: JSON.stringify({
         asset: 'USDT',
         amount: chargeAmount,
-        description: `RentYourClaw Credits — $${parseFloat(amount_usd).toFixed(2)}`,
+        description: `Operent Credits — $${parseFloat(amount_usd).toFixed(2)}`,
         payload: paymentId,
         paid_btn_name: 'callback',
-        paid_btn_url: 'https://rentyourclaw.vercel.app',
+        paid_btn_url: 'https://operent.vercel.app',
       }),
     });
     const data = await resp.json();
@@ -660,7 +660,7 @@ app.post('/admin/export/:telegramId', adminAuth, async (req, res) => {
 
 // === Start ===
 app.listen(PORT, HOST, () => {
-  console.log(`\n  🦞 RentYourClaw Backend (Multi-tenant)`);
+  console.log(`\n  🤖 Operent Backend (Multi-tenant)`);
   console.log(`  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
   console.log(`  API:    http://${HOST}:${PORT}`);
   console.log(`  Proxy:  http://${HOST}:${PORT}/v1/{agentId}/messages`);
