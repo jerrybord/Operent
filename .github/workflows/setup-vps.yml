@@ -1,0 +1,49 @@
+name: Setup VPS (run once)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Initial VPS setup via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            # Install Node.js if not present
+            if ! command -v node &> /dev/null; then
+              curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+              apt-get install -y nodejs
+            fi
+
+            # Install pm2 globally
+            npm install -g pm2 2>/dev/null || true
+
+            # Clone or update repo
+            if [ -d /root/operent ]; then
+              cd /root/operent && git pull origin main
+            else
+              git clone https://github.com/jerrybord/Operent.git /root/operent
+            fi
+
+            # Install backend dependencies
+            cd /root/operent/backend
+            npm install --production
+
+            # Copy .env if it doesn't exist (placeholder)
+            if [ ! -f .env ]; then
+              touch .env
+            fi
+
+            # Start or restart backend
+            pm2 delete operent-backend 2>/dev/null || true
+            pm2 start server.js --name operent-backend
+            pm2 save
+            pm2 startup | tail -1 | bash || true
+
+            echo "=== Setup complete ==="
+            pm2 list
