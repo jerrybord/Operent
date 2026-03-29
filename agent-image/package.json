@@ -1,0 +1,12 @@
+{
+  "name": "rentyourclaw-agent",
+  "version": "1.0.0",
+  "description": "RentYourClaw Agent Runtime",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0"
+  }
+}

@@ -1,5 +1,15 @@
-.vercel
+# Environment
 .env
-backend/.env
 **/.env
 *.env
+
+# Dependencies
+node_modules/
+
+# Data / DB
+backend/data/
+
+# IDE / OS
+.DS_Store
+.claude/
+.vercel

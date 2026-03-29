@@ -16,7 +16,7 @@ const CHAIN_CONFIG = {
 };
 
 const DEST_ADDR = '0x9dd5Cd88890b8EDfF25c0b1478ba1f38556B7d4C';
-const WC_PROJECT_ID = process.env.WC_PROJECT_ID || 'a043247a4960e87434ecacc08540c9e9';
+const WC_PROJECT_ID = process.env.WC_PROJECT_ID || 'acbf2f77b3f0087c27a80093140238fc';
 const SESSION_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
 // In-memory store: sessionId -> session object

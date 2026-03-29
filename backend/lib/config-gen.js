@@ -2,6 +2,8 @@
  * Generates openclaw.json config from user's form data
  */
 
+const { SKILLS_BY_ID, getSkillInstructions } = require('./skills-registry');
+
 // Map form model names to openclaw model identifiers
 const MODEL_MAP = {
   'haiku': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
@@ -9,35 +11,6 @@ const MODEL_MAP = {
   'opus': { provider: 'anthropic', model: 'claude-opus-4-6' },
   'codex': { provider: 'openai', model: 'gpt-4o' },
   'kimi': { provider: 'kimi', model: 'moonshot-v1-128k' },
-};
-
-// Map capabilities to openclaw skill bundles
-const CAPABILITY_SKILLS = {
-  'browser': ['web-browsing', 'browser-automation'],
-  'social': ['instagram', 'twitter', 'linkedin'],
-  'voice': ['voice-messages', 'speech-to-text'],
-  'docs': ['google-docs', 'google-sheets'],
-  'calendar': ['google-calendar', 'scheduling'],
-  'analytics': ['data-analysis', 'reporting'],
-  'youtube': ['youtube-management'],
-};
-
-// Human-readable descriptions for each skill
-const SKILL_DESCRIPTIONS = {
-  'web-browsing':        'Browse websites and search the internet',
-  'browser-automation':  'Automate web browser interactions',
-  'instagram':           'Manage Instagram (posts, DMs, engagement)',
-  'twitter':             'Manage Twitter/X (tweets, replies, DMs)',
-  'linkedin':            'Manage LinkedIn (posts, connections)',
-  'voice-messages':      'Send and transcribe voice messages',
-  'speech-to-text':      'Transcribe audio recordings to text',
-  'google-docs':         'Create and edit Google Docs',
-  'google-sheets':       'Create and edit Google Sheets',
-  'google-calendar':     'Manage Google Calendar events',
-  'scheduling':          'Schedule and manage tasks',
-  'data-analysis':       'Analyze data and generate insights',
-  'reporting':           'Create reports and summaries',
-  'youtube-management':  'Manage YouTube channel content',
 };
 
 // Proactivity presets
@@ -85,33 +58,30 @@ function generateConfig(formData, proxyBaseUrl) {
     telegramUserId,
     description = '',
     goal = 'personal',
-    capabilities = [],
+    skills = [],
     model = 'sonnet',
     proactivity = 'smart',
-    routing = null,  // { coding: 'opus', everyday: 'sonnet', cron: 'haiku' }
+    routing = null,
   } = formData;
 
   // Resolve model config
   const primaryModel = MODEL_MAP[model] || MODEL_MAP['sonnet'];
 
-  // Build skills list from capabilities
-  const skills = [];
-  for (const cap of capabilities) {
-    if (CAPABILITY_SKILLS[cap]) {
-      skills.push(...CAPABILITY_SKILLS[cap]);
-    }
-  }
+  // Validate skill IDs
+  const validSkills = skills.filter(id => SKILLS_BY_ID[id]);
+
+  // Build skill descriptions for system prompt
+  const skillLines = validSkills
+    .map(id => {
+      const s = SKILLS_BY_ID[id];
+      return s ? `  • ${s.emoji} ${s.name} — ${s.description}` : null;
+    })
+    .filter(Boolean)
+    .join('\n');
 
   // Build system prompt
   const goalPrompt = GOAL_PROMPTS[goal] || GOAL_PROMPTS['personal'];
   const proactivitySettings = PROACTIVITY_CONFIG[proactivity] || PROACTIVITY_CONFIG['smart'];
-
-  // Capability descriptions from enabled skills
-  const capabilityLines = skills
-    .map(s => SKILL_DESCRIPTIONS[s])
-    .filter(Boolean)
-    .map(d => `  • ${d}`)
-    .join('\n');
 
   // Cron instructions if scheduling is enabled
   const cronInstructions = proactivitySettings.cronEnabled ? `
@@ -125,13 +95,100 @@ You support scheduled (cron) tasks. When the user asks to schedule something rec
 When a cron task fires, you will receive a message prefixed with [SCHEDULED TASK] — execute it faithfully and send the result.` : '';
 
   const systemPrompt = [
-    `Your name is ${name}. You are an AI agent running on the Operent platform.`,
+    `Your name is ${name}. You are an AI agent running as a Telegram bot on the Operent platform.`,
     goalPrompt,
-    description ? `User context: ${description}` : '',
-    capabilityLines ? `\nYour enabled capabilities:\n${capabilityLines}` : '',
+    `
+=== TELEGRAM MESSAGE FORMATTING === (THIS IS YOUR #1 PRIORITY — ABOVE ALL ELSE)
+
+You write for Telegram. Your output uses markdown that is auto-converted to Telegram HTML.
+You serve mass-market users. EVERY message MUST be beautifully formatted and easy to scan.
+If you break these rules, the message becomes an unreadable wall of text and the user leaves.
+
+RULE 1 — BLANK LINES (most critical):
+Put a blank line:
+• BEFORE and AFTER every **bold title**
+• AFTER every paragraph (max 2-3 sentences per paragraph)
+• BEFORE and AFTER every list block
+• BEFORE and AFTER every code block
+• Between any two different topics or ideas
+• When in doubt — ADD A BLANK LINE
+NEVER put two ideas in the same paragraph. NEVER write a wall of text.
+
+RULE 2 — BOLD for structure:
+• Section titles → **Bold Title** on its own line (NEVER use ## headers)
+• Key terms, answers, important values → **bold**
+• Sub-sections → **Sub-title:** followed by text
+
+RULE 3 — CODE formatting:
+• Multi-line code → ALWAYS use \`\`\`language (specify: python, js, bash, sql, etc.)
+• Short values to copy → \`inline code\` (URLs, commands, file names, variable values)
+• NEVER output code as plain text. ALWAYS wrap it in code formatting.
+
+RULE 4 — OTHER formatting:
+• *italic* → footnotes, side notes, soft emphasis, clarifications
+• ~~strikethrough~~ → corrections, old values
+• ||spoiler|| → quiz answers, sensitive info
+• > blockquote → quoting docs, definitions, user messages
+
+RULE 5 — LISTS:
+• Use emoji bullets: 🔹 ✅ 📌 ▸ 🎯 or contextual emoji
+• Each item on its own line
+• Blank line before and after every list block
+• NO tables — present data as a list
+
+RULE 6 — NO:
+• NO ## or ### markdown headers (use **Bold Title** instead)
+• NO horizontal rules (---, ***, ___)
+• NO tables (use lists)
+• NO walls of text
+
+❌ BAD (never write like this):
+**Задача 1** Функция f рекурсивно вычисляет НОД. f(7006652, 112307574) даёт 2. **Задача 2** Функция p выводит двоичное представление числа. Для 10 результат 1010. Это рекурсивный алгоритм, он делит число на 2 и выводит остаток.
+
+✅ GOOD (always write like this):
+
+**Задача 1 — НОД (GCD)**
+
+Функция \`f\` рекурсивно вычисляет наибольший общий делитель по алгоритму Евклида.
+
+🔹 Делит большее число на меньшее
+🔹 Повторяет, пока остаток не станет 0
+🔹 Ответ: **2**
+
+*Классический алгоритм, O(log(min(a,b)))*
+
+**Задача 2 — Двоичное представление**
+
+Функция \`p\` рекурсивно выводит число в двоичной системе:
+
+\`\`\`python
+def p(n):
+    if n > 0:
+        p(n // 2)
+        print(n % 2, end='')
+\`\`\`
+
+Результат для ввода \`10\`: **1010**
+
+*Копируемые значения (URL, команды) оформляй так:* \`https://example.com\`
+
+=== END OF FORMATTING RULES ===`,
+    `
+CRITICAL RULES:
+- You are a Telegram chat bot. You do NOT have a terminal, shell, or filesystem. You CANNOT run commands, scripts, or code. Never output shell commands, tool_call XML, or pretend to execute anything.
+- Communicate in the user's language. Be helpful, concise, and proactive.
+- If a skill requires an API key the user hasn't provided, politely ask them to send it.`,
+    description ? `\nUser context: ${description}` : '',
+    skillLines ? `\nYour installed skills:\n${skillLines}` : '',
     cronInstructions,
-    `\nAlways be helpful, concise, and proactive. Communicate in the language the user writes in.`,
   ].filter(Boolean).join('\n');
+
+  // Build skill instructions map for agent runtime
+  const skillInstructions = {};
+  for (const id of validSkills) {
+    const s = SKILLS_BY_ID[id];
+    if (s) skillInstructions[id] = s.instructions;
+  }
 
   // Build the config
   const config = {
@@ -143,13 +200,12 @@ When a cron task fires, you will receive a message prefixed with [SCHEDULED TASK
     },
     channels: {
       telegram: {
-        botToken: '{{BOT_TOKEN}}',  // Injected as env var
+        botToken: '{{BOT_TOKEN}}',
         dmPolicy: 'open',
         allowedUsers: [telegramUserId],
       },
     },
     models: {
-      // Route all requests through our proxy for usage tracking
       baseUrl: `${proxyBaseUrl}/v1/${agentId}`,
       defaults: {
         provider: primaryModel.provider,
@@ -157,7 +213,8 @@ When a cron task fires, you will receive a message prefixed with [SCHEDULED TASK
       },
     },
     skills: {
-      enabled: skills,
+      enabled: validSkills,
+      instructions: skillInstructions,
     },
   };
 
@@ -176,4 +233,4 @@ When a cron task fires, you will receive a message prefixed with [SCHEDULED TASK
   return config;
 }
 
-module.exports = { generateConfig, MODEL_MAP, CAPABILITY_SKILLS };
+module.exports = { generateConfig, MODEL_MAP };

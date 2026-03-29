@@ -4,6 +4,10 @@
  * Runs inside Docker. Reads /root/.openclaw/openclaw.json and env vars.
  * Proxies LLM calls through the central backend for usage/billing tracking.
  *
+ * Skills:
+ *   Reads skill instructions from config.skills.instructions and injects into system prompt.
+ *   Special runtime skills: voice-messages (handles voice/audio Telegram messages)
+ *
  * Natural language cron:
  *   User: "Присылай мне прогноз погоды каждый день в 8 утра"
  *   Agent detects scheduling intent → LLM includes <cron schedule="daily 08:00" task="..."/>
@@ -42,6 +46,7 @@ const agentConfig    = config.agent    || {};
 const modelsConfig   = config.models   || {};
 const channelsConfig = config.channels?.telegram || {};
 const skillsEnabled  = config.skills?.enabled || [];
+const skillInstructions = config.skills?.instructions || {};
 
 const baseSystemPrompt = agentConfig.systemPrompt ||
   `Your name is ${AGENT_NAME}. You are a helpful AI assistant.`;
@@ -51,41 +56,33 @@ const LLM_BASE_URL = modelsConfig.baseUrl || '';
 const defaultModel = modelsConfig.defaults || { provider: 'anthropic', model: 'claude-sonnet-4-6' };
 const cronEnabled = agentConfig.cronEnabled !== false;
 
-// Skill descriptions for runtime injection (for existing agents)
-const SKILL_DESCRIPTIONS = {
-  'web-browsing':       'Browse websites and search the internet',
-  'browser-automation': 'Automate web browser interactions',
-  'instagram':          'Manage Instagram (posts, DMs, engagement)',
-  'twitter':            'Manage Twitter/X (tweets, replies, DMs)',
-  'linkedin':           'Manage LinkedIn (posts, connections)',
-  'voice-messages':     'Send and transcribe voice messages',
-  'speech-to-text':     'Transcribe audio recordings to text',
-  'google-docs':        'Create and edit Google Docs',
-  'google-sheets':      'Create and edit Google Sheets',
-  'google-calendar':    'Manage Google Calendar events',
-  'scheduling':         'Schedule and manage tasks',
-  'data-analysis':      'Analyze data and generate insights',
-  'reporting':          'Create reports and summaries',
-  'youtube-management': 'Manage YouTube channel content',
-};
-
-const runtimeCapabilities = skillsEnabled
-  .map(s => SKILL_DESCRIPTIONS[s])
-  .filter(Boolean);
+// Check if specific skills are enabled
+const hasVoiceSkill = skillsEnabled.includes('voice-messages');
 
 // === Build system prompt ===
 
 function buildSystemPrompt() {
   const parts = [baseSystemPrompt];
 
-  if (runtimeCapabilities.length > 0 && !baseSystemPrompt.includes('capabilities')) {
-    parts.push(
-      `\nYour enabled capabilities:\n${runtimeCapabilities.map(d => `  • ${d}`).join('\n')}`
-    );
+  // Inject detailed skill instructions
+  const instrParts = [];
+  for (const skillId of skillsEnabled) {
+    const instr = skillInstructions[skillId];
+    if (instr) instrParts.push(instr);
+  }
+  if (instrParts.length > 0) {
+    parts.push('\n--- SKILL INSTRUCTIONS ---\n' + instrParts.join('\n\n---\n\n'));
   }
 
+  // Media protocol
+  parts.push(`
+MEDIA — You can attach images/files using invisible XML tags in your response:
+  <image prompt="detailed English description"/> — AI-generates an image and sends it
+  <photo url="URL"/> — sends a photo from URL
+  <file url="URL" name="file.ext"/> — sends a document from URL
+Write a short message alongside the tag. For <image>, always use a detailed English prompt regardless of user language.`);
+
   if (cronEnabled) {
-    // Natural language cron instructions — the key part
     parts.push(`
 IMPORTANT — Scheduled tasks (cron):
 When the user asks you to do something repeatedly, on a schedule, or at a specific time in the future (e.g. "remind me every day", "send weather every morning at 8", "check prices hourly", "напоминай мне каждый день", "присылай прогноз каждое утро в 8"), you MUST create a scheduled task automatically.
@@ -214,15 +211,30 @@ async function callLLM(chatId, userMessage, isScheduled = false) {
   }
 }
 
+// === Voice transcription ===
+
+async function transcribeAudio(audioBuffer, format, duration) {
+  if (!LLM_BASE_URL) throw new Error('No LLM proxy configured');
+
+  const res = await fetch(`${LLM_BASE_URL}/audio/transcriptions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      audio: audioBuffer.toString('base64'),
+      format: format || 'ogg',
+      duration: duration || 10,
+    }),
+  });
+
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  return data.text || '';
+}
+
 // === Cron tag parser ===
 
-/**
- * Extract all <cron schedule="..." task="..."/> tags from LLM response.
- * Returns { clean: string, jobs: [{schedule, task}] }
- */
 function extractCronTags(text) {
   const jobs = [];
-  // Match <cron schedule="..." task="..."/> or <cron task="..." schedule="..."/>
   const re = /<cron\s+(?:schedule="([^"]+)"\s+task="([^"]+)"|task="([^"]+)"\s+schedule="([^"]+)")\s*\/>/gi;
   let match;
   while ((match = re.exec(text)) !== null) {
@@ -230,7 +242,6 @@ function extractCronTags(text) {
     const task     = (match[2] || match[3] || '').trim();
     if (schedule && task) jobs.push({ schedule, task });
   }
-  // Strip all cron tags from the visible text
   const clean = text.replace(re, '').replace(/\s{2,}/g, ' ').trim();
   return { clean, jobs };
 }
@@ -309,10 +320,6 @@ function stopCron(cronId) {
   if (h) { clearTimeout(h); activeTimers.delete(cronId); }
 }
 
-/**
- * Create a cron job from natural language detection or /cron add command.
- * Returns the cron object.
- */
 function createCronJob(chatId, schedule, task) {
   const cronId = Math.random().toString(36).slice(2, 8);
   const cron = { id: cronId, chatId, schedule: schedule.toLowerCase().trim(), task };
@@ -323,7 +330,6 @@ function createCronJob(chatId, schedule, task) {
   return cron;
 }
 
-// Parse /cron add args → {schedule, task} or null
 function parseCronAdd(args) {
   const daily = args.match(/^(daily\s+\d{1,2}:\d{2})\s+(.+)$/i);
   if (daily) return { schedule: daily[1].toLowerCase().trim(), task: daily[2].trim() };
@@ -334,10 +340,136 @@ function parseCronAdd(args) {
   return null;
 }
 
+// === Media tag parser ===
+
+function extractMediaTags(text) {
+  const images = [];
+  const photos = [];
+  const files = [];
+
+  // Helper: extract all key="value" pairs from a tag body
+  function parseAttrs(tagBody) {
+    const attrs = {};
+    const re = /(\w+)="([^"]*)"/g;
+    let m;
+    while ((m = re.exec(tagBody)) !== null) attrs[m[1]] = m[2];
+    return attrs;
+  }
+
+  // <image prompt="..." /> — generate image via Pollinations
+  text = text.replace(/<image\s+([^>]*?)\/>/gi, (_, body) => {
+    const a = parseAttrs(body);
+    if (a.prompt) images.push({ prompt: a.prompt, width: parseInt(a.width) || 1024, height: parseInt(a.height) || 1024 });
+    return '';
+  });
+
+  // <photo url="..." /> — send photo from URL
+  text = text.replace(/<photo\s+([^>]*?)\/>/gi, (_, body) => {
+    const a = parseAttrs(body);
+    if (a.url) photos.push({ url: a.url, caption: a.caption || '' });
+    return '';
+  });
+
+  // <file url="..." name="..." /> — send file from URL
+  text = text.replace(/<file\s+([^>]*?)\/>/gi, (_, body) => {
+    const a = parseAttrs(body);
+    if (a.url) files.push({ url: a.url, name: a.name || 'file', caption: a.caption || '' });
+    return '';
+  });
+
+  const clean = text.replace(/\n{3,}/g, '\n\n').trim();
+  return { clean, images, photos, files };
+}
+
 // === Helpers ===
 
 function escHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/**
+ * Convert markdown → Telegram HTML.
+ * Supports: <b>, <i>, <code>, <pre>, <blockquote>, <tg-spoiler>, <a href>.
+ * Handles both: LLM writing markdown AND LLM writing raw HTML tags.
+ */
+function cleanForTelegram(text) {
+  let t = text;
+
+  // 0. Remove <tool_call> XML blocks
+  t = t.replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, '');
+  t = t.replace(/<\/?tool_call>/gi, '');
+
+  // 1. Protect Telegram-supported HTML tags from escaping
+  const PH = '\x00';
+  const saved = [];
+  const SAFE_TAGS = /(<\/?\s*(?:b|i|u|s|code|pre|blockquote|tg-spoiler|a)(?:\s[^>]*)?\s*>)/gi;
+  t = t.replace(SAFE_TAGS, (match) => {
+    saved.push(match);
+    return PH + (saved.length - 1) + PH;
+  });
+
+  // 2. Escape HTML entities
+  t = t.replace(/&/g, '&amp;');
+  t = t.replace(/</g, '&lt;');
+  t = t.replace(/>/g, '&gt;');
+
+  // 3. Restore protected tags
+  t = t.replace(new RegExp(PH + '(\\d+)' + PH, 'g'), (_, i) => saved[parseInt(i)] || '');
+
+  // 4. Markdown → Telegram HTML conversion
+
+  // Code blocks: ```lang\ncode\n``` → <pre><code class="language-X">code</code></pre>
+  t = t.replace(/```(\w+)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>');
+  t = t.replace(/```\n?([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+
+  // Inline code: `text` → <code>text</code>
+  t = t.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+
+  // Bold: **text** or __text__ → <b>text</b>
+  t = t.replace(/\*\*(.+?)\*\*/gs, '<b>$1</b>');
+  t = t.replace(/__(.+?)__/gs, '<b>$1</b>');
+
+  // Italic: *text* or _text_ → <i>text</i>
+  t = t.replace(/(?<!\w)\*(?!\s)(.+?)(?<!\s)\*(?!\w)/g, '<i>$1</i>');
+  t = t.replace(/(?<!\w)_(?!\s)(.+?)(?<!\s)_(?!\w)/g, '<i>$1</i>');
+
+  // Strikethrough: ~~text~~ → <s>text</s>
+  t = t.replace(/~~(.+?)~~/g, '<s>$1</s>');
+
+  // Spoiler: ||text|| → <tg-spoiler>text</tg-spoiler>
+  t = t.replace(/\|\|(.+?)\|\|/gs, '<tg-spoiler>$1</tg-spoiler>');
+
+  // Headers: ## Title → bold with blank line
+  t = t.replace(/^#{1,6}\s+(.+)$/gm, '\n<b>$1</b>\n');
+
+  // Blockquotes: > text → <blockquote>text</blockquote>
+  // Collect consecutive > lines into one blockquote
+  t = t.replace(/(?:^&gt;\s?(.*)$\n?)+/gm, (match) => {
+    const lines = match.split('\n')
+      .map(l => l.replace(/^&gt;\s?/, ''))
+      .filter(l => l.trim() !== '');
+    return '<blockquote>' + lines.join('\n') + '</blockquote>\n';
+  });
+
+  // Links: [text](url) → <a href="url">text</a>
+  t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
+  // Bare URLs → clickable (only http/https, not already inside <a>)
+  // Skip this — Telegram auto-links URLs anyway
+
+  // Horizontal rules → blank line
+  t = t.replace(/^[-*_]{3,}\s*$/gm, '');
+
+  // Tables → simple list
+  t = t.replace(/^\s*\|?[-:\s|]+\|[-:\s|]*\s*$/gm, '');
+  t = t.replace(/\|/g, '  ');
+
+  // 5. Whitespace cleanup
+  t = t.replace(/[ \t]{2,}/g, ' ');
+  t = t.replace(/\n{4,}/g, '\n\n\n');
+  t = t.replace(/^\n+/, '');
+
+  return t.trim();
 }
 
 function sendLong(chatId, text, opts = {}) {
@@ -345,6 +477,83 @@ function sendLong(chatId, text, opts = {}) {
   if (text.length <= 4000) { bot.sendMessage(chatId, text, opts).catch(() => {}); return; }
   const chunks = text.match(/.{1,4000}/gs) || [text];
   for (const chunk of chunks) bot.sendMessage(chatId, chunk, opts).catch(() => {});
+}
+
+// Process LLM reply: extract cron + media tags, send text + media
+async function processReply(chatId, rawReply) {
+  // 1. Extract cron tags
+  const { clean: noCron, jobs } = extractCronTags(rawReply);
+  for (const job of jobs) {
+    if (!cronEnabled) continue;
+    try {
+      const cron = createCronJob(chatId, job.schedule, job.task);
+      console.log(`[cron] Auto-created from LLM: "${cron.task}" (${describeSchedule(cron.schedule)}) id=${cron.id}`);
+    } catch (e) {
+      console.error('[cron] Failed to create from LLM tag:', e.message);
+    }
+  }
+
+  // 2. Extract media tags
+  const { clean: reply, images, photos, files } = extractMediaTags(noCron);
+
+  // 3. Clean markdown → Telegram HTML and send
+  const cleanReply = reply ? cleanForTelegram(reply) : '';
+  if (cleanReply) sendLong(chatId, cleanReply, { parse_mode: 'HTML' });
+
+  // 4. Generate and send images (via backend proxy → Together AI FLUX)
+  for (const img of images) {
+    try {
+      bot.sendChatAction(chatId, 'upload_photo').catch(() => {});
+      console.log(`[media] Generating image: "${img.prompt.slice(0, 60)}..."`);
+      const genRes = await fetch(`${LLM_BASE_URL}/generate-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: img.prompt, width: img.width, height: img.height }),
+      });
+      const genData = await genRes.json();
+      if (genData.error) throw new Error(genData.error.message || 'Generation failed');
+      if (!genData.image) throw new Error('No image data');
+      const buf = Buffer.from(genData.image, 'base64');
+      await bot.sendPhoto(chatId, buf, { caption: img.prompt.slice(0, 200) }, { filename: 'image.png', contentType: 'image/png' });
+      console.log(`[media] Sent image (${Math.round(buf.length / 1024)}KB)`);
+    } catch (e) {
+      console.error('[media] Image generation failed:', e.message);
+      bot.sendMessage(chatId, `⚠️ Image generation failed: ${e.message}`).catch(() => {});
+    }
+  }
+
+  // 5. Send photos from URL
+  for (const photo of photos) {
+    try {
+      bot.sendChatAction(chatId, 'upload_photo').catch(() => {});
+      const res = await fetch(photo.url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const buf = Buffer.from(await res.arrayBuffer());
+      await bot.sendPhoto(chatId, buf, { caption: photo.caption || '' }, { filename: 'photo.jpg', contentType: 'image/jpeg' });
+    } catch (e) {
+      console.error('[media] Photo send failed:', e.message);
+      bot.sendMessage(chatId, `⚠️ Could not send photo: ${e.message}`).catch(() => {});
+    }
+  }
+
+  // 6. Send files from URL
+  for (const file of files) {
+    try {
+      bot.sendChatAction(chatId, 'upload_document').catch(() => {});
+      const res = await fetch(file.url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const buf = Buffer.from(await res.arrayBuffer());
+      await bot.sendDocument(chatId, buf, { caption: file.caption || '' }, { filename: file.name, contentType: 'application/octet-stream' });
+    } catch (e) {
+      console.error('[media] File send failed:', e.message);
+      bot.sendMessage(chatId, `⚠️ Could not send file: ${e.message}`).catch(() => {});
+    }
+  }
+
+  // If no text and no media sent, send fallback
+  if (!cleanReply && images.length === 0 && photos.length === 0 && files.length === 0) {
+    sendLong(chatId, '...');
+  }
 }
 
 // === Bot ===
@@ -359,9 +568,6 @@ console.log(`[cron] Restored ${savedCrons.length} scheduled task(s)`);
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from?.id;
-  const text = (msg.text || '').trim();
-
-  if (!text) return;
 
   // Access control
   if (allowedUsers.length > 0 && !allowedUsers.includes(userId)) {
@@ -371,16 +577,57 @@ bot.on('message', async (msg) => {
     console.log(`[agent] Auto-added owner: ${userId}`);
   }
 
+  // === Handle voice/audio messages ===
+  if (msg.voice || msg.audio) {
+    if (!hasVoiceSkill) {
+      bot.sendMessage(chatId, '🎙️ Voice messages are not enabled for this agent. Enable the Voice Messages skill to use this feature.').catch(() => {});
+      return;
+    }
+
+    const fileObj = msg.voice || msg.audio;
+    const duration = fileObj.duration || 0;
+
+    bot.sendChatAction(chatId, 'typing').catch(() => {});
+
+    try {
+      // Download audio file from Telegram
+      const fileLink = await bot.getFileLink(fileObj.file_id);
+      const audioRes = await fetch(fileLink);
+      if (!audioRes.ok) throw new Error(`Failed to download audio: ${audioRes.status}`);
+      const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
+
+      // Transcribe via backend Whisper proxy
+      const transcription = await transcribeAudio(audioBuffer, 'ogg', duration);
+
+      if (!transcription || transcription.trim().length === 0) {
+        sendLong(chatId, '⚠️ Could not transcribe the voice message. Please try again or send a text message.');
+        return;
+      }
+
+      console.log(`[voice] Transcribed ${duration}s audio: "${transcription.slice(0, 80)}..."`);
+
+      // Pass transcription to LLM as regular message
+      const rawReply = await callLLM(chatId, transcription);
+      await processReply(chatId, rawReply);
+    } catch (e) {
+      console.error('[voice] Error:', e.message);
+      sendLong(chatId, `⚠️ Voice processing error: ${e.message}`);
+    }
+    return;
+  }
+
+  // === Text messages ===
+  const text = (msg.text || '').trim();
+  if (!text) return;
+
   // /start
   if (text === '/start') {
-    const caps = runtimeCapabilities.length > 0
-      ? `\n\n<b>My capabilities:</b>\n${runtimeCapabilities.map(d => `• ${d}`).join('\n')}`
-      : '';
-    const cronHint = cronEnabled
-      ? `\n\nJust tell me naturally if you want me to do something on a schedule — e.g. "Send me weather every morning at 8".`
-      : '';
+    const skillCount = skillsEnabled.length;
+    const skillLine = skillCount > 0 ? `\n⚡ <b>${skillCount} skills</b> installed` : '';
+    const voiceHint = hasVoiceSkill ? '\n🎙️ Voice messages supported' : '';
+    const cronHint = cronEnabled ? '\n⏰ Scheduling available' : '';
     bot.sendMessage(chatId,
-      `🤖 Hi! I am <b>${escHtml(AGENT_NAME)}</b>, your AI agent.${caps}${cronHint}\n\nPowered by @OperentBot`,
+      `👋 I'm <b>${escHtml(AGENT_NAME)}</b>${skillLine}${voiceHint}${cronHint}\n\nHow can I help you?`,
       { parse_mode: 'HTML' }
     ).catch(() => {});
     return;
@@ -399,13 +646,13 @@ bot.on('message', async (msg) => {
     const history = loadConversation(chatId);
     const crons = loadCrons().filter(c => c.chatId === chatId);
     bot.sendMessage(chatId,
-      `📊 <b>Agent Status</b>\n\nName: ${escHtml(AGENT_NAME)}\nModel: ${defaultModel.model}\nMessages in context: ${history.length}\nScheduled tasks: ${crons.length}\nAgent ID: <code>${AGENT_ID}</code>`,
+      `📊 <b>Agent Status</b>\n\nName: ${escHtml(AGENT_NAME)}\nModel: ${defaultModel.model}\nSkills: ${skillsEnabled.length > 0 ? skillsEnabled.join(', ') : 'none'}\nMessages in context: ${history.length}\nScheduled tasks: ${crons.length}\nAgent ID: <code>${AGENT_ID}</code>`,
       { parse_mode: 'HTML' }
     ).catch(() => {});
     return;
   }
 
-  // /cron commands (manual override, still supported)
+  // /cron commands
   if (text.startsWith('/cron')) {
     const rest = text.slice(5).trim();
 
@@ -414,7 +661,7 @@ bot.on('message', async (msg) => {
       if (crons.length === 0) {
         bot.sendMessage(chatId,
           'No scheduled tasks yet.\n\nJust tell me what to schedule, e.g. "Send me weather every morning at 8".',
-          ).catch(() => {});
+        ).catch(() => {});
       } else {
         const lines = crons.map((c, i) =>
           `${i + 1}. <b>${escHtml(c.task)}</b>\n   ⏱ ${describeSchedule(c.schedule)} · id: <code>${c.id}</code>`
@@ -473,22 +720,7 @@ bot.on('message', async (msg) => {
   // === Regular message → LLM ===
   bot.sendChatAction(chatId, 'typing').catch(() => {});
   const rawReply = await callLLM(chatId, text);
-
-  // Extract any cron tags the LLM included
-  const { clean: reply, jobs } = extractCronTags(rawReply);
-
-  // Process cron jobs from LLM response
-  for (const job of jobs) {
-    if (!cronEnabled) continue;
-    try {
-      const cron = createCronJob(chatId, job.schedule, job.task);
-      console.log(`[cron] Auto-created from LLM: "${cron.task}" (${describeSchedule(cron.schedule)}) id=${cron.id}`);
-    } catch (e) {
-      console.error('[cron] Failed to create from LLM tag:', e.message);
-    }
-  }
-
-  sendLong(chatId, reply || '...');
+  await processReply(chatId, rawReply);
 });
 
 bot.on('polling_error', (error) => {
@@ -497,4 +729,3 @@ bot.on('polling_error', (error) => {
 
 console.log(`🦞 Agent "${AGENT_NAME}" (${AGENT_ID}) is running`);
 if (skillsEnabled.length > 0) console.log(`[agent] Skills: ${skillsEnabled.join(', ')}`);
-if (cronEnabled) console.log('[agent] Natural language cron scheduling: enabled');

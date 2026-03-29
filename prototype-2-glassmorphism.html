@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>RentYourClaw — Prototype 2: Glassmorphism</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+  :root {
+    --bg: #0C0C0E;
+    --glass: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.08);
+    --glass-strong: rgba(255,255,255,0.07);
+    --red: #FF3040;
+    --red-dark: #CC1020;
+    --red-glow: rgba(255,48,64,0.3);
+    --red-soft: rgba(255,48,64,0.1);
+    --text: #FFFFFF;
+    --text-sec: rgba(255,255,255,0.5);
+    --text-dim: rgba(255,255,255,0.25);
+    --success: #34D399;
+    --purple: #A855F7;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent; }
+  html, body {
+    width:100%;height:100%;overflow:hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'SF Pro Display', 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    touch-action: pan-y;
+    overscroll-behavior: none;
+    user-select: none; -webkit-user-select: none;
+  }
+
+  /* Ambient background blobs */
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::before {
+    width: 300px; height: 300px;
+    background: rgba(255,48,64,0.08);
+    top: -80px; right: -80px;
+  }
+  body::after {
+    width: 250px; height: 250px;
+    background: rgba(168,85,247,0.05);
+    bottom: 10%; left: -60px;
+  }
+
+  #app {
+    width:100%;height:100%;position:relative;overflow:hidden;
+    max-width:430px;margin:0 auto;z-index:1;
+  }
+
+  .screen {
+    position:absolute;top:0;left:0;width:100%;height:100%;
+    display:flex;flex-direction:column;
+    opacity:0;transform:translateX(40px) scale(0.98);
+    pointer-events:none;
+    transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    overflow-y:auto;overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
+    padding:0 20px;
+    padding-top:calc(var(--safe-top) + 16px);
+    padding-bottom:calc(var(--safe-bottom) + 110px);
+    scrollbar-width:none;
+  }
+  .screen::-webkit-scrollbar{display:none;}
+  .screen.active{opacity:1;transform:translateX(0) scale(1);pointer-events:auto;}
+  .screen.exit{opacity:0;transform:translateX(-40px) scale(0.98);pointer-events:none;}
+
+  /* Glass Card Base */
+  .glass {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .glass-strong {
+    background: var(--glass-strong);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  /* Header */
+  .hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 0 20px;min-height:44px;}
+  .hdr-back{display:flex;align-items:center;gap:4px;color:var(--red);font-size:17px;font-weight:600;cursor:pointer;background:none;border:none;padding:8px 0;}
+  .hdr-back svg{width:10px;height:17px;}
+  .hdr-pill{font-size:12px;font-weight:600;color:var(--text-dim);background:var(--glass-strong);border:1px solid var(--glass-border);padding:5px 12px;border-radius:100px;}
+
+  /* Progress */
+  .prog{height:3px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden;margin-bottom:24px;}
+  .prog-bar{height:100%;background:linear-gradient(90deg,var(--red),#FF6060);border-radius:2px;transition:width 0.6s cubic-bezier(0.22, 1, 0.36, 1);}
+
+  /* Landing */
+  .landing-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:20px 0 0;}
+
+  .hero-orb {
+    width: 100px; height: 100px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, var(--red), #990020);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 50px;
+    margin-bottom: 32px;
+    position: relative;
+    box-shadow: 0 12px 48px var(--red-glow), inset 0 1px 1px rgba(255,255,255,0.15);
+    animation: orb-float 4s ease-in-out infinite;
+  }
+  @keyframes orb-float {
+    0%,100%{transform:translateY(0) rotate(0deg);}
+    50%{transform:translateY(-8px) rotate(2deg);}
+  }
+  .hero-orb::before {
+    content:'';position:absolute;
+    top:4px;left:12px;right:12px;height:35%;
+    background:linear-gradient(to bottom, rgba(255,255,255,0.2), transparent);
+    border-radius:20px 20px 50% 50%;
+  }
+
+  .hero-title{font-size:34px;font-weight:900;letter-spacing:-0.8px;line-height:1.1;margin-bottom:14px;}
+  .hero-title em{font-style:normal;background:linear-gradient(90deg,var(--red),#FF6B6B);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .hero-sub{font-size:15px;color:var(--text-sec);line-height:1.55;max-width:300px;margin-bottom:36px;}
+
+  .hero-stats{display:flex;gap:12px;width:100%;margin-bottom:32px;}
+  .stat-card{
+    flex:1;padding:16px 8px;text-align:center;
+    border-radius: 16px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .stat-num{font-size:22px;font-weight:800;color:var(--red);margin-bottom:4px;}
+  .stat-label{font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;}
+
+  /* Buttons */
+  .cta{
+    width:100%;border:none;border-radius:16px;padding:18px 24px;
+    font-size:17px;font-weight:700;cursor:pointer;
+    position:relative;overflow:hidden;
+    transition:transform 0.15s, box-shadow 0.3s;
+    letter-spacing:-0.2px;
+    color: #fff;
+    background: linear-gradient(135deg, var(--red), var(--red-dark));
+    box-shadow: 0 6px 32px var(--red-glow);
+  }
+  .cta:active{transform:scale(0.97);}
+  .cta::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:50%;
+    background:linear-gradient(to bottom, rgba(255,255,255,0.15), transparent);
+    border-radius:16px 16px 0 0;
+  }
+  .cta-ghost{
+    width:100%;background:var(--glass-strong);border:1px solid var(--glass-border);
+    border-radius:16px;padding:16px 24px;font-size:16px;font-weight:600;
+    color:var(--text);cursor:pointer;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    transition:transform 0.15s;
+  }
+  .cta-ghost:active{transform:scale(0.97);}
+
+  /* Form */
+  .section{margin-bottom:24px;}
+  .title{font-size:22px;font-weight:800;letter-spacing:-0.4px;line-height:1.25;margin-bottom:10px;}
+  .subtitle{font-size:14px;color:var(--text-sec);margin-bottom:16px;line-height:1.45;}
+
+  .input{
+    width:100%;
+    background:var(--glass);border:1.5px solid var(--glass-border);
+    border-radius:14px;padding:16px;font-size:16px;color:var(--text);
+    font-family:inherit;outline:none;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    transition:border-color 0.2s;resize:none;
+  }
+  .input:focus{border-color:var(--red);}
+  .input::placeholder{color:var(--text-dim);}
+  textarea.input{min-height:110px;line-height:1.5;}
+
+  /* Goal Cards */
+  .goals{display:flex;flex-direction:column;gap:10px;}
+  .goal{
+    display:flex;align-items:center;gap:14px;
+    padding:16px;border-radius:16px;cursor:pointer;
+    background:var(--glass);border:1.5px solid var(--glass-border);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    transition:all 0.25s;
+  }
+  .goal.on{border-color:var(--red);background:rgba(255,48,64,0.08);}
+  .goal-ic{width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+  .goal.on .goal-ic{background:var(--red-soft);}
+  .goal h4{font-size:15px;font-weight:600;}
+  .goal p{font-size:13px;color:var(--text-sec);margin-top:2px;}
+
+  /* Toggles */
+  .toggle-row{
+    display:flex;align-items:center;gap:14px;
+    padding:14px 16px;margin-bottom:8px;border-radius:16px;cursor:pointer;
+    background:var(--glass);border:1.5px solid var(--glass-border);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    transition:all 0.25s;
+  }
+  .toggle-row.on{border-color:var(--red);background:rgba(255,48,64,0.06);}
+  .toggle-row .t-icon{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .toggle-row.on .t-icon{background:var(--red-soft);}
+  .t-info{flex:1;}
+  .t-info h4{font-size:14px;font-weight:600;}
+  .t-info p{font-size:12px;color:var(--text-sec);}
+  .sw{width:46px;height:26px;border-radius:13px;background:rgba(255,255,255,0.08);position:relative;flex-shrink:0;transition:background 0.25s;}
+  .sw::after{content:'';width:20px;height:20px;border-radius:10px;background:#fff;position:absolute;top:3px;left:3px;transition:transform 0.25s cubic-bezier(0.4,0,0.2,1);box-shadow:0 1px 3px rgba(0,0,0,0.3);}
+  .toggle-row.on .sw{background:var(--red);}
+  .toggle-row.on .sw::after{transform:translateX(20px);}
+
+  /* Guide Steps */
+  .steps{display:flex;flex-direction:column;gap:16px;margin-bottom:24px;}
+  .step{display:flex;gap:12px;}
+  .step-n{width:26px;height:26px;border-radius:13px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;margin-top:1px;}
+  .step-t{font-size:14px;line-height:1.5;color:var(--text-sec);}
+  .step-t b{color:var(--text);font-weight:600;}
+
+  .api-wrap{position:relative;margin-top:16px;}
+  .api-wrap .input{padding-right:54px;}
+  .api-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--red-soft);border:none;border-radius:8px;padding:6px 10px;color:var(--red);font-size:12px;font-weight:600;cursor:pointer;}
+
+  /* LLM Cards */
+  .llm{
+    display:flex;align-items:center;gap:12px;
+    padding:14px 16px;margin-bottom:8px;border-radius:16px;cursor:pointer;
+    background:var(--glass);border:1.5px solid var(--glass-border);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    transition:all 0.25s;
+  }
+  .llm.sel{border-color:var(--red);background:rgba(255,48,64,0.08);}
+  .llm-av{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .llm-d{flex:1;}
+  .llm-d h4{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .llm-d p{font-size:12px;color:var(--text-sec);margin-top:2px;}
+  .tag{display:inline-block;padding:2px 7px;border-radius:6px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;}
+  .tag-r{background:var(--red-soft);color:var(--red);}
+  .tag-g{background:rgba(52,211,153,0.1);color:var(--success);}
+  .tag-p{background:rgba(168,85,247,0.1);color:var(--purple);}
+  .dot{width:20px;height:20px;border-radius:10px;border:2px solid rgba(255,255,255,0.15);flex-shrink:0;position:relative;transition:all 0.2s;}
+  .llm.sel .dot{border-color:var(--red);background:var(--red);}
+  .llm.sel .dot::after{content:'✓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:11px;font-weight:700;}
+
+  /* Tree */
+  .tree-wrap{display:flex;flex-direction:column;align-items:center;padding:24px 0;}
+  .tree-core{
+    padding:16px 32px;border-radius:16px;font-size:16px;font-weight:700;
+    background:linear-gradient(135deg,var(--red),var(--red-dark));
+    box-shadow:0 6px 24px var(--red-glow);position:relative;text-align:center;
+  }
+  .tree-core::after{content:'';width:2px;height:24px;background:rgba(255,255,255,0.1);position:absolute;bottom:-24px;left:50%;}
+  .tree-limbs{display:flex;gap:8px;margin-top:24px;width:100%;}
+  .limb{
+    flex:1;padding:16px 8px;text-align:center;border-radius:16px;cursor:pointer;
+    background:var(--glass);border:1.5px solid var(--glass-border);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    transition:all 0.25s;position:relative;
+  }
+  .limb::before{content:'';width:2px;height:12px;background:rgba(255,255,255,0.06);position:absolute;top:-12px;left:50%;}
+  .limb:hover{border-color:rgba(255,48,64,0.4);}
+  .limb .l-ic{font-size:24px;margin-bottom:6px;}
+  .limb h4{font-size:12px;font-weight:600;margin-bottom:3px;}
+  .limb p{font-size:10px;color:var(--text-dim);}
+  .limb .l-model{margin-top:8px;padding:5px 8px;background:var(--red-soft);border-radius:8px;font-size:10px;font-weight:600;color:var(--red);}
+
+  /* Popup */
+  .overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:100;display:none;align-items:flex-end;justify-content:center;}
+  .overlay.show{display:flex;}
+  .sheet{width:100%;max-width:430px;background:rgba(20,20,22,0.95);backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);border:1px solid var(--glass-border);border-radius:24px 24px 0 0;padding:8px 20px calc(var(--safe-bottom) + 20px);max-height:70vh;overflow-y:auto;animation:sheetUp 0.4s cubic-bezier(0.22, 1, 0.36, 1);}
+  @keyframes sheetUp{from{transform:translateY(100%);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .sheet-handle{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,0.15);margin:8px auto 18px;}
+  .sheet-title{font-size:18px;font-weight:700;margin-bottom:14px;text-align:center;}
+
+  /* Proactivity */
+  .proact{padding:16px;margin-bottom:10px;border-radius:16px;cursor:pointer;background:var(--glass);border:1.5px solid var(--glass-border);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);transition:all 0.25s;}
+  .proact.on{border-color:var(--red);background:rgba(255,48,64,0.06);}
+  .proact h4{font-size:15px;font-weight:600;margin-bottom:3px;}
+  .proact p{font-size:13px;color:var(--text-sec);line-height:1.4;}
+
+  /* Deploy */
+  .deploy-box{
+    margin:24px 0;padding:36px 20px;text-align:center;
+    border-radius:24px;position:relative;overflow:hidden;
+    background:var(--glass-strong);
+    border:2px solid var(--red);
+    box-shadow:0 0 60px rgba(255,48,64,0.15);
+  }
+  .deploy-box::before{content:'';position:absolute;top:-60%;left:-30%;width:160%;height:160%;background:radial-gradient(circle,rgba(255,48,64,0.08),transparent 60%);pointer-events:none;}
+  .deploy-price{font-size:60px;font-weight:900;letter-spacing:-2px;position:relative;}
+  .deploy-price sup{font-size:24px;vertical-align:super;}
+  .deploy-desc{font-size:13px;color:var(--text-sec);margin:4px 0 20px;}
+  .deploy-pills{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
+  .deploy-pill{padding:6px 12px;background:rgba(255,255,255,0.04);border-radius:100px;font-size:12px;color:var(--text-sec);font-weight:500;border:1px solid var(--glass-border);}
+
+  /* Bottom */
+  .bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;padding:12px 20px calc(var(--safe-bottom) + 16px);background:linear-gradient(to top, var(--bg) 70%, transparent);z-index:50;}
+
+  .sep{height:1px;background:var(--glass-border);margin:20px 0;}
+
+  /* Nickname */
+  .nick-orb{width:72px;height:72px;border-radius:22px;background:linear-gradient(135deg,var(--red),#880015);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;margin:0 auto 20px;box-shadow:0 8px 28px var(--red-glow);}
+
+  .spacer{flex:1;} .s-sm{height:14px;} .s-md{height:20px;} .s-lg{height:30px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Landing -->
+  <div class="screen active" id="s-landing">
+    <div class="landing-wrap">
+      <div class="hero-orb">🦞</div>
+      <h1 class="hero-title">Rent Your<br><em>AI Claw.</em></h1>
+      <p class="hero-sub">No code. No servers. No pain. We deploy a fully configured AI agent in your Telegram bot — in 60 seconds.</p>
+      <div class="hero-stats">
+        <div class="stat-card">
+          <div class="stat-num">60s</div>
+          <div class="stat-label">Deploy</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">$2</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">6+</div>
+          <div class="stat-label">LLMs</div>
+        </div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <button class="cta" onclick="go(1)">Create Your Agent</button>
+    <div class="s-md"></div>
+  </div>
+
+  <!-- Step 1: Describe -->
+  <div class="screen" id="s-1">
+    <div class="hdr">
+      <button class="hdr-back" onclick="back(0)"><svg viewBox="0 0 10 17" fill="none"><path d="M9 1L1.5 8.5L9 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Back</button>
+      <span class="hdr-pill">1 / 6</span>
+    </div>
+    <div class="prog"><div class="prog-bar" style="width:16.6%"></div></div>
+    <div class="section">
+      <h2 class="title">Tell your agent<br>what to do.</h2>
+      <p class="subtitle">Write in plain language. It handles the rest.</p>
+      <textarea class="input" placeholder="e.g. Manage my social media, reply to DMs, analyze engagement, schedule content..."></textarea>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom"><button class="cta" onclick="go(2)">Continue</button></div>
+  </div>
+
+  <!-- Step 2: Goal -->
+  <div class="screen" id="s-2">
+    <div class="hdr">
+      <button class="hdr-back" onclick="back(1)"><svg viewBox="0 0 10 17" fill="none"><path d="M9 1L1.5 8.5L9 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Back</button>
+      <span class="hdr-pill">2 / 6</span>
+    </div>
+    <div class="prog"><div class="prog-bar" style="width:33%"></div></div>
+    <div class="section">
+      <h2 class="title">What's your<br>main goal?</h2>
+      <p class="subtitle">We'll pre-configure everything for you.</p>
+      <div class="goals">
+        <div class="goal" onclick="pick(this,'goal')"><div class="goal-ic">💼</div><div><h4>Business Automation</h4><p>Workflows & operations</p></div></div>
+        <div class="goal" onclick="pick(this,'goal')"><div class="goal-ic">📱</div><div><h4>Social Media</h4><p>Content & engagement</p></div></div>
+        <div class="goal" onclick="pick(this,'goal')"><div class="goal-ic">💻</div><div><h4>Development</h4><p>Code, debug & deploy</p></div></div>
+        <div class="goal" onclick="pick(this,'goal')"><div class="goal-ic">📊</div><div><h4>Research & Analytics</h4><p>Data analysis & insights</p></div></div>
+        <div class="goal" onclick="pick(this,'goal')"><div class="goal-ic">🎯</div><div><h4>Personal Assistant</h4><p>Daily tasks & calendar</p></div></div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom"><button class="cta" onclick="go(3)">Continue</button></div>
+  </div>
+
+  <!-- Step 3: Capabilities -->
+  <div class="screen" id="s-3">
+    <div class="hdr">
+      <button class="hdr-back" onclick="back(2)"><svg viewBox="0 0 10 17" fill="none"><path d="M9 1L1.5 8.5L9 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Back</button>
+      <span class="hdr-pill">3 / 6</span>
+    </div>
+    <div class="prog"><div class="prog-bar" style="width:50%"></div></div>
+    <div class="section">
+      <h2 class="title">Toggle capabilities.</h2>
+      <p class="subtitle">All included. No extra cost.</p>
+      <div class="toggle-row on" onclick="tog(this)"><div class="t-icon">🌐</div><div class="t-info"><h4>Human Browser</h4><p>Browse web like a human</p></div><div class="sw"></div></div>
+      <div class="toggle-row on" onclick="tog(this)"><div class="t-icon">📸</div><div class="t-info"><h4>Instagram + X + LinkedIn</h4><p>Social accounts</p></div><div class="sw"></div></div>
+      <div class="toggle-row" onclick="tog(this)"><div class="t-icon">🎙️</div><div class="t-info"><h4>Voice Messages</h4><p>Voice notes support</p></div><div class="sw"></div></div>
+      <div class="toggle-row on" onclick="tog(this)"><div class="t-icon">📄</div><div class="t-info"><h4>Google Docs</h4><p>Docs & editing</p></div><div class="sw"></div></div>
+      <div class="toggle-row" onclick="tog(this)"><div class="t-icon">📅</div><div class="t-info"><h4>Calendar</h4><p>Events & scheduling</p></div><div class="sw"></div></div>
+      <div class="toggle-row" onclick="tog(this)"><div class="t-icon">📈</div><div class="t-info"><h4>Analytics</h4><p>Metrics & reports</p></div><div class="sw"></div></div>
+      <div class="toggle-row" onclick="tog(this)"><div class="t-icon">▶️</div><div class="t-info"><h4>YouTube</h4><p>Channel management</p></div><div class="sw"></div></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom"><button class="cta" onclick="go(4)">Continue</button></div>
+  </div>
+
+  <!-- Step 4: BotFather + LLM -->
+  <div class="screen" id="s-4">
+    <div class="hdr">
+      <button class="hdr-back" onclick="back(3)"><svg viewBox="0 0 10 17" fill="none"><path d="M9 1L1.5 8.5L9 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Back</button>
+      <span class="hdr-pill">4 / 6</span>
+    </div>
+    <div class="prog"><div class="prog-bar" style="width:66%"></div></div>
+    <div class="section">
+      <h2 class="title">Connect your bot</h2>
+      <p class="subtitle">Create a bot via @BotFather, then paste the token.</p>
+      <div class="steps">
+        <div class="step"><div class="step-n">1</div><div class="step-t">Open <b>@BotFather</b> in Telegram</div></div>
+        <div class="step"><div class="step-n">2</div><div class="step-t">Send <b>/newbot</b> and follow prompts</div></div>
+        <div class="step"><div class="step-n">3</div><div class="step-t">Copy your <b>API Token</b></div></div>
+        <div class="step"><div class="step-n">4</div><div class="step-t">Paste it below</div></div>
+      </div>
+      <div class="api-wrap">
+        <input class="input" type="text" placeholder="Bot API Token..." />
+        <button class="api-btn">Paste</button>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div class="section">
+      <h2 class="title">Choose AI Brain</h2>
+      <p class="subtitle">Select the LLM that powers your agent.</p>
+      <div class="llm" onclick="llmPick(this,0)"><div class="llm-av" style="background:linear-gradient(135deg,#D4A574,#8B6914);">⚡</div><div class="llm-d"><h4>Claude Haiku 4.5 <span class="tag tag-r">FAST</span></h4><p>Lightning fast</p></div><div class="dot"></div></div>
+      <div class="llm sel" onclick="llmPick(this,0)"><div class="llm-av" style="background:linear-gradient(135deg,#D4A574,#8B6914);">🧠</div><div class="llm-d"><h4>Claude Sonnet 4.6 <span class="tag tag-r">RECOMMENDED</span></h4><p>Best balance</p></div><div class="dot"></div></div>
+      <div class="llm" onclick="llmPick(this,0)"><div class="llm-av" style="background:linear-gradient(135deg,#D4A574,#8B6914);">👑</div><div class="llm-d"><h4>Claude Opus 4.6</h4><p>Max reasoning</p></div><div class="dot"></div></div>
+      <div class="llm" onclick="llmPick(this,0)"><div class="llm-av" style="background:linear-gradient(135deg,#10A37F,#066);">💎</div><div class="llm-d"><h4>Codex 5.3 <span class="tag tag-g">NEW</span></h4><p>OpenAI latest</p></div><div class="dot"></div></div>
+      <div class="llm" onclick="llmPick(this,0)"><div class="llm-av" style="background:linear-gradient(135deg,#4A90D9,#2C5AA0);">🌙</div><div class="llm-d"><h4>Kimi K2.5</h4><p>Multilingual</p></div><div class="dot"></div></div>
+      <div class="llm" onclick="llmPick(this,1)"><div class="llm-av" style="background:linear-gradient(135deg,var(--red),#800);">⚙️</div><div class="llm-d"><h4>Custom Routing <span class="tag tag-p">PRO</span></h4><p>Different LLMs per task</p></div><div class="dot"></div></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom"><button class="cta" onclick="go(5)">Continue</button></div>
+  </div>
+
+  <!-- Custom Routing -->
+  <div class="screen" id="s-routing">
+    <div class="hdr">
+      <button class="hdr-back" onclick="back(4)"><svg viewBox="0 0 10 17" fill="none"><path d="M9 1L1.5 8.5L9 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Back</button>
+      <span class="hdr-pill">Routing</span>
+    </div>
+    <div class="s-sm"></div>
+    <div class="section" style="text-align:center;">
+      <h2 class="title">Smart Routing</h2>
+      <p class="subtitle">Tap each branch to assign a model.</p>
+    </div>
+    <div class="tree-wrap">
+      <div class="tree-core">🦞 AI Agent</div>
+      <div class="tree-limbs">
+        <div class="limb" onclick="openPop('coding')"><div class="l-ic">💻</div><h4>Coding</h4><p>Code & Debug</p><div class="l-model" id="m-coding">Select</div></div>
+        <div class="limb" onclick="openPop('everyday')"><div class="l-ic">📋</div><h4>Everyday</h4><p>Daily Tasks</p><div class="l-model" id="m-everyday">Select</div></div>
+        <div class="limb" onclick="openPop('cron')"><div class="l-ic">⏰</div><h4>Cron</h4><p>Scheduled</p><div class="l-model" id="m-cron">Select</div></div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom"><button class="cta" onclick="go(5)">Continue</button></div>
+  </div>
+
+  <!-- Step 5: Nickname + Proactivity -->
+  <div class="screen" id="s-5">
+    <div class="hdr">
+      <button class="hdr-back" onclick="back(4)"><svg viewBox="0 0 10 17" fill="none"><path d="M9 1L1.5 8.5L9 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Back</button>
+      <span class="hdr-pill">5 / 6</span>
+    </div>
+    <div class="prog"><div class="prog-bar" style="width:83%"></div></div>
+    <div class="s-md"></div>
+    <div class="nick-orb" id="nick-av">?</div>
+    <div class="section" style="text-align:center;">
+      <h2 class="title">Name your agent</h2>
+      <p class="subtitle">Give it a personality.</p>
+      <input class="input" type="text" placeholder="e.g. Clawde, Atlas, Jarvis..." oninput="document.getElementById('nick-av').textContent=this.value?this.value[0].toUpperCase():'?'" style="text-align:center;font-size:18px;font-weight:700;" />
+    </div>
+    <div class="sep"></div>
+    <div class="section">
+      <h2 class="title">Proactivity</h2>
+      <p class="subtitle">How much initiative should it take?</p>
+      <div class="proact" onclick="pick(this,'proact')"><h4>🔇 Only when asked</h4><p>Responds only to direct messages.</p></div>
+      <div class="proact on" onclick="pick(this,'proact')"><h4>💡 Smart nudges</h4><p>Suggests improvements & reminders.</p></div>
+      <div class="proact" onclick="pick(this,'proact')"><h4>🚀 Full autopilot</h4><p>Maximum autonomy. Takes action.</p></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom"><button class="cta" onclick="go(6)">Continue</button></div>
+  </div>
+
+  <!-- Step 6: Deploy -->
+  <div class="screen" id="s-6">
+    <div class="hdr">
+      <button class="hdr-back" onclick="back(5)"><svg viewBox="0 0 10 17" fill="none"><path d="M9 1L1.5 8.5L9 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Back</button>
+      <span class="hdr-pill">6 / 6</span>
+    </div>
+    <div class="prog"><div class="prog-bar" style="width:100%"></div></div>
+    <div class="s-lg"></div>
+    <div style="text-align:center;">
+      <h2 class="title">Ready to launch.</h2>
+      <p class="subtitle">Your agent is configured & waiting.</p>
+    </div>
+    <div class="deploy-box">
+      <div class="deploy-price"><sup>$</sup>2</div>
+      <div class="deploy-desc">One-time deploy. Everything included.</div>
+      <div class="deploy-pills">
+        <span class="deploy-pill">☁️ Hosting</span>
+        <span class="deploy-pill">🧠 LLM Credits</span>
+        <span class="deploy-pill">🔄 Updates</span>
+        <span class="deploy-pill">📊 Dashboard</span>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom"><button class="cta" id="deploy-btn" onclick="deploy()">🦞 Born your Agent</button></div>
+  </div>
+</div>
+
+<!-- Popup -->
+<div class="overlay" id="pop">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title" id="pop-title">Select Model</h3>
+    <div id="pop-body"></div>
+  </div>
+</div>
+
+<script>
+function go(n) {
+  const cur = document.querySelector('.screen.active');
+  const tgt = n === 'routing' ? document.getElementById('s-routing') : document.getElementById('s-' + n);
+  if (cur) { cur.classList.remove('active'); cur.classList.add('exit'); setTimeout(() => cur.classList.remove('exit'), 450); }
+  tgt.classList.add('active'); tgt.scrollTop = 0;
+}
+function back(n) {
+  const cur = document.querySelector('.screen.active');
+  const tgt = n === 0 ? document.getElementById('s-landing') : n === 'routing' ? document.getElementById('s-routing') : document.getElementById('s-' + n);
+  if (cur) { cur.classList.remove('active'); cur.style.transform='translateX(40px) scale(0.98)'; cur.style.opacity='0'; setTimeout(()=>{cur.style.transform='';cur.style.opacity='';},450); }
+  tgt.style.transform='translateX(-40px) scale(0.98)'; tgt.classList.add('active');
+  requestAnimationFrame(()=>{tgt.style.transform='';});tgt.scrollTop=0;
+}
+function pick(el, cls) {
+  const s = cls === 'goal' ? '.goal' : '.proact';
+  el.closest('.section').querySelectorAll(s).forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+}
+function tog(el) { el.classList.toggle('on'); }
+function llmPick(el, isCustom) {
+  el.closest('.section').querySelectorAll('.llm').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  if (isCustom) setTimeout(() => go('routing'), 300);
+}
+
+const models = {
+  coding: [{n:'Claude Opus 4.6',r:1,i:'👑'},{n:'Kimi K2.5',r:1,i:'🌙'},{n:'Codex 5.3',r:0,i:'💎'},{n:'Claude Sonnet 4.6',r:0,i:'🧠'},{n:'Claude Haiku 4.5',r:0,i:'⚡'}],
+  everyday: [{n:'Claude Sonnet 4.6',r:1,i:'🧠'},{n:'Codex 5.3',r:1,i:'💎'},{n:'Claude Opus 4.6',r:0,i:'👑'},{n:'Kimi K2.5',r:0,i:'🌙'},{n:'Claude Haiku 4.5',r:0,i:'⚡'}],
+  cron: [{n:'Claude Haiku 4.5',r:1,i:'⚡'},{n:'Claude Sonnet 4.6',r:0,i:'🧠'},{n:'Kimi K2.5',r:0,i:'🌙'},{n:'Codex 5.3',r:0,i:'💎'},{n:'Claude Opus 4.6',r:0,i:'👑'}]
+};
+let curType='';
+function openPop(type) {
+  curType=type;
+  const titles={coding:'💻 Coding',everyday:'📋 Everyday',cron:'⏰ Cron'};
+  document.getElementById('pop-title').textContent=titles[type]+' Model';
+  document.getElementById('pop-body').innerHTML=models[type].map(m=>`<div class="llm" onclick="pickModel(this,'${m.n}')"><div class="llm-av" style="background:var(--glass-strong);">${m.i}</div><div class="llm-d"><h4>${m.n} ${m.r?'<span class=\\"tag tag-r\\">RECOMMENDED</span>':''}</h4></div><div class="dot"></div></div>`).join('');
+  document.getElementById('pop').classList.add('show');
+}
+function pickModel(el, name) {
+  el.closest('#pop-body').querySelectorAll('.llm').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('m-'+curType).textContent=name;
+  setTimeout(()=>document.getElementById('pop').classList.remove('show'),300);
+}
+document.getElementById('pop').addEventListener('click',function(e){if(e.target===this)this.classList.remove('show');});
+
+function deploy() {
+  const btn=document.getElementById('deploy-btn');
+  btn.textContent='⏳ Deploying...';btn.style.opacity='0.7';
+  setTimeout(()=>{btn.textContent='✅ Agent is Live!';btn.style.background='var(--success)';btn.style.opacity='1';btn.style.boxShadow='0 4px 24px rgba(52,211,153,0.3)';},2200);
+}
+
+document.addEventListener('touchmove',function(e){if(!e.target.closest('.screen'))e.preventDefault();},{passive:false});
+</script>
+</body>
+</html>

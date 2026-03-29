@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>RentYourClaw — Prototype 1: Dark Minimal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --bg: #0A0A0B;
+    --card: #141416;
+    --card-border: rgba(255,255,255,0.06);
+    --red: #FF2D2D;
+    --red-glow: rgba(255,45,45,0.25);
+    --red-soft: rgba(255,45,45,0.12);
+    --text: #FFFFFF;
+    --text-secondary: rgba(255,255,255,0.55);
+    --text-tertiary: rgba(255,255,255,0.3);
+    --surface: #1C1C1F;
+    --surface-hover: #242428;
+    --success: #30D158;
+    --radius: 16px;
+    --radius-sm: 12px;
+    --radius-xs: 8px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'SF Pro Display', 'SF Pro Text', 'Inter', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    touch-action: pan-y;
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #app {
+    width: 100%; height: 100%;
+    position: relative;
+    overflow: hidden;
+    max-width: 430px;
+    margin: 0 auto;
+  }
+
+  .screen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transform: translateX(30px);
+    pointer-events: none;
+    transition: opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 20px;
+    padding-top: calc(var(--safe-top) + 16px);
+    padding-bottom: calc(var(--safe-bottom) + 100px);
+  }
+
+  .screen.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .screen.exit-left {
+    opacity: 0;
+    transform: translateX(-30px);
+    pointer-events: none;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0 24px;
+    min-height: 44px;
+  }
+  .header-back {
+    display: flex; align-items: center; gap: 4px;
+    color: var(--red);
+    font-size: 17px; font-weight: 600;
+    cursor: pointer;
+    background: none; border: none;
+    padding: 8px 0;
+  }
+  .header-back svg { width: 10px; height: 17px; }
+  .header-title {
+    font-size: 17px; font-weight: 700;
+    position: absolute; left: 50%; transform: translateX(-50%);
+  }
+  .header-step {
+    font-size: 13px; font-weight: 500;
+    color: var(--text-tertiary);
+    background: var(--surface);
+    padding: 4px 10px;
+    border-radius: 100px;
+  }
+
+  /* Landing */
+  .landing-hero {
+    flex: 1; display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    text-align: center;
+    padding: 40px 0 0;
+  }
+
+  .claw-icon {
+    width: 88px; height: 88px;
+    background: linear-gradient(135deg, var(--red), #CC0000);
+    border-radius: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 44px;
+    margin-bottom: 28px;
+    box-shadow: 0 8px 32px var(--red-glow), 0 0 0 1px rgba(255,45,45,0.15);
+    position: relative;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .claw-icon::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 25px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    padding: 1px;
+  }
+
+  .landing-title {
+    font-size: 32px; font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.15;
+    margin-bottom: 14px;
+  }
+  .landing-title span { color: var(--red); }
+
+  .landing-subtitle {
+    font-size: 16px; font-weight: 400;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    max-width: 320px;
+    margin-bottom: 40px;
+  }
+
+  .features-row {
+    display: flex; gap: 10px;
+    width: 100%;
+    margin-bottom: 32px;
+  }
+  .feature-chip {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 14px 8px;
+    text-align: center;
+    font-size: 12px; font-weight: 600;
+    color: var(--text-secondary);
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
+  }
+  .feature-chip .icon {
+    width: 32px; height: 32px;
+    background: var(--red-soft);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  /* Primary Button */
+  .btn-primary {
+    width: 100%;
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 18px 24px;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.3s;
+    box-shadow: 0 4px 24px var(--red-glow);
+    letter-spacing: -0.2px;
+  }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-primary::after {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 50%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.12), transparent);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .btn-secondary {
+    width: 100%;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 16px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s;
+  }
+  .btn-secondary:active { transform: scale(0.97); background: var(--surface-hover); }
+
+  /* Form Elements */
+  .form-section { margin-bottom: 28px; }
+  .form-label {
+    font-size: 20px; font-weight: 700;
+    letter-spacing: -0.3px;
+    line-height: 1.3;
+    margin-bottom: 14px;
+  }
+  .form-sublabel {
+    font-size: 14px; font-weight: 400;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+
+  .text-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    font-size: 16px;
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: none;
+  }
+  .text-input:focus { border-color: var(--red); }
+  .text-input::placeholder { color: var(--text-tertiary); }
+
+  textarea.text-input { min-height: 100px; line-height: 1.5; }
+
+  /* Capability Toggles */
+  .capability-card {
+    display: flex; align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 10px;
+    gap: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .capability-card.active { border-color: var(--red); background: var(--red-soft); }
+  .capability-card .cap-icon {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .capability-card.active .cap-icon { background: var(--red-glow); }
+  .cap-info { flex: 1; }
+  .cap-info h4 { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .cap-info p { font-size: 13px; color: var(--text-secondary); }
+  .cap-toggle {
+    width: 48px; height: 28px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.1);
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.25s;
+  }
+  .cap-toggle::after {
+    content: '';
+    width: 22px; height: 22px;
+    border-radius: 11px;
+    background: #fff;
+    position: absolute;
+    top: 3px; left: 3px;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .capability-card.active .cap-toggle { background: var(--red); }
+  .capability-card.active .cap-toggle::after { transform: translateX(20px); }
+
+  /* Goal Cards */
+  .goal-grid { display: flex; flex-direction: column; gap: 10px; }
+  .goal-card {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface);
+    border: 1.5px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .goal-card.selected { border-color: var(--red); background: var(--red-soft); }
+  .goal-card .goal-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.05);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .goal-card.selected .goal-icon { background: var(--red-glow); }
+  .goal-card h4 { font-size: 15px; font-weight: 600; }
+  .goal-card p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+  /* BotFather Guide */
+  .guide-step {
+    display: flex; gap: 14px;
+    margin-bottom: 20px;
+  }
+  .guide-num {
+    width: 28px; height: 28px;
+    border-radius: 14px;
+    background: var(--red);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .guide-text { font-size: 15px; line-height: 1.5; color: var(--text-secondary); }
+  .guide-text strong { color: var(--text); font-weight: 600; }
+
+  .api-input-wrap {
+    position: relative;
+    margin-top: 20px;
+  }
+  .api-input-wrap .text-input { padding-right: 50px; }
+  .paste-btn {
+    position: absolute;
+    right: 12px; top: 50%; transform: translateY(-50%);
+    background: var(--red-soft);
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: var(--red);
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* LLM Selection */
+  .llm-card {
+    display: flex; align-items: center;
+    background: var(--surface);
+    border: 1.5px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 10px;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .llm-card.selected { border-color: var(--red); background: var(--red-soft); }
+  .llm-logo {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .llm-info { flex: 1; }
+  .llm-info h4 { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .llm-info p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-rec { background: var(--red-soft); color: var(--red); }
+  .badge-new { background: rgba(48,209,88,0.12); color: var(--success); }
+  .llm-radio {
+    width: 22px; height: 22px;
+    border-radius: 11px;
+    border: 2px solid rgba(255,255,255,0.2);
+    flex-shrink: 0;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .llm-card.selected .llm-radio {
+    border-color: var(--red);
+    background: var(--red);
+  }
+  .llm-card.selected .llm-radio::after {
+    content: '✓';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 12px; font-weight: 700;
+  }
+
+  /* Custom Routing Tree */
+  .tree-container {
+    display: flex; flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+  }
+  .tree-root {
+    background: linear-gradient(135deg, var(--red), #CC0000);
+    border-radius: var(--radius);
+    padding: 16px 28px;
+    font-size: 16px; font-weight: 700;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 4px 20px var(--red-glow);
+  }
+  .tree-root::after {
+    content: '';
+    width: 2px; height: 28px;
+    background: rgba(255,255,255,0.15);
+    position: absolute;
+    bottom: -28px; left: 50%;
+  }
+  .tree-branches {
+    display: flex; gap: 10px;
+    margin-top: 28px;
+    width: 100%;
+  }
+  .tree-branch {
+    flex: 1;
+    background: var(--surface);
+    border: 1.5px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 16px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .tree-branch::before {
+    content: '';
+    width: 2px; height: 16px;
+    background: rgba(255,255,255,0.1);
+    position: absolute;
+    top: -16px; left: 50%;
+  }
+  .tree-branch:hover { border-color: var(--red); }
+  .tree-branch .branch-icon { font-size: 24px; margin-bottom: 8px; }
+  .tree-branch h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .tree-branch p { font-size: 11px; color: var(--text-tertiary); }
+  .tree-branch .branch-model {
+    margin-top: 10px;
+    padding: 6px 8px;
+    background: var(--red-soft);
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--red);
+  }
+
+  /* Popup Overlay */
+  .popup-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .popup-overlay.visible { display: flex; }
+  .popup-sheet {
+    width: 100%; max-width: 430px;
+    background: var(--card);
+    border-radius: 20px 20px 0 0;
+    padding: 8px 20px calc(var(--safe-bottom) + 24px);
+    max-height: 70vh;
+    overflow-y: auto;
+    animation: slideUp 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .popup-handle {
+    width: 36px; height: 5px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.2);
+    margin: 8px auto 20px;
+  }
+  .popup-title {
+    font-size: 20px; font-weight: 700;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  /* Proactivity Cards */
+  .proactivity-card {
+    background: var(--surface);
+    border: 1.5px solid var(--card-border);
+    border-radius: var(--radius-sm);
+    padding: 18px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .proactivity-card.selected { border-color: var(--red); background: var(--red-soft); }
+  .proactivity-card h4 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .proactivity-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.4; }
+
+  /* Deploy Card */
+  .deploy-card {
+    background: linear-gradient(145deg, #1A1A1D, #141416);
+    border: 2px solid var(--red);
+    border-radius: 20px;
+    padding: 32px 24px;
+    text-align: center;
+    margin: 20px 0;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 40px var(--red-glow);
+  }
+  .deploy-card::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at 50% 30%, var(--red-soft), transparent 50%);
+    pointer-events: none;
+  }
+  .deploy-card .price-tag {
+    font-size: 56px; font-weight: 800;
+    letter-spacing: -2px;
+    position: relative;
+  }
+  .deploy-card .price-tag sup { font-size: 24px; font-weight: 700; vertical-align: super; }
+  .deploy-card .deploy-label {
+    font-size: 14px; color: var(--text-secondary);
+    margin-top: 4px;
+    margin-bottom: 20px;
+  }
+  .deploy-features {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+  .deploy-feat {
+    padding: 6px 14px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 100px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* Spacers */
+  .spacer { flex: 1; }
+  .spacer-sm { height: 16px; }
+  .spacer-md { height: 24px; }
+  .spacer-lg { height: 32px; }
+
+  /* Progress Bar */
+  .progress-wrap {
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: var(--red);
+    border-radius: 2px;
+    transition: width 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  /* Bottom Fixed Button Area */
+  .bottom-action {
+    position: fixed;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 100%; max-width: 430px;
+    padding: 12px 20px calc(var(--safe-bottom) + 16px);
+    background: linear-gradient(to top, var(--bg) 60%, transparent);
+    z-index: 50;
+  }
+
+  /* Nickname Input */
+  .nickname-preview {
+    width: 80px; height: 80px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, var(--red), #AA0000);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; font-weight: 800;
+    margin: 0 auto 20px;
+    box-shadow: 0 8px 32px var(--red-glow);
+  }
+
+  .screen::-webkit-scrollbar { display: none; }
+  .screen { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Pulse animation for deploy */
+  @keyframes pulse-red {
+    0%, 100% { box-shadow: 0 0 40px var(--red-glow); }
+    50% { box-shadow: 0 0 60px rgba(255,45,45,0.35); }
+  }
+  .deploy-card { animation: pulse-red 2.5s ease-in-out infinite; }
+
+  /* Telegram-style separator */
+  .separator {
+    height: 1px;
+    background: var(--card-border);
+    margin: 20px 0;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Screen 0: Landing -->
+  <div class="screen active" id="screen-landing">
+    <div class="landing-hero">
+      <div class="claw-icon">🦞</div>
+      <h1 class="landing-title">Your AI Agent.<br><span>One Click Away.</span></h1>
+      <p class="landing-subtitle">Skip the setup nightmare. We deploy a fully configured OpenClaw agent — personalized to your needs. Just answer a few questions.</p>
+      <div class="features-row">
+        <div class="feature-chip">
+          <div class="icon">⚡</div>
+          Instant Deploy
+        </div>
+        <div class="feature-chip">
+          <div class="icon">🧠</div>
+          Smart LLM
+        </div>
+        <div class="feature-chip">
+          <div class="icon">🔧</div>
+          Zero Config
+        </div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn-primary" onclick="goTo(1)">Hire Your Agent</button>
+    <div class="spacer-md"></div>
+  </div>
+
+  <!-- Screen 1: Tell Agent What To Do -->
+  <div class="screen" id="screen-1">
+    <div class="header">
+      <button class="header-back" onclick="goBack(0)">
+        <svg viewBox="0 0 10 17" fill="none"><path d="M9 1L1.5 8.5L9 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Back
+      </button>
+      <span class="header-step">1 of 6</span>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" style="width:16.6%"></div></div>
+    <div class="spacer-md"></div>
+    <div class="form-section">
+      <h2 class="form-label">Tell your agent what to do — in plain language.</h2>
+      <p class="form-sublabel">Describe your ideal assistant. It handles the rest.</p>
+      <textarea class="text-input" placeholder="e.g. I need an assistant that helps me manage my social media, responds to DMs, schedules posts, and analyzes engagement metrics..." rows="5"></textarea>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom-action">
+      <button class="btn-primary" onclick="goTo(2)">Continue</button>
+    </div>
+  </div>
+
+  <!-- Screen 2: Main Goal -->
+  <div class="screen" id="screen-2">
+    <div class="header">
+      <button class="header-back" onclick="goBack(1)">
+        <svg viewBox="0 0 10 17" fill="none"><path d="M9 1L1.5 8.5L9 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Back
+      </button>
+      <span class="header-step">2 of 6</span>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" style="width:33.2%"></div></div>
+    <div class="spacer-md"></div>
+    <div class="form-section">
+      <h2 class="form-label">What is your Main Goal?</h2>
+      <p class="form-sublabel">We'll configure your agent for you.</p>
+      <div class="goal-grid">
+        <div class="goal-card" onclick="selectGoal(this)">
+          <div class="goal-icon">💼</div>
+          <div>
+            <h4>Business Automation</h4>
+            <p>Automate workflows & operations</p>
+          </div>
+        </div>
+        <div class="goal-card" onclick="selectGoal(this)">
+          <div class="goal-icon">📱</div>
+          <div>
+            <h4>Social Media</h4>
+            <p>Content creation & management</p>
+          </div>
+        </div>
+        <div class="goal-card" onclick="selectGoal(this)">
+          <div class="goal-icon">💻</div>
+          <div>
+            <h4>Development</h4>
+            <p>Code, debug & deploy projects</p>
+          </div>
+        </div>
+        <div class="goal-card" onclick="selectGoal(this)">
+          <div class="goal-icon">📊</div>
+          <div>
+            <h4>Research & Analytics</h4>
+            <p>Data analysis & insights</p>
+          </div>
+        </div>
+        <div class="goal-card" onclick="selectGoal(this)">
+          <div class="goal-icon">🎯</div>
+          <div>
+            <h4>Personal Assistant</h4>
+            <p>Daily tasks & scheduling</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom-action">
+      <button class="btn-primary" onclick="goTo(3)">Continue</button>
+    </div>
+  </div>
+
+  <!-- Screen 3: Capabilities -->
+  <div class="screen" id="screen-3">
+    <div class="header">
+      <button class="header-back" onclick="goBack(2)">
+        <svg viewBox="0 0 10 17" fill="none"><path d="M9 1L1.5 8.5L9 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Back
+      </button>
+      <span class="header-step">3 of 6</span>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" style="width:50%"></div></div>
+    <div class="spacer-md"></div>
+    <div class="form-section">
+      <h2 class="form-label">Toggle what your agent can do.</h2>
+      <p class="form-sublabel">All included, no extra cost.</p>
+
+      <div class="capability-card active" onclick="toggleCap(this)">
+        <div class="cap-icon">🌐</div>
+        <div class="cap-info">
+          <h4>Human Browser</h4>
+          <p>Browse the web like a human</p>
+        </div>
+        <div class="cap-toggle"></div>
+      </div>
+
+      <div class="capability-card active" onclick="toggleCap(this)">
+        <div class="cap-icon">📸</div>
+        <div class="cap-info">
+          <h4>Instagram + X + LinkedIn</h4>
+          <p>Manage social accounts</p>
+        </div>
+        <div class="cap-toggle"></div>
+      </div>
+
+      <div class="capability-card" onclick="toggleCap(this)">
+        <div class="cap-icon">🎙️</div>
+        <div class="cap-info">
+          <h4>Voice Messages</h4>
+          <p>Send & receive voice notes</p>
+        </div>
+        <div class="cap-toggle"></div>
+      </div>
+
+      <div class="capability-card active" onclick="toggleCap(this)">
+        <div class="cap-icon">📄</div>
+        <div class="cap-info">
+          <h4>Google Docs</h4>
+          <p>Create & edit documents</p>
+        </div>
+        <div class="cap-toggle"></div>
+      </div>
+
+      <div class="capability-card" onclick="toggleCap(this)">
+        <div class="cap-icon">📅</div>
+        <div class="cap-info">
+          <h4>Calendar</h4>
+          <p>Schedule & manage events</p>
+        </div>
+        <div class="cap-toggle"></div>
+      </div>
+
+      <div class="capability-card" onclick="toggleCap(this)">
+        <div class="cap-icon">📈</div>
+        <div class="cap-info">
+          <h4>Analytics</h4>
+          <p>Track metrics & reports</p>
+        </div>
+        <div class="cap-toggle"></div>
+      </div>
+
+      <div class="capability-card" onclick="toggleCap(this)">
+        <div class="cap-icon">▶️</div>
+        <div class="cap-info">
+          <h4>YouTube</h4>
+          <p>Manage channel & content</p>
+        </div>
+        <div class="cap-toggle"></div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom-action">
+      <button class="btn-primary" onclick="goTo(4)">Continue</button>
+    </div>
+  </div>
+
+  <!-- Screen 4: BotFather + API Key -->
+  <div class="screen" id="screen-4">
+    <div class="header">
+      <button class="header-back" onclick="goBack(3)">
+        <svg viewBox="0 0 10 17" fill="none"><path d="M9 1L1.5 8.5L9 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Back
+      </button>
+      <span class="header-step">4 of 6</span>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" style="width:66.6%"></div></div>
+    <div class="spacer-md"></div>
+    <div class="form-section">
+      <h2 class="form-label">Create your bot in Telegram</h2>
+      <p class="form-sublabel">Your agent will live inside this bot. Follow these simple steps:</p>
+
+      <div class="guide-step">
+        <div class="guide-num">1</div>
+        <div class="guide-text">Open <strong>@BotFather</strong> in Telegram</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-num">2</div>
+        <div class="guide-text">Send <strong>/newbot</strong> and follow the prompts</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-num">3</div>
+        <div class="guide-text">Copy the <strong>API Token</strong> you receive</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-num">4</div>
+        <div class="guide-text">Paste it below — we'll handle everything else</div>
+      </div>
+
+      <div class="api-input-wrap">
+        <input class="text-input" type="text" placeholder="Paste your Bot API Token here..." />
+        <button class="paste-btn">Paste</button>
+      </div>
+    </div>
+
+    <div class="separator"></div>
+
+    <div class="form-section">
+      <h2 class="form-label">AI Brain of your agent</h2>
+      <p class="form-sublabel">Choose the LLM that powers your agent's intelligence.</p>
+
+      <div class="llm-card" onclick="selectLLM(this, false)">
+        <div class="llm-logo" style="background: linear-gradient(135deg, #D4A574, #8B6914);">🤖</div>
+        <div class="llm-info">
+          <h4>Claude Haiku 4.5 <span class="badge badge-rec">FAST</span></h4>
+          <p>Lightning fast for simple tasks</p>
+        </div>
+        <div class="llm-radio"></div>
+      </div>
+
+      <div class="llm-card selected" onclick="selectLLM(this, false)">
+        <div class="llm-logo" style="background: linear-gradient(135deg, #D4A574, #8B6914);">🧠</div>
+        <div class="llm-info">
+          <h4>Claude Sonnet 4.6 <span class="badge badge-rec">RECOMMENDED</span></h4>
+          <p>Best balance of speed & quality</p>
+        </div>
+        <div class="llm-radio"></div>
+      </div>
+
+      <div class="llm-card" onclick="selectLLM(this, false)">
+        <div class="llm-logo" style="background: linear-gradient(135deg, #D4A574, #8B6914);">👑</div>
+        <div class="llm-info">
+          <h4>Claude Opus 4.6</h4>
+          <p>Most powerful reasoning</p>
+        </div>
+        <div class="llm-radio"></div>
+      </div>
+
+      <div class="llm-card" onclick="selectLLM(this, false)">
+        <div class="llm-logo" style="background: linear-gradient(135deg, #10A37F, #066B53);">💎</div>
+        <div class="llm-info">
+          <h4>Codex 5.3 <span class="badge badge-new">NEW</span></h4>
+          <p>OpenAI's latest for code</p>
+        </div>
+        <div class="llm-radio"></div>
+      </div>
+
+      <div class="llm-card" onclick="selectLLM(this, false)">
+        <div class="llm-logo" style="background: linear-gradient(135deg, #4A90D9, #2C5AA0);">🌙</div>
+        <div class="llm-info">
+          <h4>Kimi K2.5</h4>
+          <p>Advanced multilingual model</p>
+        </div>
+        <div class="llm-radio"></div>
+      </div>
+
+      <div class="llm-card" onclick="selectLLM(this, true)">
+        <div class="llm-logo" style="background: linear-gradient(135deg, var(--red), #990000);">⚙️</div>
+        <div class="llm-info">
+          <h4>Custom Routing <span class="badge badge-rec">PRO</span></h4>
+          <p>Different LLMs for different tasks</p>
+        </div>
+        <div class="llm-radio"></div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom-action">
+      <button class="btn-primary" onclick="goTo(5)">Continue</button>
+    </div>
+  </div>
+
+  <!-- Screen 4.5: Custom Routing -->
+  <div class="screen" id="screen-routing">
+    <div class="header">
+      <button class="header-back" onclick="goBack(4)">
+        <svg viewBox="0 0 10 17" fill="none"><path d="M9 1L1.5 8.5L9 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Back
+      </button>
+      <span class="header-step">Custom Routing</span>
+    </div>
+    <div class="spacer-sm"></div>
+    <div class="form-section">
+      <h2 class="form-label" style="text-align:center;">Route tasks to the right model</h2>
+      <p class="form-sublabel" style="text-align:center;">Tap each branch to choose a model.</p>
+    </div>
+
+    <div class="tree-container">
+      <div class="tree-root">🦞 AI Agent</div>
+      <div class="tree-branches">
+        <div class="tree-branch" onclick="openRoutingPopup('coding')">
+          <div class="branch-icon">💻</div>
+          <h4>Coding</h4>
+          <p>Code & Debug</p>
+          <div class="branch-model" id="coding-model">Tap to select</div>
+        </div>
+        <div class="tree-branch" onclick="openRoutingPopup('everyday')">
+          <div class="branch-icon">📋</div>
+          <h4>Everyday</h4>
+          <p>Daily Tasks</p>
+          <div class="branch-model" id="everyday-model">Tap to select</div>
+        </div>
+        <div class="tree-branch" onclick="openRoutingPopup('cron')">
+          <div class="branch-icon">⏰</div>
+          <h4>Cron</h4>
+          <p>Automated</p>
+          <div class="branch-model" id="cron-model">Tap to select</div>
+        </div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom-action">
+      <button class="btn-primary" onclick="goTo(5)">Continue</button>
+    </div>
+  </div>
+
+  <!-- Screen 5: Nickname + Proactivity -->
+  <div class="screen" id="screen-5">
+    <div class="header">
+      <button class="header-back" onclick="goBack(4)">
+        <svg viewBox="0 0 10 17" fill="none"><path d="M9 1L1.5 8.5L9 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Back
+      </button>
+      <span class="header-step">5 of 6</span>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" style="width:83.3%"></div></div>
+    <div class="spacer-md"></div>
+
+    <div class="nickname-preview" id="nickname-avatar">?</div>
+
+    <div class="form-section">
+      <h2 class="form-label" style="text-align:center;">Name your agent</h2>
+      <p class="form-sublabel" style="text-align:center;">Give it a personality. Pick a nickname.</p>
+      <input class="text-input" type="text" placeholder="e.g. Clawde, Atlas, Jarvis..." oninput="updateAvatar(this.value)" style="text-align:center; font-size:18px; font-weight:600;" />
+    </div>
+
+    <div class="separator"></div>
+
+    <div class="form-section">
+      <h2 class="form-label">Proactivity Level</h2>
+      <p class="form-sublabel">How often should your agent take initiative?</p>
+
+      <div class="proactivity-card" onclick="selectProactivity(this)">
+        <h4>🔇 Only when asked</h4>
+        <p>Responds only to direct messages. Silent otherwise.</p>
+      </div>
+
+      <div class="proactivity-card selected" onclick="selectProactivity(this)">
+        <h4>💡 Smart nudges</h4>
+        <p>Suggests improvements and sends reminders. Balanced.</p>
+      </div>
+
+      <div class="proactivity-card" onclick="selectProactivity(this)">
+        <h4>🚀 Full autopilot</h4>
+        <p>Takes action proactively. Maximum autonomy.</p>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom-action">
+      <button class="btn-primary" onclick="goTo(6)">Continue</button>
+    </div>
+  </div>
+
+  <!-- Screen 6: Deploy -->
+  <div class="screen" id="screen-6">
+    <div class="header">
+      <button class="header-back" onclick="goBack(5)">
+        <svg viewBox="0 0 10 17" fill="none"><path d="M9 1L1.5 8.5L9 16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Back
+      </button>
+      <span class="header-step">6 of 6</span>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" style="width:100%"></div></div>
+    <div class="spacer-lg"></div>
+
+    <div style="text-align:center;">
+      <h2 class="form-label">Everything's ready.</h2>
+      <p class="form-sublabel">Your agent is configured and waiting to be born.</p>
+    </div>
+
+    <div class="deploy-card">
+      <div class="price-tag" style="position:relative;"><sup>$</sup>2</div>
+      <div class="deploy-label">One-time deploy fee. Everything included.</div>
+      <div class="deploy-features">
+        <span class="deploy-feat">☁️ Cloud Hosting</span>
+        <span class="deploy-feat">🧠 LLM Credits</span>
+        <span class="deploy-feat">🔄 Auto Updates</span>
+        <span class="deploy-feat">📊 Dashboard</span>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="bottom-action">
+      <button class="btn-primary" onclick="deployAgent()" style="font-size:18px;">
+        🦞 Born your Agent
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Routing Popup -->
+<div class="popup-overlay" id="routing-popup">
+  <div class="popup-sheet">
+    <div class="popup-handle"></div>
+    <h3 class="popup-title" id="popup-title">Select Model</h3>
+    <div id="popup-models"></div>
+  </div>
+</div>
+
+<script>
+  let currentScreen = 'landing';
+
+  function goTo(screenNum) {
+    const cur = document.querySelector('.screen.active');
+    const target = screenNum === 'routing'
+      ? document.getElementById('screen-routing')
+      : document.getElementById('screen-' + screenNum);
+
+    if (cur) {
+      cur.classList.remove('active');
+      cur.classList.add('exit-left');
+      setTimeout(() => cur.classList.remove('exit-left'), 400);
+    }
+    target.classList.add('active');
+    target.scrollTop = 0;
+    currentScreen = screenNum;
+  }
+
+  function goBack(screenNum) {
+    const cur = document.querySelector('.screen.active');
+    const target = screenNum === 0
+      ? document.getElementById('screen-landing')
+      : screenNum === 'routing'
+        ? document.getElementById('screen-routing')
+        : document.getElementById('screen-' + screenNum);
+
+    if (cur) {
+      cur.classList.remove('active');
+      cur.style.transform = 'translateX(30px)';
+      cur.style.opacity = '0';
+      setTimeout(() => { cur.style.transform = ''; cur.style.opacity = ''; }, 400);
+    }
+    target.style.transform = 'translateX(-30px)';
+    target.classList.add('active');
+    requestAnimationFrame(() => { target.style.transform = ''; });
+    target.scrollTop = 0;
+    currentScreen = screenNum;
+  }
+
+  function selectGoal(el) {
+    document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function toggleCap(el) {
+    el.classList.toggle('active');
+  }
+
+  function selectLLM(el, isCustom) {
+    el.closest('.form-section').querySelectorAll('.llm-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    if (isCustom) {
+      setTimeout(() => goTo('routing'), 300);
+    }
+  }
+
+  function selectProactivity(el) {
+    document.querySelectorAll('.proactivity-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function updateAvatar(val) {
+    const avatar = document.getElementById('nickname-avatar');
+    avatar.textContent = val ? val.charAt(0).toUpperCase() : '?';
+  }
+
+  // Routing Popup
+  const routingModels = {
+    coding: [
+      { name: 'Claude Opus 4.6', rec: true, icon: '👑' },
+      { name: 'Kimi K2.5', rec: true, icon: '🌙' },
+      { name: 'Codex 5.3', rec: false, icon: '💎' },
+      { name: 'Claude Sonnet 4.6', rec: false, icon: '🧠' },
+      { name: 'Claude Haiku 4.5', rec: false, icon: '🤖' },
+    ],
+    everyday: [
+      { name: 'Claude Sonnet 4.6', rec: true, icon: '🧠' },
+      { name: 'Codex 5.3', rec: true, icon: '💎' },
+      { name: 'Claude Opus 4.6', rec: false, icon: '👑' },
+      { name: 'Kimi K2.5', rec: false, icon: '🌙' },
+      { name: 'Claude Haiku 4.5', rec: false, icon: '🤖' },
+    ],
+    cron: [
+      { name: 'Claude Haiku 4.5', rec: true, icon: '🤖' },
+      { name: 'Claude Sonnet 4.6', rec: false, icon: '🧠' },
+      { name: 'Kimi K2.5', rec: false, icon: '🌙' },
+      { name: 'Codex 5.3', rec: false, icon: '💎' },
+      { name: 'Claude Opus 4.6', rec: false, icon: '👑' },
+    ]
+  };
+
+  let currentRoutingType = '';
+
+  function openRoutingPopup(type) {
+    currentRoutingType = type;
+    const titles = { coding: '💻 Coding Model', everyday: '📋 Everyday Model', cron: '⏰ Cron Model' };
+    document.getElementById('popup-title').textContent = titles[type];
+    const container = document.getElementById('popup-models');
+    container.innerHTML = routingModels[type].map(m => `
+      <div class="llm-card" onclick="selectRoutingModel(this, '${m.name}')">
+        <div class="llm-logo" style="background:var(--surface);font-size:20px;">${m.icon}</div>
+        <div class="llm-info">
+          <h4>${m.name} ${m.rec ? '<span class=\\"badge badge-rec\\">RECOMMENDED</span>' : ''}</h4>
+        </div>
+        <div class="llm-radio"></div>
+      </div>
+    `).join('');
+    document.getElementById('routing-popup').classList.add('visible');
+  }
+
+  function selectRoutingModel(el, name) {
+    el.closest('#popup-models').querySelectorAll('.llm-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById(currentRoutingType + '-model').textContent = name;
+    setTimeout(() => {
+      document.getElementById('routing-popup').classList.remove('visible');
+    }, 300);
+  }
+
+  document.getElementById('routing-popup').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('visible');
+  });
+
+  function deployAgent() {
+    const btn = document.querySelector('#screen-6 .btn-primary');
+    btn.textContent = '⏳ Deploying...';
+    btn.style.opacity = '0.7';
+    setTimeout(() => {
+      btn.textContent = '✅ Agent is Live!';
+      btn.style.background = 'var(--success)';
+      btn.style.opacity = '1';
+      btn.style.boxShadow = '0 4px 24px rgba(48,209,88,0.3)';
+    }, 2000);
+  }
+
+  // Prevent default touch behaviors
+  document.addEventListener('touchmove', function(e) {
+    const screen = e.target.closest('.screen');
+    if (!screen) e.preventDefault();
+  }, { passive: false });
+</script>
+</body>
+</html>

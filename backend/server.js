@@ -34,6 +34,7 @@ const crypto = require('crypto');
 
 const { db, queries } = require('./lib/db');
 const { generateConfig } = require('./lib/config-gen');
+const { getSkillList } = require('./lib/skills-registry');
 const { deployAgent, stopAgent, checkHealth, getAgentLogs, exportUserData, getServerStats } = require('./lib/deployer');
 const { validateInitData, extractUser, sendMessage } = require('./lib/telegram');
 const { createProxyRouter } = require('./lib/llm-proxy');
@@ -103,7 +104,7 @@ app.get('/health', (req, res) => {
 // === Deploy ===
 app.post('/api/deploy', authMiddleware, async (req, res) => {
   try {
-    const { name, botToken, description, goal, capabilities, model, proactivity, routing } = req.body;
+    const { name, botToken, description, goal, skills, capabilities, model, proactivity, routing } = req.body;
 
     if (!name || !botToken) {
       return res.status(400).json({ error: 'Name and botToken are required' });
@@ -125,6 +126,9 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
 
     // Generate config
     const proxyBaseUrl = process.env.PROXY_BASE_URL || `http://${HOST}:${PORT}`;
+    // Accept both new 'skills' field and legacy 'capabilities' field
+    const agentSkills = skills || capabilities || [];
+
     const config = generateConfig({
       agentId,
       name,
@@ -132,7 +136,7 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
       telegramUserId: req.tgUser.id,
       description,
       goal,
-      capabilities: capabilities || [],
+      skills: agentSkills,
       model: model || 'sonnet',
       proactivity: proactivity || 'smart',
       routing,
@@ -143,14 +147,14 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
       agentId, user.id, name, botToken,
       JSON.stringify(config),
       description || '', goal || 'personal',
-      JSON.stringify(capabilities || []),
+      JSON.stringify(agentSkills),
       model || 'sonnet', proactivity || 'smart'
     );
     queries.updateAgentServer.run(server.id, agentId);
     queries.updateAgentStatus.run('deploying', agentId);
 
     // Start deployment in background
-    deployStatus.set(agentId, { step: 0, total: 6, message: 'Queued...' });
+    deployStatus.set(agentId, { step: 0, total: 7, message: 'Queued...' });
 
     deployAgent(
       server,
@@ -165,7 +169,7 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
     ).then(async (result) => {
       if (result.success) {
         queries.updateAgentDeploy.run(result.containerId, agentId);
-        deployStatus.set(agentId, { step: 6, total: 6, message: 'Agent is live!', done: true });
+        deployStatus.set(agentId, { step: 7, total: 7, message: 'Agent is live!', done: true });
 
         if (TG_BOT_TOKEN) {
           await sendMessage(TG_BOT_TOKEN, req.tgUser.id,
@@ -174,11 +178,11 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
         }
       } else {
         queries.updateAgentStatus.run('error', agentId);
-        deployStatus.set(agentId, { step: 0, total: 6, message: result.error, done: true, error: true });
+        deployStatus.set(agentId, { step: 0, total: 7, message: result.error, done: true, error: true });
       }
     }).catch((err) => {
       queries.updateAgentStatus.run('error', agentId);
-      deployStatus.set(agentId, { step: 0, total: 6, message: err.message, done: true, error: true });
+      deployStatus.set(agentId, { step: 0, total: 7, message: err.message, done: true, error: true });
     });
 
     res.json({ agentId, status: 'deploying' });
@@ -188,13 +192,18 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
   }
 });
 
+// === Skills catalog ===
+app.get('/api/skills', (req, res) => {
+  res.json(getSkillList());
+});
+
 // === Status ===
 app.get('/api/status/:id', (req, res) => {
   const progress = deployStatus.get(req.params.id);
   if (!progress) {
     const agent = queries.getAgent.get(req.params.id);
     if (!agent) return res.status(404).json({ error: 'Agent not found' });
-    return res.json({ step: 6, total: 6, message: agent.status, done: true });
+    return res.json({ step: 7, total: 7, message: agent.status, done: true });
   }
   res.json(progress);
 });

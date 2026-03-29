@@ -394,6 +394,167 @@ function createProxyRouter(express) {
     }
   });
 
+  // Audio transcription endpoint (Whisper)
+  router.post('/:agentId/audio/transcriptions', express.json({ limit: '25mb' }), async (req, res) => {
+    try {
+      const { agentId } = req.params;
+      const { audio, format, duration } = req.body;
+
+      if (!audio) return res.status(400).json({ error: { message: 'Missing audio data' } });
+
+      // Check balance
+      const bal = checkBalance(agentId);
+      if (!bal.allowed) return res.status(402).json({ error: { message: 'Insufficient balance' } });
+
+      // Use Groq Whisper (free) or fall back to OpenAI
+      const GROQ_KEY = process.env.GROQ_API_KEY;
+      const OPENAI_KEY = process.env.OPENAI_API_KEY;
+      const useGroq = !!GROQ_KEY;
+      const apiKey = GROQ_KEY || OPENAI_KEY;
+      if (!apiKey) return res.status(500).json({ error: { message: 'Transcription not configured (set GROQ_API_KEY or OPENAI_API_KEY)' } });
+
+      const whisperUrl = useGroq
+        ? 'https://api.groq.com/openai/v1/audio/transcriptions'
+        : 'https://api.openai.com/v1/audio/transcriptions';
+      const whisperModel = useGroq ? 'whisper-large-v3-turbo' : 'whisper-1';
+
+      // Decode base64 audio
+      const audioBuffer = Buffer.from(audio, 'base64');
+      const boundary = '----FormBoundary' + Math.random().toString(36).slice(2);
+      const ext = format || 'ogg';
+      const mimeType = ext === 'ogg' ? 'audio/ogg' : `audio/${ext}`;
+
+      // Build multipart body manually
+      const partHeader = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.${ext}"\r\nContent-Type: ${mimeType}\r\n\r\n`);
+      const partFooter = Buffer.from(`\r\n--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\n${whisperModel}\r\n--${boundary}--\r\n`);
+      const body = Buffer.concat([partHeader, audioBuffer, partFooter]);
+
+      const whisperRes = await fetch(whisperUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        },
+        body,
+      });
+
+      const result = await whisperRes.json();
+
+      if (result.text) {
+        // Groq Whisper is free; OpenAI costs $0.006/min with 25% markup
+        const durationMin = Math.max(1, (duration || 10)) / 60;
+        const costCents = useGroq ? 0 : Math.max(1, Math.round(durationMin * 0.75));
+        logUsage(agentId, whisperModel, 0, 0, costCents);
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error('[proxy] Transcription error:', error.message);
+      res.status(500).json({ error: { message: 'Transcription failed: ' + error.message } });
+    }
+  });
+
+  // Image generation endpoint (multi-provider: Cloudflare Workers AI, Together AI, Gemini)
+  router.post('/:agentId/generate-image', express.json({ limit: '1mb' }), async (req, res) => {
+    try {
+      const { agentId } = req.params;
+      const { prompt, width, height } = req.body;
+
+      if (!prompt) return res.status(400).json({ error: { message: 'Missing prompt' } });
+
+      const bal = checkBalance(agentId);
+      if (!bal.allowed) return res.status(402).json({ error: { message: 'Insufficient balance' } });
+
+      const w = Math.min(width || 1024, 1440);
+      const h = Math.min(height || 1024, 1440);
+      console.log(`[proxy] Image gen for ${agentId}: "${prompt.slice(0, 60)}..."`);
+
+      let b64 = null;
+      let provider = 'none';
+
+      // Provider 1: Cloudflare Workers AI (free, 10K images/day)
+      const CF_ACCOUNT = process.env.CF_ACCOUNT_ID;
+      const CF_TOKEN = process.env.CF_API_TOKEN;
+      if (!b64 && CF_ACCOUNT && CF_TOKEN) {
+        try {
+          const cfRes = await fetch(
+            `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
+            {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${CF_TOKEN}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt, width: Math.min(w, 1024), height: Math.min(h, 1024) }),
+            }
+          );
+          if (cfRes.ok) {
+            const imgBuf = Buffer.from(await cfRes.arrayBuffer());
+            b64 = imgBuf.toString('base64');
+            provider = 'cloudflare-flux';
+            console.log(`[proxy] CF image OK (${Math.round(imgBuf.length / 1024)}KB)`);
+          } else {
+            const err = await cfRes.text().catch(() => '');
+            console.warn(`[proxy] CF failed ${cfRes.status}: ${err.slice(0, 100)}`);
+          }
+        } catch (e) { console.warn('[proxy] CF error:', e.message); }
+      }
+
+      // Provider 2: Together AI (free FLUX model with credits)
+      const TOGETHER_KEY = process.env.TOGETHER_API_KEY;
+      if (!b64 && TOGETHER_KEY) {
+        try {
+          const tRes = await fetch('https://api.together.xyz/v1/images/generations', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${TOGETHER_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'black-forest-labs/FLUX.1-schnell-Free',
+              prompt, width: w, height: h, n: 1, response_format: 'b64_json',
+            }),
+          });
+          const tData = await tRes.json();
+          if (tData.data?.[0]?.b64_json) {
+            b64 = tData.data[0].b64_json;
+            provider = 'together-flux';
+          } else if (tData.error) {
+            console.warn('[proxy] Together error:', tData.error.message?.slice(0, 100));
+          }
+        } catch (e) { console.warn('[proxy] Together error:', e.message); }
+      }
+
+      // Provider 3: Gemini image generation
+      const GEMINI_KEY = process.env.GEMINI_API_KEY;
+      if (!b64 && GEMINI_KEY) {
+        try {
+          const gRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${GEMINI_KEY}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: `Generate an image: ${prompt}` }] }],
+                generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+              }),
+            }
+          );
+          const gData = await gRes.json();
+          const parts = gData.candidates?.[0]?.content?.parts || [];
+          for (const p of parts) {
+            if (p.inlineData?.data) { b64 = p.inlineData.data; provider = 'gemini-flash-image'; break; }
+          }
+          if (!b64 && gData.error) console.warn('[proxy] Gemini error:', gData.error.message?.slice(0, 100));
+        } catch (e) { console.warn('[proxy] Gemini error:', e.message); }
+      }
+
+      if (!b64) {
+        return res.status(502).json({ error: { message: 'Image generation failed: no provider available. Set CF_ACCOUNT_ID+CF_API_TOKEN, TOGETHER_API_KEY, or GEMINI_API_KEY.' } });
+      }
+
+      logUsage(agentId, provider, 0, 0, 0);
+      res.json({ image: b64 });
+    } catch (error) {
+      console.error('[proxy] Image gen error:', error.message);
+      res.status(500).json({ error: { message: 'Image generation failed: ' + error.message } });
+    }
+  });
+
   // Usage stats endpoint
   router.get('/:agentId/usage', async (req, res) => {
     try {
