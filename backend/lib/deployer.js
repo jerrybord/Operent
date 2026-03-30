@@ -25,6 +25,82 @@ const SSH_KEY_PATH = process.env.SSH_KEY_PATH || path.join(process.env.HOME || '
 let SSH_PRIVATE_KEY = null;
 try { SSH_PRIVATE_KEY = fs.readFileSync(SSH_KEY_PATH); } catch { /* password fallback */ }
 
+// === Workspace templates ===
+
+const TEMPLATES_DIR = path.join(__dirname, '../templates/agent-workspace');
+
+function loadTemplate(filename) {
+  try {
+    return fs.readFileSync(path.join(TEMPLATES_DIR, filename), 'utf-8');
+  } catch {
+    return null;
+  }
+}
+
+const SKILL_NAMES = {
+  'voice-messages':    '🎙 Voice Messages — Transcribe voice messages to text',
+  'global-search':     '🔍 Global Search — Search across 17 search engines',
+  'google-workspace':  '📧 Google Workspace — Gmail, Calendar, Drive, Sheets',
+  'summarize':         '🧾 Summarize — Summarize URLs, files, and YouTube videos',
+  'self-improving':    '🧠 Self-Improving — Learn from corrections and improve over time',
+  'youtube':           '📺 YouTube — Extract and analyze video transcripts',
+  'x-search':          '𝕏 X / Twitter — Search and analyze posts',
+  'trello':            '📋 Trello — Manage boards, lists, and cards',
+  'notion':            '📝 Notion — Work with pages and databases',
+  'slack':             '💬 Slack — Send messages, reactions, manage channels',
+  'github':            '🐙 GitHub — Manage issues, PRs, and CI pipelines',
+  'nano-banana':       '🎨 Nano Banana — Generate and edit images with AI',
+  'nano-pdf':          '📄 Nano PDF — Edit PDFs using natural language',
+  'clawhub':           '🔧 ClawHub — Install and manage additional skills',
+};
+
+const GOAL_LABELS = {
+  'business':   'Business Automation',
+  'social':     'Social Media Management',
+  'development':'Development Assistant',
+  'research':   'Research & Analysis',
+  'personal':   'Personal Assistant',
+};
+
+function generateUserMd(agent) {
+  const goalLabel = GOAL_LABELS[agent.goal] || agent.goal || 'General Assistant';
+  const userName = agent.telegramUsername ? `@${agent.telegramUsername}` : `User #${agent.telegramId}`;
+  const description = agent.description || 'No additional context provided.';
+
+  return `# USER.md — About Your User
+
+- **Name:** ${userName}
+- **Language:** Russian
+- **Goal:** ${goalLabel}
+- **Timezone:** UTC+3
+
+## Context
+
+${description}
+
+## Preferences
+
+Use defaults from SOUL.md. Update this file as you learn more about the user.
+`;
+}
+
+function generateToolsMd(enabledSkills = []) {
+  let content = '# TOOLS.md — Your Active Skills\n\n';
+
+  if (enabledSkills.length === 0) {
+    content += 'No skills enabled. The user can add skills by redeploying the agent.\n';
+    return content;
+  }
+
+  content += '## Enabled Skills\n\n';
+  for (const skillId of enabledSkills) {
+    const desc = SKILL_NAMES[skillId] || `✅ ${skillId}`;
+    content += `🔹 ${desc}\n`;
+  }
+  content += '\n## Notes\n\nAdd skill-specific API keys and configurations here as needed.\n';
+  return content;
+}
+
 // === SSH helpers ===
 
 function sshExec(conn, command) {
@@ -164,6 +240,17 @@ async function deployAgent(server, agent, onProgress = () => {}) {
     } else {
       onProgress({ step: 5, total: TOTAL, message: 'No skills to install' });
     }
+
+    // Step 5b: Write workspace templates
+    const soulMd = loadTemplate('SOUL.md');
+    const agentsMd = loadTemplate('AGENTS.md');
+    const userMd = generateUserMd(agent);
+    const toolsMd = generateToolsMd(enabledSkills);
+
+    if (soulMd)   await sftpWriteFile(sftp, `${dir}/workspace/SOUL.md`, soulMd);
+    if (agentsMd) await sftpWriteFile(sftp, `${dir}/workspace/AGENTS.md`, agentsMd);
+    await sftpWriteFile(sftp, `${dir}/workspace/USER.md`, userMd);
+    await sftpWriteFile(sftp, `${dir}/workspace/TOOLS.md`, toolsMd);
 
     // Close SFTP session
     sftp.end();
