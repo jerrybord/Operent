@@ -31,6 +31,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
+const path = require('path');
 
 const { db, queries } = require('./lib/db');
 const { generateConfig } = require('./lib/config-gen');
@@ -668,6 +669,18 @@ app.post('/admin/export/:telegramId', adminAuth, async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// === Serve frontend (public/) ===
+const PUBLIC_DIR = path.join(__dirname, '../public');
+app.use(express.static(PUBLIC_DIR, {
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  }
+}));
+app.get('*', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
 });
 
 // === Start ===
