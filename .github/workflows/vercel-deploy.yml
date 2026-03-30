@@ -13,8 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Vercel
-        run: npx vercel deploy --prod --yes --token ${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Link & Deploy to Vercel
+        run: |
+          vercel link --yes --project operent --token ${{ secrets.VERCEL_TOKEN }}
+          vercel deploy --prod --yes --token ${{ secrets.VERCEL_TOKEN }}
