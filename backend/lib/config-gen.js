@@ -6,11 +6,13 @@ const { SKILLS_BY_ID, getSkillInstructions } = require('./skills-registry');
 
 // Map form model names to openclaw model identifiers
 const MODEL_MAP = {
-  'haiku': { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
-  'sonnet': { provider: 'anthropic', model: 'claude-sonnet-4-6' },
-  'opus': { provider: 'anthropic', model: 'claude-opus-4-6' },
-  'codex': { provider: 'openai', model: 'gpt-4o' },
-  'kimi': { provider: 'kimi', model: 'moonshot-v1-128k' },
+  'haiku':    { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+  'sonnet':   { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  'opus':     { provider: 'anthropic', model: 'claude-opus-4-6' },
+  'codex':    { provider: 'openai',    model: 'gpt-4o' },
+  'gpt4mini': { provider: 'openai',    model: 'gpt-4o-mini' },
+  'o3':       { provider: 'openai',    model: 'o3' },
+  'kimi':     { provider: 'kimi',      model: 'moonshot-v1-128k' },
 };
 
 // Proactivity presets

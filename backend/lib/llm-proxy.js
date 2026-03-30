@@ -28,8 +28,14 @@ const COST_PER_1K = {
   // Kimi K2.5: markup $0.75/$3.75 per 1M
   'kimi-k2-0711':       { input: 0.00075, output: 0.00375 },
   'moonshot-v1-128k':   { input: 0.00075, output: 0.00375 },
-  // GPT-4o fallback
+  // OpenAI models (25% markup)
+  // GPT-4o: official $2.5/$10 per 1M
   'gpt-4o':             { input: 0.003125, output: 0.0125 },
+  // GPT-4o mini: official $0.15/$0.60 per 1M
+  'gpt-4o-mini':        { input: 0.0001875, output: 0.00075 },
+  // o3: official $10/$40 per 1M
+  'o3':                 { input: 0.0125, output: 0.05 },
+  'o3-mini':            { input: 0.001375, output: 0.00550 },
   // Legacy model IDs (existing agents may still use these)
   'claude-haiku-4-5-20241022':  { input: 0.00125, output: 0.00625 },
   'claude-sonnet-4-20250514':   { input: 0.00375, output: 0.01875 },
@@ -53,7 +59,7 @@ function detectProvider(model) {
   if (!model) return 'anthropic';
   if (model.startsWith('claude')) return 'anthropic';
   if (model.startsWith('moonshot') || model.startsWith('kimi')) return 'kimi';
-  if (model.startsWith('gpt') || model.startsWith('o1') || model.startsWith('o3')) return 'openai';
+  if (model.startsWith('gpt') || model.startsWith('o1') || model.startsWith('o2') || model.startsWith('o3') || model.startsWith('o4')) return 'openai';
   return 'anthropic'; // default
 }
 
