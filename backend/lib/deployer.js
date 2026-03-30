@@ -37,6 +37,11 @@ function loadTemplate(filename) {
   }
 }
 
+function loadSoulForGoal(goal) {
+  // Try goal-specific SOUL first, fall back to base SOUL.md
+  return loadTemplate(`goals/${goal}.md`) || loadTemplate('SOUL.md');
+}
+
 const SKILL_NAMES = {
   'voice-messages':    '🎙 Voice Messages — Transcribe voice messages to text',
   'global-search':     '🔍 Global Search — Search across 17 search engines',
@@ -242,7 +247,7 @@ async function deployAgent(server, agent, onProgress = () => {}) {
     }
 
     // Step 5b: Write workspace templates
-    const soulMd = loadTemplate('SOUL.md');
+    const soulMd = loadSoulForGoal(agent.goal || 'personal');
     const agentsMd = loadTemplate('AGENTS.md');
     const userMd = generateUserMd(agent);
     const toolsMd = generateToolsMd(enabledSkills);
