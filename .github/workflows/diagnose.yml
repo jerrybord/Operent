@@ -1,0 +1,26 @@
+name: Diagnose VPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check VPS status
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            echo "=== PM2 STATUS ==="
+            pm2 list
+            echo "=== PM2 LOGS (last 30 lines) ==="
+            pm2 logs operent-backend --lines 30 --nostream
+            echo "=== server.js tail (last 20 lines) ==="
+            tail -20 /root/operent/backend/server.js
+            echo "=== public/index.html first line ==="
+            head -2 /root/operent/public/index.html
+            echo "=== .env ==="
+            cat /root/operent/backend/.env | grep -v KEY | grep -v TOKEN | grep -v PASSWORD
