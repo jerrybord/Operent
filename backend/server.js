@@ -164,6 +164,9 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
         bot_token: botToken,
         config,
         telegramId: req.tgUser.id,
+        telegramUsername: req.tgUser.username || '',
+        goal: goal || 'personal',
+        description: description || '',
       },
       (progress) => deployStatus.set(agentId, progress)
     ).then(async (result) => {
