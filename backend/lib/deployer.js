@@ -247,8 +247,11 @@ async function deployAgent(server, agent, onProgress = () => {}) {
     const userMd = generateUserMd(agent);
     const toolsMd = generateToolsMd(enabledSkills);
 
+    const formatMd = loadTemplate('TELEGRAM_FORMAT.md');
+
     if (soulMd)   await sftpWriteFile(sftp, `${dir}/workspace/SOUL.md`, soulMd);
     if (agentsMd) await sftpWriteFile(sftp, `${dir}/workspace/AGENTS.md`, agentsMd);
+    if (formatMd) await sftpWriteFile(sftp, `${dir}/workspace/TELEGRAM_FORMAT.md`, formatMd);
     await sftpWriteFile(sftp, `${dir}/workspace/USER.md`, userMd);
     await sftpWriteFile(sftp, `${dir}/workspace/TOOLS.md`, toolsMd);
 
