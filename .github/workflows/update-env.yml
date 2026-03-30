@@ -1,0 +1,32 @@
+name: Update VPS env vars
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-env:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set OPENAI_API_KEY on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            ENV_FILE=/root/operent/backend/.env
+
+            # Add or update OPENAI_API_KEY
+            if grep -q "^OPENAI_API_KEY=" "$ENV_FILE"; then
+              sed -i "s|^OPENAI_API_KEY=.*|OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}|" "$ENV_FILE"
+            else
+              echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> "$ENV_FILE"
+            fi
+
+            echo "✅ OPENAI_API_KEY updated"
+
+            # Restart backend to pick up new env
+            cd /root/operent/backend
+            pm2 restart operent-backend
+            pm2 save
+            echo "✅ Backend restarted"
