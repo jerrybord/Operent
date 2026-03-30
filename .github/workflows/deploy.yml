@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -16,8 +17,13 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
-            cd /root/operent/backend
+            cd /root/operent
             git pull origin main
+            cd backend
             npm install --production
             pm2 restart operent-backend || pm2 start server.js --name operent-backend
             pm2 save
+            echo "=== PM2 STATUS ==="
+            pm2 list
+            echo "=== LAST 20 LOG LINES ==="
+            pm2 logs operent-backend --lines 20 --nostream || true
