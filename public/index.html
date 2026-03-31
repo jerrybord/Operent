@@ -345,6 +345,75 @@
   .agent-stat .dot-live{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(34,197,94,0.5);}
   .agent-empty{text-align:center;padding:48px 20px;}
   .agent-empty p{font-size:13px;color:var(--t3);line-height:1.5;}
+  .agent-gear{background:none;border:none;padding:8px;color:var(--t3);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:8px;transition:color 0.15s,background 0.15s;margin-left:4px;}
+  .agent-gear:active{color:var(--text);background:rgba(255,255,255,0.07);}
+  /* Settings screen */
+  .set-header{display:flex;align-items:center;gap:10px;padding:16px 20px 12px;border-bottom:1px solid var(--border);}
+  .set-back{background:none;border:none;color:var(--t2);cursor:pointer;padding:6px;display:flex;align-items:center;border-radius:8px;}
+  .set-back:active{background:rgba(255,255,255,0.07);}
+  .set-title{font-size:17px;font-weight:700;flex:1;}
+  .set-sec{padding:20px 20px 0;}
+  .set-label{font-size:12px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;}
+  .set-textarea{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:14px;color:var(--text);font-size:14px;padding:12px 14px;resize:none;outline:none;font-family:inherit;line-height:1.5;box-sizing:border-box;transition:border 0.15s;}
+  .set-textarea:focus{border-color:var(--red);}
+  .set-select{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:14px;color:var(--text);font-size:14px;padding:12px 14px;outline:none;font-family:inherit;appearance:none;cursor:pointer;box-sizing:border-box;}
+  .set-select option{background:#1a1a1a;color:#fff;}
+  /* Personalities */
+  .pers-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+  .pers-item{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;}
+  .pers-icon{font-size:22px;flex-shrink:0;}
+  .pers-body{flex:1;min-width:0;}
+  .pers-name{font-size:14px;font-weight:600;}
+  .pers-sub{font-size:11px;color:var(--t3);margin-top:2px;}
+  .pers-del{background:none;border:none;color:var(--t3);cursor:pointer;padding:6px;border-radius:8px;display:flex;}
+  .pers-del:active{background:rgba(255,0,0,0.12);color:var(--red);}
+  .set-add-btn{width:100%;background:rgba(229,57,53,0.1);border:1px dashed rgba(229,57,53,0.3);color:var(--red);border-radius:14px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .set-add-btn:active{background:rgba(229,57,53,0.18);}
+  /* Skills toggles */
+  .skill-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+  .skill-row:last-child{border-bottom:none;}
+  .skill-ico{font-size:20px;flex-shrink:0;width:28px;text-align:center;}
+  .skill-body{flex:1;min-width:0;}
+  .skill-name{font-size:14px;font-weight:600;}
+  .skill-desc{font-size:11px;color:var(--t3);margin-top:1px;}
+  .skill-toggle{position:relative;width:44px;height:26px;flex-shrink:0;cursor:pointer;}
+  .skill-toggle input{opacity:0;width:0;height:0;position:absolute;}
+  .skill-slider{position:absolute;inset:0;background:rgba(255,255,255,0.12);border-radius:13px;transition:0.2s;}
+  .skill-slider:before{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:3px;left:3px;transition:0.2s;}
+  .skill-toggle input:checked+.skill-slider{background:var(--red);}
+  .skill-toggle input:checked+.skill-slider:before{transform:translateX(18px);}
+  /* Redeploy button */
+  .set-redeploy-btn{margin:24px 20px 20px;width:calc(100% - 40px);background:var(--red);color:#fff;border:none;border-radius:16px;padding:16px;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.15s;}
+  .set-redeploy-btn:active{opacity:0.85;}
+  /* Bottom sheet — personality picker */
+  .sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity 0.25s;}
+  .sheet-overlay.open{opacity:1;pointer-events:all;}
+  .sheet-content{background:#1a1a1a;border-radius:20px 20px 0 0;width:100%;max-height:85vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,16px);}
+  .sheet-handle{width:36px;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin:10px auto 16px;}
+  .sheet-title{font-size:16px;font-weight:700;padding:0 20px 14px;border-bottom:1px solid var(--border);}
+  .pers-pick-list{padding:12px 16px;}
+  .pers-pick-card{background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background 0.15s;}
+  .pers-pick-card:active,.pers-pick-card.selected{background:rgba(229,57,53,0.12);border-color:rgba(229,57,53,0.4);}
+  .pers-pick-icon{font-size:26px;flex-shrink:0;}
+  .pers-pick-body{flex:1;}
+  .pers-pick-name{font-size:15px;font-weight:700;}
+  .pers-pick-desc{font-size:12px;color:var(--t3);margin-top:2px;}
+  .sheet-instructions{padding:0 16px 12px;}
+  .sheet-instructions-label{font-size:12px;color:var(--t2);font-weight:600;margin-bottom:8px;}
+  .sheet-instructions textarea{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;padding:10px 12px;resize:none;outline:none;font-family:inherit;box-sizing:border-box;}
+  .sheet-confirm-btn{margin:0 16px 12px;width:calc(100% - 32px);background:var(--red);color:#fff;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;}
+  /* Redeploy overlay */
+  .rdp-overlay{position:fixed;inset:0;background:#0a0a0a;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+  .rdp-overlay.open{opacity:1;pointer-events:all;}
+  .rdp-spinner{width:56px;height:56px;border:3px solid rgba(255,255,255,0.08);border-top-color:var(--red);border-radius:50%;animation:spin 0.9s linear infinite;margin-bottom:24px;}
+  .rdp-title{font-size:20px;font-weight:800;margin-bottom:10px;}
+  .rdp-sub{font-size:14px;color:var(--t2);line-height:1.6;margin-bottom:8px;}
+  .rdp-memory{font-size:13px;color:var(--green);display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;}
+  .rdp-progress{width:100%;max-width:260px;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:20px;overflow:hidden;}
+  .rdp-progress-bar{height:100%;background:var(--red);border-radius:2px;transition:width 0.6s ease;}
+  .rdp-success-icon{font-size:52px;margin-bottom:20px;}
+  .rdp-btn{margin-top:20px;background:var(--red);color:#fff;border:none;border-radius:14px;padding:14px 32px;font-size:15px;font-weight:700;cursor:pointer;width:100%;max-width:260px;}
+  .rdp-retry-btn{margin-top:10px;background:rgba(255,255,255,0.07);color:var(--text);border:none;border-radius:14px;padding:12px 32px;font-size:14px;font-weight:600;cursor:pointer;width:100%;max-width:260px;}
 
   /* Liquid Glass Tab Bar */
   .dash-tabs{
@@ -1258,7 +1327,7 @@ function haptic(type) {
 var navHistory = [];
 
 // Back map: which screen to go back to from current
-var backMap = {1:0, 2:1, 3:2, 4:3, 5:4, 6:5, 'routing':4};
+var backMap = {1:0, 2:1, 3:2, 4:3, 5:4, 6:5, 'routing':4, 'settings':'dash'};
 
 function go(n){
   haptic('heavy');
@@ -1598,13 +1667,23 @@ function renderAgents() {
   container.innerHTML = list.map(function(a) {
     var initial = a.name ? a.name[0].toUpperCase() : '?';
     var desc = a.description || 'AI Agent';
-    if (desc.length > 45) desc = desc.substring(0, 45) + '...';
+    if (desc.length > 40) desc = desc.substring(0, 40) + '...';
     var mLabel = modelLabels[a.model] || a.model || 'Sonnet';
-    var onclick = a.botUsername ? ' onclick="haptic(\'medium\');openBot(\'' + a.botUsername + '\')"' : '';
-    return '<div class="agent-card"' + onclick + '>' +
+    var isOnline = a.status === 'active';
+    var statColor = isOnline ? 'var(--green)' : 'rgba(255,255,255,0.3)';
+    var statLabel = isOnline ? 'Online' : (a.status || 'Offline');
+    var botClick = a.botUsername ? 'haptic(\'medium\');openBot(\'' + a.botUsername + '\')' : '';
+    var gearSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+    return '<div class="agent-card" onclick="' + botClick + '">' +
       '<div class="agent-ava">' + initial + '</div>' +
-      '<div class="agent-info"><div class="agent-name">' + a.name + '</div><div class="agent-desc">' + desc + '</div></div>' +
-      '<div class="agent-right"><div class="agent-model">' + mLabel + '</div><div class="agent-stat"><span class="dot-live"></span> Online</div></div>' +
+      '<div class="agent-info">' +
+        '<div class="agent-name">' + escHtml(a.name) + ' <span style="font-size:11px;font-weight:500;color:var(--t3);margin-left:4px;">' + escHtml(mLabel) + '</span></div>' +
+        '<div class="agent-desc">' + escHtml(desc) + '</div>' +
+      '</div>' +
+      '<div class="agent-right" style="display:flex;align-items:center;gap:4px;">' +
+        '<div style="text-align:right;margin-right:4px;"><div class="agent-stat" style="color:' + statColor + ';"><span class="dot-live" style="background:' + statColor + ';box-shadow:none;"></span> ' + statLabel + '</div></div>' +
+        '<button class="agent-gear" onclick="event.stopPropagation();openSettings(\'' + a.id + '\')" title="Settings">' + gearSvg + '</button>' +
+      '</div>' +
       '</div>';
   }).join('');
 }
@@ -3080,6 +3159,355 @@ if (getAgents().length > 0) {
 
 // Fetch billing on startup (when dashboard is shown)
 setTimeout(function(){ fetchBilling(); }, 1000);
+
+// =============================================
+// AGENT SETTINGS
+// =============================================
+var settingsAgentId = null;
+var settingsData = null;
+var settingsSkills = [];
+var pickerSelectedKey = null;
+
+var PERSONALITIES_META = {
+  research:    { key:'research',    name:'Research & Analytics', icon:'🔬', desc:'Deep research, data analysis, market insights' },
+  development: { key:'development', name:'Development',          icon:'💻', desc:'Code writing, debugging, architecture' },
+  social:      { key:'social',      name:'Social Media Manager', icon:'📱', desc:'Content creation, audience engagement' },
+  personal:    { key:'personal',    name:'Personal Assistant',   icon:'👤', desc:'Planning, reminders, daily productivity' },
+  business:    { key:'business',    name:'Business Automation',  icon:'💼', desc:'Workflows, reporting, CRM, operations' },
+};
+
+function openSettings(agentId) {
+  haptic('medium');
+  settingsAgentId = agentId;
+  var h = getHeaders();
+  // Load skills catalog and agent settings in parallel
+  Promise.all([
+    fetch(API_BASE + '/api/skills', { headers: h }).then(function(r){ return r.json(); }),
+    fetch(API_BASE + '/api/agents/' + agentId + '/settings', { headers: h }).then(function(r){ return r.json(); }),
+  ]).then(function(results) {
+    settingsSkills = results[0] || [];
+    settingsData = results[1];
+    renderSettingsScreen();
+    go('settings');
+  }).catch(function(e) {
+    console.warn('Settings load error:', e);
+  });
+}
+
+function renderSettingsScreen() {
+  var d = settingsData;
+  if (!d) return;
+
+  // Description
+  var descEl = document.getElementById('set-desc');
+  if (descEl) descEl.value = d.description || '';
+
+  // Goal
+  var goalEl = document.getElementById('set-goal');
+  if (goalEl) goalEl.value = d.goal || 'personal';
+
+  // Personalities
+  renderSettingsPersonalities(d.personalities || []);
+
+  // Skills
+  renderSettingsSkills(d.capabilities || []);
+}
+
+function renderSettingsPersonalities(personalities) {
+  var list = document.getElementById('set-pers-list');
+  if (!list) return;
+  if (!personalities || personalities.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--t3);padding:4px 0;">No additional personalities added yet.</div>';
+    return;
+  }
+  list.innerHTML = personalities.map(function(p) {
+    var meta = PERSONALITIES_META[p.key] || { name: p.key, icon: '🧠', desc: '' };
+    return '<div class="pers-item">' +
+      '<div class="pers-icon">' + meta.icon + '</div>' +
+      '<div class="pers-body">' +
+        '<div class="pers-name">' + escHtml(meta.name) + '</div>' +
+        (p.instructions ? '<div class="pers-sub">' + escHtml(p.instructions) + '</div>' : '') +
+      '</div>' +
+      '<button class="pers-del" onclick="removePersonality(\'' + p.key + '\')">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>' +
+      '</button>' +
+    '</div>';
+  }).join('');
+}
+
+function renderSettingsSkills(capabilities) {
+  var cont = document.getElementById('set-skills-list');
+  if (!cont || !settingsSkills.length) return;
+  cont.innerHTML = settingsSkills.map(function(s) {
+    var checked = capabilities.indexOf(s.id) !== -1;
+    return '<div class="skill-row">' +
+      '<div class="skill-ico">' + (s.emoji || '🔧') + '</div>' +
+      '<div class="skill-body"><div class="skill-name">' + escHtml(s.name) + '</div>' +
+        '<div class="skill-desc">' + escHtml(s.description || '') + '</div>' +
+      '</div>' +
+      '<label class="skill-toggle">' +
+        '<input type="checkbox" id="sk-' + s.id + '"' + (checked ? ' checked' : '') + '>' +
+        '<span class="skill-slider"></span>' +
+      '</label>' +
+    '</div>';
+  }).join('');
+}
+
+function removePersonality(key) {
+  haptic('light');
+  if (!settingsData) return;
+  settingsData.personalities = (settingsData.personalities || []).filter(function(p){ return p.key !== key; });
+  renderSettingsPersonalities(settingsData.personalities);
+}
+
+function openPersonalityPicker() {
+  haptic('light');
+  var currentKeys = (settingsData && settingsData.personalities || []).map(function(p){ return p.key; });
+  var primaryGoal = settingsData && settingsData.goal;
+  var sheet = document.getElementById('personality-sheet');
+  var pickList = document.getElementById('pers-pick-list');
+  pickerSelectedKey = null;
+  document.getElementById('pers-instructions-sec').style.display = 'none';
+  document.getElementById('pers-instructions-input').value = '';
+
+  pickList.innerHTML = Object.values(PERSONALITIES_META).map(function(p) {
+    var alreadyAdded = currentKeys.indexOf(p.key) !== -1 || p.key === primaryGoal;
+    var opacity = alreadyAdded ? '0.4' : '1';
+    var disabled = alreadyAdded ? ' style="opacity:0.4;pointer-events:none;"' : ' onclick="selectPersonality(\'' + p.key + '\')"';
+    return '<div class="pers-pick-card" id="ppc-' + p.key + '"' + disabled + '>' +
+      '<div class="pers-pick-icon">' + p.icon + '</div>' +
+      '<div class="pers-pick-body">' +
+        '<div class="pers-pick-name">' + p.name + '</div>' +
+        '<div class="pers-pick-desc">' + p.desc + (alreadyAdded ? ' · Already added' : '') + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  sheet.classList.add('open');
+}
+
+function closePersonalityPicker() {
+  document.getElementById('personality-sheet').classList.remove('open');
+}
+
+function selectPersonality(key) {
+  haptic('light');
+  pickerSelectedKey = key;
+  document.querySelectorAll('.pers-pick-card').forEach(function(c){ c.classList.remove('selected'); });
+  var card = document.getElementById('ppc-' + key);
+  if (card) card.classList.add('selected');
+  document.getElementById('pers-instructions-sec').style.display = 'block';
+  document.getElementById('pers-confirm-btn').textContent = 'Add ' + (PERSONALITIES_META[key] ? PERSONALITIES_META[key].name : key);
+}
+
+function confirmAddPersonality() {
+  if (!pickerSelectedKey) return;
+  haptic('medium');
+  var instructions = document.getElementById('pers-instructions-input').value.trim();
+  if (!settingsData) settingsData = {};
+  if (!settingsData.personalities) settingsData.personalities = [];
+  settingsData.personalities.push({ key: pickerSelectedKey, instructions: instructions, addedAt: new Date().toISOString() });
+  renderSettingsPersonalities(settingsData.personalities);
+  closePersonalityPicker();
+}
+
+function saveAndRedeploy() {
+  haptic('heavy');
+  if (!settingsAgentId || !settingsData) return;
+  var h = getHeaders();
+
+  // Collect current skill toggles state
+  var caps = [];
+  (settingsSkills || []).forEach(function(s) {
+    var el = document.getElementById('sk-' + s.id);
+    if (el && el.checked) caps.push(s.id);
+  });
+
+  var payload = {
+    description: (document.getElementById('set-desc') || {}).value || settingsData.description || '',
+    goal: (document.getElementById('set-goal') || {}).value || settingsData.goal || 'personal',
+    capabilities: caps,
+    personalities: settingsData.personalities || [],
+    model: settingsData.model,
+    proactivity: settingsData.proactivity,
+  };
+
+  // Save settings first
+  fetch(API_BASE + '/api/agents/' + settingsAgentId + '/settings', {
+    method: 'PUT',
+    headers: Object.assign({'Content-Type':'application/json'}, h),
+    body: JSON.stringify(payload),
+  }).then(function(r){ return r.json(); })
+  .then(function() {
+    // Now trigger redeploy
+    showRedeployOverlay();
+    return fetch(API_BASE + '/api/agents/' + settingsAgentId + '/redeploy', {
+      method: 'POST',
+      headers: Object.assign({'Content-Type':'application/json'}, h),
+      body: JSON.stringify({}),
+    });
+  }).then(function(r){ return r.json(); })
+  .then(function(data) {
+    if (data.error) throw new Error(data.error);
+    pollRedeployStatus(settingsAgentId);
+  }).catch(function(e) {
+    showRedeployError(e.message);
+  });
+}
+
+function showRedeployOverlay() {
+  var ov = document.getElementById('rdp-overlay');
+  ov.classList.add('open');
+  document.getElementById('rdp-loading').style.display = 'flex';
+  document.getElementById('rdp-success').style.display = 'none';
+  document.getElementById('rdp-error').style.display = 'none';
+  document.getElementById('rdp-progress-bar').style.width = '0%';
+}
+
+function closeRedeployOverlay() {
+  document.getElementById('rdp-overlay').classList.remove('open');
+  // Refresh agents list
+  renderAgents();
+  goToDash();
+}
+
+function showRedeployError(msg) {
+  document.getElementById('rdp-loading').style.display = 'none';
+  document.getElementById('rdp-error').style.display = 'flex';
+  document.getElementById('rdp-error-msg').textContent = msg || 'Update failed. Please try again.';
+}
+
+var redeployPollInterval = null;
+
+function pollRedeployStatus(agentId) {
+  var h = getHeaders();
+  var attempts = 0;
+  clearInterval(redeployPollInterval);
+  redeployPollInterval = setInterval(function() {
+    attempts++;
+    fetch(API_BASE + '/api/status/' + agentId, { headers: h })
+      .then(function(r){ return r.json(); })
+      .then(function(s) {
+        var pct = s.total > 0 ? Math.round((s.step / s.total) * 100) : 0;
+        document.getElementById('rdp-progress-bar').style.width = pct + '%';
+        var msgEl = document.getElementById('rdp-status-msg');
+        if (msgEl) msgEl.textContent = s.message || 'Updating...';
+        if (s.done) {
+          clearInterval(redeployPollInterval);
+          if (s.error) {
+            showRedeployError(s.message);
+          } else {
+            document.getElementById('rdp-loading').style.display = 'none';
+            document.getElementById('rdp-success').style.display = 'flex';
+            haptic('heavy');
+            renderAgents();
+          }
+        }
+        if (attempts > 40) { // 2 min timeout
+          clearInterval(redeployPollInterval);
+          document.getElementById('rdp-status-msg').textContent = 'Taking longer than usual…';
+        }
+      }).catch(function(){});
+  }, 3000);
+}
 </script>
+
+<!-- Settings Screen -->
+<div class="screen" id="p-settings">
+  <div class="screen-body" style="padding-bottom:100px;">
+    <div class="set-header">
+      <button class="set-back" onclick="haptic('light');bk('dash')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="set-title">Agent Settings</div>
+    </div>
+
+    <!-- Description -->
+    <div class="set-sec">
+      <div class="set-label">Describe your agent</div>
+      <textarea id="set-desc" class="set-textarea" rows="3" placeholder="e.g. Venture capital analyst helping with market research…"></textarea>
+    </div>
+
+    <!-- Primary Goal -->
+    <div class="set-sec" style="margin-top:16px;">
+      <div class="set-label">Primary Goal</div>
+      <select id="set-goal" class="set-select">
+        <option value="personal">👤 Personal Assistant</option>
+        <option value="research">🔬 Research &amp; Analytics</option>
+        <option value="development">💻 Development</option>
+        <option value="social">📱 Social Media Manager</option>
+        <option value="business">💼 Business Automation</option>
+      </select>
+    </div>
+
+    <!-- Additional Personalities -->
+    <div class="set-sec" style="margin-top:20px;">
+      <div class="set-label">Additional Personalities</div>
+      <div class="pers-list" id="set-pers-list"></div>
+      <button class="set-add-btn" onclick="openPersonalityPicker()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add Personality
+      </button>
+    </div>
+
+    <!-- Skills -->
+    <div class="set-sec" style="margin-top:20px;">
+      <div class="set-label">Skills</div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;padding:4px 16px;">
+        <div id="set-skills-list"></div>
+      </div>
+    </div>
+
+    <!-- Update button -->
+    <button class="set-redeploy-btn" onclick="saveAndRedeploy()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Update Agent
+    </button>
+  </div>
+</div>
+
+<!-- Personality Picker Sheet -->
+<div class="sheet-overlay" id="personality-sheet" onclick="if(event.target===this)closePersonalityPicker()">
+  <div class="sheet-content">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Choose Personality</div>
+    <div class="pers-pick-list" id="pers-pick-list"></div>
+    <div class="sheet-instructions" id="pers-instructions-sec" style="display:none;">
+      <div class="sheet-instructions-label">Special Instructions <span style="color:var(--t3);font-weight:400;">(optional)</span></div>
+      <textarea id="pers-instructions-input" rows="2" placeholder="e.g. Focus on Python and algorithms…"></textarea>
+    </div>
+    <button class="sheet-confirm-btn" id="pers-confirm-btn" onclick="confirmAddPersonality()">Confirm</button>
+    <div style="height:8px;"></div>
+  </div>
+</div>
+
+<!-- Redeploy Progress Overlay -->
+<div class="rdp-overlay" id="rdp-overlay">
+  <div id="rdp-loading" style="display:flex;flex-direction:column;align-items:center;width:100%;">
+    <div class="rdp-spinner"></div>
+    <div class="rdp-title">Updating your agent</div>
+    <div class="rdp-sub" id="rdp-status-msg">Preparing files…</div>
+    <div class="rdp-sub">~30 seconds</div>
+    <div class="rdp-memory">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      All agent memory will be preserved
+    </div>
+    <div class="rdp-progress"><div class="rdp-progress-bar" id="rdp-progress-bar" style="width:0%"></div></div>
+  </div>
+  <div id="rdp-success" style="display:none;flex-direction:column;align-items:center;width:100%;">
+    <div class="rdp-success-icon">✅</div>
+    <div class="rdp-title">Agent updated!</div>
+    <div class="rdp-sub">All memory preserved.<br>Ready to chat.</div>
+    <button class="rdp-btn" onclick="closeRedeployOverlay()">Done</button>
+  </div>
+  <div id="rdp-error" style="display:none;flex-direction:column;align-items:center;width:100%;">
+    <div class="rdp-success-icon">❌</div>
+    <div class="rdp-title">Update failed</div>
+    <div class="rdp-sub" id="rdp-error-msg">Something went wrong.</div>
+    <button class="rdp-btn" onclick="saveAndRedeploy()">Retry</button>
+    <button class="rdp-retry-btn" onclick="document.getElementById('rdp-overlay').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
 </body>
 </html>
