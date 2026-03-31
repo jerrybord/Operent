@@ -222,7 +222,10 @@ app.get('/api/health/:id', authMiddleware, async (req, res) => {
     if (!server) return res.json({ alive: false, error: 'No server assigned' });
 
     const health = await checkHealth(server, agent.id);
-    if (health.alive) queries.updateAgentHealth.run(agent.id);
+    if (health.alive) {
+      queries.updateAgentHealth.run(agent.id);
+      queries.updateAgentStatus.run('active', agent.id);
+    }
     res.json(health);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -1486,7 +1486,7 @@ function dep() {
   text.textContent = '0%';
   track.style.width = '0%';
 
-  function onStep(step, total, message, done, error) {
+  function onStep(step, total, message, done, error, agentId) {
     const pct = Math.round((step / total) * 100);
     track.style.width = pct + '%';
     btn.style.setProperty('--track-w', btn.offsetWidth * pct / 100 + 'px');
@@ -1512,8 +1512,8 @@ function dep() {
       track.style.width = '100%';
       text.textContent = '100%';
 
-      // Save agent to local list
-      addDeployedAgent(formData);
+      // Save agent to local list (pass real UUID so gear button works)
+      addDeployedAgent(formData, agentId);
 
       setTimeout(() => {
         btn.classList.remove('loading');
@@ -1566,7 +1566,7 @@ async function realDeploy(formData, onStep) {
       try {
         const sr = await fetch(API_BASE + '/api/status/' + agentId, { headers: headers });
         const st = await sr.json();
-        onStep(st.step, st.total, st.message, st.done, st.error);
+        onStep(st.step, st.total, st.message, st.done, st.error, agentId);
         if (st.done || st.error) clearInterval(poll);
       } catch(e) {
         onStep(0, 7, 'Connection lost', false, true);
@@ -1622,11 +1622,18 @@ async function getBotUsername(token) {
   return null;
 }
 
-// Add agent after successful deploy
-async function addDeployedAgent(formData) {
+// Add agent after successful deploy — agentId is the real UUID from the API
+async function addDeployedAgent(formData, agentId) {
   var username = await getBotUsername(formData.botToken);
+  // Store bot username keyed by real UUID so renderAgents can look it up
+  if (agentId && username) {
+    var m = getBotUsernameMap();
+    m[agentId] = username;
+    saveBotUsernameMap(m);
+  }
+  // Keep legacy localStorage entry for backward compat (won't be shown after API fetch)
   var agent = {
-    id: Date.now().toString(36),
+    id: agentId || Date.now().toString(36),
     name: formData.name || 'Agent',
     description: formData.description || '',
     model: formData.model || 'sonnet',
@@ -1635,18 +1642,49 @@ async function addDeployedAgent(formData) {
     deployedAt: new Date().toISOString(),
   };
   var list = getAgents();
+  list = list.filter(function(a) { return a.id !== agent.id; });
   list.unshift(agent);
   saveAgents(list);
   renderAgents();
   return agent;
 }
 
-// Render agent list
+// Bot username cache keyed by real agent UUID
+function getBotUsernameMap() {
+  try { return JSON.parse(localStorage.getItem('ryc_bot_usernames') || '{}'); } catch(e) { return {}; }
+}
+function saveBotUsernameMap(m) { localStorage.setItem('ryc_bot_usernames', JSON.stringify(m)); }
+
+// Render agent list — fetches from API for real UUIDs and statuses
 function renderAgents() {
-  var list = getAgents();
   var container = document.getElementById('agent-list');
   if (!container) return;
-  // Update hero count
+  var h = getHeaders();
+  fetch(API_BASE + '/api/agents', { headers: h })
+    .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function(apiList) {
+      if (!Array.isArray(apiList)) throw new Error('bad response');
+      var usernameMap = getBotUsernameMap();
+      // Also try to match by name from legacy localStorage for bots deployed before this fix
+      var legacyList = getAgents();
+      var legacyByName = {};
+      legacyList.forEach(function(a) { if (a.name && a.botUsername) legacyByName[a.name.toLowerCase()] = a.botUsername; });
+      var augmented = apiList.map(function(a) {
+        return Object.assign({}, a, {
+          botUsername: usernameMap[a.id] || legacyByName[a.name && a.name.toLowerCase()] || '',
+        });
+      });
+      _paintAgents(augmented);
+    })
+    .catch(function() {
+      // Fallback: render from localStorage (old agents without real UUID won't have working gear)
+      _paintAgents(getAgents());
+    });
+}
+
+function _paintAgents(list) {
+  var container = document.getElementById('agent-list');
+  if (!container) return;
   var countEl = document.getElementById('dash-count');
   if (countEl) countEl.innerHTML = list.length + ' <span>agent' + (list.length !== 1 ? 's' : '') + '</span>';
   var statusEl = document.getElementById('dash-status');
@@ -1664,16 +1702,17 @@ function renderAgents() {
     return;
   }
   var modelLabels = {haiku:'Haiku 4.5',sonnet:'Sonnet 4.6',opus:'Opus 4.6',codex:'GPT-4o',gpt4mini:'GPT-4o mini',o3:'o3',kimi:'Kimi K2.5',custom:'Multi-route'};
+  var gearSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
   container.innerHTML = list.map(function(a) {
     var initial = a.name ? a.name[0].toUpperCase() : '?';
     var desc = a.description || 'AI Agent';
     if (desc.length > 40) desc = desc.substring(0, 40) + '...';
     var mLabel = modelLabels[a.model] || a.model || 'Sonnet';
     var isOnline = a.status === 'active';
-    var statColor = isOnline ? 'var(--green)' : 'rgba(255,255,255,0.3)';
-    var statLabel = isOnline ? 'Online' : (a.status || 'Offline');
+    var isDeploying = a.status === 'deploying';
+    var statColor = isOnline ? 'var(--green)' : isDeploying ? 'var(--yellow,#F59E0B)' : 'rgba(255,255,255,0.3)';
+    var statLabel = isOnline ? 'Online' : isDeploying ? 'Deploying…' : (a.status === 'error' ? 'Error' : a.status === 'stopped' ? 'Stopped' : 'Offline');
     var botClick = a.botUsername ? 'haptic(\'medium\');openBot(\'' + a.botUsername + '\')' : '';
-    var gearSvg = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
     return '<div class="agent-card" onclick="' + botClick + '">' +
       '<div class="agent-ava">' + initial + '</div>' +
       '<div class="agent-info">' +
@@ -1682,7 +1721,7 @@ function renderAgents() {
       '</div>' +
       '<div class="agent-right" style="display:flex;align-items:center;gap:4px;">' +
         '<div style="text-align:right;margin-right:4px;"><div class="agent-stat" style="color:' + statColor + ';"><span class="dot-live" style="background:' + statColor + ';box-shadow:none;"></span> ' + statLabel + '</div></div>' +
-        '<button class="agent-gear" onclick="event.stopPropagation();openSettings(\'' + a.id + '\')" title="Settings">' + gearSvg + '</button>' +
+        '<button class="agent-gear" id="gear-' + a.id + '" onclick="event.stopPropagation();openSettings(\'' + a.id + '\')" title="Settings">' + gearSvg + '</button>' +
       '</div>' +
       '</div>';
   }).join('');
@@ -3179,18 +3218,35 @@ var PERSONALITIES_META = {
 function openSettings(agentId) {
   haptic('medium');
   settingsAgentId = agentId;
+  // Show loading state on gear button
+  var gearBtn = document.getElementById('gear-' + agentId);
+  if (gearBtn) { gearBtn.style.opacity = '0.4'; gearBtn.style.pointerEvents = 'none'; }
   var h = getHeaders();
   // Load skills catalog and agent settings in parallel
   Promise.all([
     fetch(API_BASE + '/api/skills', { headers: h }).then(function(r){ return r.json(); }),
-    fetch(API_BASE + '/api/agents/' + agentId + '/settings', { headers: h }).then(function(r){ return r.json(); }),
+    fetch(API_BASE + '/api/agents/' + agentId + '/settings', { headers: h }).then(function(r){
+      if (!r.ok) return r.json().then(function(d){ throw new Error(d.error || 'HTTP ' + r.status); });
+      return r.json();
+    }),
   ]).then(function(results) {
+    if (gearBtn) { gearBtn.style.opacity = ''; gearBtn.style.pointerEvents = ''; }
     settingsSkills = results[0] || [];
     settingsData = results[1];
+    if (!settingsData || settingsData.error) {
+      var msg = (settingsData && settingsData.error) || 'Failed to load settings';
+      if (tgApp && tgApp.showAlert) tgApp.showAlert(msg);
+      else alert(msg);
+      return;
+    }
     renderSettingsScreen();
     go('settings');
   }).catch(function(e) {
-    console.warn('Settings load error:', e);
+    if (gearBtn) { gearBtn.style.opacity = ''; gearBtn.style.pointerEvents = ''; }
+    console.error('Settings load error:', e);
+    var msg = e.message || 'Failed to load settings';
+    if (tgApp && tgApp.showAlert) tgApp.showAlert(msg);
+    else alert(msg);
   });
 }
 
