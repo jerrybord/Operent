@@ -36,7 +36,7 @@ const path = require('path');
 const { db, queries } = require('./lib/db');
 const { generateConfig } = require('./lib/config-gen');
 const { getSkillList } = require('./lib/skills-registry');
-const { deployAgent, stopAgent, checkHealth, getAgentLogs, exportUserData, getServerStats } = require('./lib/deployer');
+const { deployAgent, stopAgent, checkHealth, getAgentLogs, exportUserData, getServerStats, redeployAgent } = require('./lib/deployer');
 const { validateInitData, extractUser, sendMessage } = require('./lib/telegram');
 const { createProxyRouter } = require('./lib/llm-proxy');
 const { startScanner, triggerImmediateScan } = require('./lib/crypto-scanner');
@@ -612,6 +612,105 @@ app.post('/api/webhook', async (req, res) => {
   }
 
   res.json({ ok: true });
+});
+
+// === Agent settings ===
+app.get('/api/agents/:id/settings', authMiddleware, (req, res) => {
+  const agent = queries.getAgent.get(req.params.id);
+  if (!agent) return res.status(404).json({ error: 'Agent not found' });
+  const user = queries.getUser.get(req.tgUser.id);
+  if (!user || agent.user_id !== user.id) return res.status(403).json({ error: 'Forbidden' });
+  res.json({
+    id: agent.id,
+    name: agent.name,
+    description: agent.description || '',
+    goal: agent.goal || 'personal',
+    model: agent.model || 'sonnet',
+    proactivity: agent.proactivity || 'smart',
+    capabilities: JSON.parse(agent.capabilities || '[]'),
+    personalities: JSON.parse(agent.personalities || '[]'),
+    status: agent.status,
+  });
+});
+
+app.put('/api/agents/:id/settings', authMiddleware, (req, res) => {
+  const agent = queries.getAgent.get(req.params.id);
+  if (!agent) return res.status(404).json({ error: 'Agent not found' });
+  const user = queries.getUser.get(req.tgUser.id);
+  if (!user || agent.user_id !== user.id) return res.status(403).json({ error: 'Forbidden' });
+
+  const { description, goal, capabilities, personalities, model, proactivity } = req.body;
+  queries.updateAgentSettings.run(
+    description ?? (agent.description || ''),
+    goal ?? (agent.goal || 'personal'),
+    JSON.stringify(capabilities ?? JSON.parse(agent.capabilities || '[]')),
+    JSON.stringify(personalities ?? JSON.parse(agent.personalities || '[]')),
+    model ?? (agent.model || 'sonnet'),
+    proactivity ?? (agent.proactivity || 'smart'),
+    agent.id
+  );
+  res.json({ ok: true });
+});
+
+app.post('/api/agents/:id/redeploy', authMiddleware, async (req, res) => {
+  const agent = queries.getAgent.get(req.params.id);
+  if (!agent) return res.status(404).json({ error: 'Agent not found' });
+  const user = queries.getUser.get(req.tgUser.id);
+  if (!user || agent.user_id !== user.id) return res.status(403).json({ error: 'Forbidden' });
+
+  if (agent.status === 'deploying') {
+    return res.status(409).json({ error: 'Agent is already being updated' });
+  }
+
+  const server = queries.getServer.get(agent.server_id);
+  if (!server) return res.status(400).json({ error: 'No server assigned to this agent' });
+
+  const personalities = JSON.parse(agent.personalities || '[]');
+  const capabilities = JSON.parse(agent.capabilities || '[]');
+
+  const newConfig = generateConfig({
+    agentId: agent.id,
+    name: agent.name,
+    botToken: agent.bot_token,
+    telegramUserId: user.telegram_id,
+    description: agent.description,
+    goal: agent.goal,
+    skills: capabilities,
+    model: agent.model,
+    proactivity: agent.proactivity,
+  }, `http://${process.env.HOST || '0.0.0.0'}:${process.env.PORT || 3000}/v1/${agent.id}`);
+
+  const agentData = {
+    id: agent.id,
+    name: agent.name,
+    bot_token: agent.bot_token,
+    config: newConfig,
+    telegramId: user.telegram_id,
+    telegramUsername: user.telegram_username || '',
+    goal: agent.goal || 'personal',
+    description: agent.description || '',
+    personalities,
+    capabilities,
+  };
+
+  queries.updateAgentStatus.run('deploying', agent.id);
+  deployStatus.set(agent.id, { step: 0, total: 5, message: 'Starting update...', done: false });
+
+  redeployAgent(server, agentData, (progress) => {
+    deployStatus.set(agent.id, progress);
+  }).then((result) => {
+    if (result.success) {
+      queries.updateAgentStatus.run('active', agent.id);
+    } else {
+      queries.updateAgentStatus.run('active', agent.id); // restore even on error
+      deployStatus.set(agent.id, { step: 0, total: 5, message: result.error, done: true, error: true });
+    }
+  }).catch((err) => {
+    queries.updateAgentStatus.run('active', agent.id);
+    deployStatus.set(agent.id, { step: 0, total: 5, message: err.message, done: true, error: true });
+  });
+
+  res.json({ ok: true, redeployId: agent.id });
 });
 
 // === LLM Proxy ===

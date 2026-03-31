@@ -407,6 +407,168 @@ async function getServerStats(server) {
   }
 }
 
+// === Soul Merging ===
+
+const PERSONALITY_META = {
+  research:    { name: 'Research & Analytics', expertise: 'deep research, data analysis, market insights, academic literature' },
+  development: { name: 'Development Assistant', expertise: 'code writing, debugging, technical architecture, software engineering' },
+  social:      { name: 'Social Media Manager', expertise: 'content creation, audience engagement, platform strategy, copywriting' },
+  personal:    { name: 'Personal Assistant', expertise: 'task planning, reminders, travel, daily productivity' },
+  business:    { name: 'Business Automation', expertise: 'workflows, reporting, CRM, operations, business strategy' },
+};
+
+function mergeSouls(primaryGoal, personalities = []) {
+  // Load primary SOUL
+  const baseSoul = loadSoulForGoal(primaryGoal);
+  if (!personalities || personalities.length === 0) return baseSoul;
+
+  // Collect additional personality templates
+  const extras = personalities
+    .map(p => {
+      const tpl = loadTemplate(`goals/${p.key}.md`);
+      return { ...p, template: tpl, meta: PERSONALITY_META[p.key] };
+    })
+    .filter(p => p.template);
+
+  if (extras.length === 0) return baseSoul;
+
+  const primaryMeta = PERSONALITY_META[primaryGoal] || { name: primaryGoal, expertise: primaryGoal };
+  const allExpertise = [primaryMeta, ...extras.map(p => p.meta)].filter(Boolean);
+
+  // Build multi-expertise preamble
+  let preamble = `# MULTI-EXPERT AGENT\n\n`;
+  preamble += `## Your Expertise Areas\n\n`;
+  allExpertise.forEach(m => {
+    preamble += `- **${m.name}**: ${m.expertise}\n`;
+  });
+
+  preamble += `\n## Context Switching\n\n`;
+  preamble += `You automatically select the most relevant expertise for each request:\n`;
+  extras.forEach(p => {
+    const m = p.meta;
+    if (m) preamble += `- For questions about ${m.expertise.split(',')[0]}: use **${m.name}** mode\n`;
+  });
+  preamble += `- When multiple areas overlap: combine them seamlessly\n`;
+  preamble += `- Your memory is **unified** across all roles — you remember all past conversations regardless of which mode you're in\n\n`;
+
+  // Add special instructions per personality
+  extras.forEach(p => {
+    if (p.instructions && p.instructions.trim()) {
+      preamble += `### Special Instructions for ${p.meta?.name || p.key}\n${p.instructions.trim()}\n\n`;
+    }
+  });
+
+  preamble += `---\n\n## Primary Identity\n\n`;
+
+  // Extract key expertise sections from extra templates (first 60 lines)
+  let extraSections = '';
+  extras.forEach(p => {
+    if (!p.template) return;
+    const lines = p.template.split('\n').slice(0, 60).join('\n');
+    extraSections += `\n---\n## Additional Expertise: ${p.meta?.name || p.key}\n\n${lines}\n`;
+  });
+
+  return preamble + baseSoul + extraSections;
+}
+
+function generateUserMdFull(agent) {
+  const goalLabel = GOAL_LABELS[agent.goal] || agent.goal || 'General Assistant';
+  const userName = agent.telegramUsername ? `@${agent.telegramUsername}` : `User #${agent.telegramId}`;
+  const description = agent.description || 'No additional context provided.';
+  const personalities = agent.personalities || [];
+
+  let content = `# USER.md — About Your User\n\n`;
+  content += `- **Name:** ${userName}\n`;
+  content += `- **Language:** Russian\n`;
+  content += `- **Goal:** ${goalLabel}\n`;
+  content += `- **Timezone:** UTC+3\n\n`;
+  content += `## Context\n\n${description}\n\n`;
+
+  if (personalities.length > 0) {
+    content += `## Additional Personalities\n\n`;
+    personalities.forEach(p => {
+      const meta = PERSONALITY_META[p.key];
+      content += `- **${meta?.name || p.key}**`;
+      if (p.instructions) content += ` — ${p.instructions}`;
+      content += '\n';
+    });
+    content += '\n';
+  }
+
+  content += `## Preferences\n\nUse defaults from SOUL.md. Update this file as you learn more about the user.\n`;
+  return content;
+}
+
+// === Redeploy ===
+
+async function redeployAgent(server, agent, onProgress = () => {}) {
+  const TOTAL = 5;
+  let conn;
+  try {
+    onProgress({ step: 1, total: TOTAL, message: 'Connecting to server...' });
+    conn = await sshConnect(server);
+
+    const dir = agentDir(agent.telegramId, agent.id);
+    const sftp = await sshGetSftp(conn);
+
+    onProgress({ step: 2, total: TOTAL, message: 'Updating workspace files...' });
+
+    // SOUL.md — merge personalities
+    const personalities = agent.personalities || [];
+    const soulMd = mergeSouls(agent.goal || 'personal', personalities);
+    if (soulMd) await sftpWriteFile(sftp, `${dir}/workspace/SOUL.md`, soulMd);
+
+    // USER.md — updated description + personalities
+    const userMd = generateUserMdFull(agent);
+    await sftpWriteFile(sftp, `${dir}/workspace/USER.md`, userMd);
+
+    // TOOLS.md — updated skills
+    const enabledSkills = agent.capabilities || [];
+    const toolsMd = generateToolsMd(enabledSkills);
+    await sftpWriteFile(sftp, `${dir}/workspace/TOOLS.md`, toolsMd);
+
+    // Update config/openclaw.json
+    if (agent.config) {
+      await sftpWriteFile(sftp, `${dir}/config/openclaw.json`, JSON.stringify(agent.config, null, 2));
+    }
+
+    // Update skill instructions
+    const skillInstructions = agent.config?.skills?.instructions || {};
+    for (const skillId of enabledSkills) {
+      const content = skillInstructions[skillId];
+      if (content) {
+        await sshExec(conn, `mkdir -p ${dir}/skills/${skillId}`);
+        await sftpWriteFile(sftp, `${dir}/skills/${skillId}/SKILL.md`, content);
+      }
+    }
+
+    sftp.end();
+
+    onProgress({ step: 3, total: TOTAL, message: 'Restarting agent...' });
+    const cName = containerName(agent.id);
+    await sshExec(conn, `docker restart ${cName}`);
+
+    onProgress({ step: 4, total: TOTAL, message: 'Waiting for agent to start...' });
+    await new Promise(r => setTimeout(r, 5000));
+
+    onProgress({ step: 5, total: TOTAL, message: 'Verifying...' });
+    const status = await sshExec(conn, `docker inspect -f '{{.State.Status}}' ${cName}`);
+    if (status !== 'running') {
+      const logs = await sshExec(conn, `docker logs --tail 20 ${cName} 2>&1`);
+      throw new Error(`Container not running after restart (${status}). Logs: ${logs}`);
+    }
+
+    onProgress({ step: 5, total: TOTAL, message: 'Agent updated successfully!', done: true });
+    return { success: true };
+
+  } catch (error) {
+    onProgress({ step: 0, total: TOTAL, message: `Error: ${error.message}`, done: true, error: true });
+    return { success: false, error: error.message };
+  } finally {
+    if (conn) conn.end();
+  }
+}
+
 module.exports = {
   deployAgent,
   stopAgent,
@@ -414,4 +576,5 @@ module.exports = {
   getAgentLogs,
   exportUserData,
   getServerStats,
+  redeployAgent,
 };
