@@ -107,6 +107,7 @@ const migrations = [
   'CREATE INDEX IF NOT EXISTS idx_cpay_net_status ON crypto_payments(network, status, created_at)',
   'ALTER TABLE crypto_payments ADD COLUMN sender_address TEXT',
   "ALTER TABLE crypto_payments ADD COLUMN payment_type TEXT DEFAULT 'manual'",
+  "ALTER TABLE agents ADD COLUMN personalities JSON DEFAULT '[]'",
 ];
 for (const sql of migrations) {
   try { db.exec(sql); } catch (e) { /* column/index already exists */ }
@@ -175,6 +176,11 @@ const queries = {
   updateAgentHealth: db.prepare(`UPDATE agents SET last_health = datetime('now') WHERE id = ?`),
 
   getAgentsByServer: db.prepare(`SELECT * FROM agents WHERE server_id = ? AND status IN ('active', 'deploying')`),
+
+  updateAgentSettings: db.prepare(`
+    UPDATE agents SET description = ?, goal = ?, capabilities = ?, personalities = ?, model = ?, proactivity = ?
+    WHERE id = ?
+  `),
   getAgentsByUser: db.prepare(`
     SELECT a.*, s.ip as server_ip FROM agents a
     LEFT JOIN servers s ON s.id = a.server_id
