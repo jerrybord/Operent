@@ -266,6 +266,22 @@ app.get('/api/health/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// === User profile (language sync) ===
+app.get('/api/me', authMiddleware, (req, res) => {
+  const user = queries.getUser.get(req.tgUser.id);
+  if (!user) return res.status(404).json({ error: 'not found' });
+  res.json({ language: user.language || null });
+});
+
+app.post('/api/me/language', authMiddleware, (req, res) => {
+  const { language } = req.body;
+  if (language !== 'en' && language !== 'ru') return res.status(400).json({ error: 'invalid language' });
+  const user = queries.getUser.get(req.tgUser.id);
+  if (!user) return res.status(404).json({ error: 'not found' });
+  db.prepare('UPDATE users SET language = ? WHERE id = ?').run(language, user.id);
+  res.json({ ok: true });
+});
+
 // === List agents ===
 app.get('/api/agents', authMiddleware, (req, res) => {
   const user = queries.getUser.get(req.tgUser.id);

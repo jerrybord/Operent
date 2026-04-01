@@ -1645,6 +1645,37 @@ function setLang(lang) {
   applyLang();
   // Re-render agent list so status labels update
   if (typeof renderAgents === 'function') renderAgents();
+  // Sync to server so bot uses same language
+  _syncLangToServer(lang);
+}
+function _getAuthHeaders() {
+  var h = { 'Content-Type': 'application/json' };
+  if (tgApp && tgApp.initData) h['x-telegram-init-data'] = tgApp.initData;
+  return h;
+}
+function _syncLangToServer(lang) {
+  if (!tgApp || !tgApp.initData) return;
+  fetch(API_BASE + '/api/me/language', {
+    method: 'POST',
+    headers: _getAuthHeaders(),
+    body: JSON.stringify({ language: lang })
+  }).catch(function(){});
+}
+function _loadLangFromServer() {
+  if (!tgApp || !tgApp.initData) return;
+  fetch(API_BASE + '/api/me', { headers: _getAuthHeaders() })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data.language === 'en' || data.language === 'ru') {
+        if (data.language !== _lang) {
+          _lang = data.language;
+          localStorage.setItem('operent_lang', _lang);
+          applyLang();
+          if (typeof renderAgents === 'function') renderAgents();
+        }
+      }
+    })
+    .catch(function(){});
 }
 function applyLang() {
   // data-i18n: set textContent; data-i18n-html: set innerHTML; data-i18n-ph: set placeholder
@@ -3586,8 +3617,9 @@ function renderBillingData(data) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
-// Apply saved language on startup
+// Apply saved language on startup (local first, then sync from server)
 applyLang();
+_loadLangFromServer();
 
 // Init: render agents on load
 renderAgents();
