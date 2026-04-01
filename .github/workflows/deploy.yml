@@ -35,25 +35,8 @@ jobs:
               fi
             done
 
-            # --- Show all DB files on VPS (for diagnostics) ---
-            echo "=== All DB files on VPS ==="
-            find / -name "*.db" -size +10k -not -path "*/node_modules/*" -maxdepth 10 2>/dev/null | head -20 || true
-
-            # --- Migrate old DB if it exists and has more data ---
+            # --- Ensure DB directory exists (never touch existing DB) ---
             mkdir -p /root/operent/backend/data
-            TARGET_DB="/root/operent/backend/data/rentyourclaw.db"
-            TARGET_SZ=$(wc -c < "$TARGET_DB" 2>/dev/null || echo 0)
-            for OLD_DB in /root/operent/data/rentyourclaw.db /root/rentyourclaw.db /root/data/rentyourclaw.db /home/rentyourclaw.db; do
-              if [ -f "$OLD_DB" ]; then
-                OLD_SZ=$(wc -c < "$OLD_DB")
-                if [ "$OLD_SZ" -gt "$TARGET_SZ" ]; then
-                  echo "Migrating DB from $OLD_DB ($OLD_SZ bytes) — current is $TARGET_SZ bytes"
-                  cp -f "$OLD_DB" "$TARGET_DB"
-                  TARGET_SZ="$OLD_SZ"
-                fi
-              fi
-            done
-            echo "DB size after check: $(wc -c < $TARGET_DB 2>/dev/null || echo 0) bytes"
 
             # --- Write .env with API keys from GitHub secrets ---
             ENV_FILE="/root/operent/backend/.env"

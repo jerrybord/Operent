@@ -108,6 +108,11 @@ const migrations = [
   'ALTER TABLE crypto_payments ADD COLUMN sender_address TEXT',
   "ALTER TABLE crypto_payments ADD COLUMN payment_type TEXT DEFAULT 'manual'",
   "ALTER TABLE agents ADD COLUMN personalities JSON DEFAULT '[]'",
+  "ALTER TABLE agents ADD COLUMN description TEXT DEFAULT ''",
+  "ALTER TABLE agents ADD COLUMN goal TEXT DEFAULT 'personal'",
+  "ALTER TABLE agents ADD COLUMN capabilities JSON DEFAULT '[]'",
+  "ALTER TABLE agents ADD COLUMN model TEXT DEFAULT 'sonnet'",
+  "ALTER TABLE agents ADD COLUMN proactivity TEXT DEFAULT 'smart'",
 ];
 for (const sql of migrations) {
   try { db.exec(sql); } catch (e) { /* column/index already exists */ }
