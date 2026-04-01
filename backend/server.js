@@ -24,7 +24,9 @@
  *   POST /admin/export/:tgId  — Export user data
  */
 
-require('dotenv').config();
+// Load .env from backend dir, then fall back to repo root (CWD-independent)
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 const express = require('express');
 const cors = require('cors');
@@ -198,7 +200,29 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
 
 // === Ping / version check ===
 app.get('/api/ping', (req, res) => {
-  res.json({ ok: true, v: '9362f46', t: Date.now() });
+  res.json({ ok: true, v: 'debug-1', t: Date.now() });
+});
+
+// === Temporary debug endpoint (no auth) ===
+app.get('/api/debug', (req, res) => {
+  try {
+    const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get();
+    const agentCount = db.prepare('SELECT COUNT(*) as c FROM agents').get();
+    const serverCount = db.prepare("SELECT COUNT(*) as c FROM servers WHERE status = 'active'").get();
+    res.json({
+      mode: IS_DEV ? 'dev' : 'prod',
+      node_env: process.env.NODE_ENV || '(not set)',
+      has_tg_token: !!TG_BOT_TOKEN,
+      tg_token_len: TG_BOT_TOKEN.length,
+      cwd: process.cwd(),
+      db_path: require('./lib/db').db.name,
+      users: userCount.c,
+      agents: agentCount.c,
+      servers: serverCount.c,
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // === Skills catalog ===
