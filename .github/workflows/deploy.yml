@@ -24,9 +24,9 @@ jobs:
             npm install --production
             npm rebuild 2>/dev/null || true
             fuser -k 3000/tcp 2>/dev/null || true
-            sleep 2
-            pm2 start server.js --name operent-backend --cwd /root/operent/backend 2>/dev/null || \
-            pm2 restart operent-backend
+            sleep 1
+            pm2 delete operent-backend 2>/dev/null || true
+            pm2 start server.js --name operent-backend --cwd /root/operent/backend
             pm2 save
             echo "=== PM2 STATUS ==="
             pm2 list

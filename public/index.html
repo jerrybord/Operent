@@ -1661,11 +1661,13 @@ function renderAgents() {
   if (!container) return;
   var h = getHeaders();
   fetch(API_BASE + '/api/agents', { headers: h })
-    .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function(r) {
+      if (r.status === 401) return Promise.reject('auth');
+      return r.ok ? r.json() : Promise.reject(r.status);
+    })
     .then(function(apiList) {
       if (!Array.isArray(apiList)) throw new Error('bad response');
       var usernameMap = getBotUsernameMap();
-      // Also try to match by name from legacy localStorage for bots deployed before this fix
       var legacyList = getAgents();
       var legacyByName = {};
       legacyList.forEach(function(a) { if (a.name && a.botUsername) legacyByName[a.name.toLowerCase()] = a.botUsername; });
@@ -1676,8 +1678,14 @@ function renderAgents() {
       });
       _paintAgents(augmented);
     })
-    .catch(function() {
-      // Fallback: render from localStorage (old agents without real UUID won't have working gear)
+    .catch(function(err) {
+      if (err === 'auth') {
+        // Auth failed — show error, don't silently show empty list
+        var container2 = document.getElementById('agent-list');
+        if (container2) container2.innerHTML = '<div style="padding:24px;text-align:center;font-size:13px;color:var(--red)">Auth error — please reopen app</div>';
+        return;
+      }
+      // Network/other error — fall back to localStorage
       _paintAgents(getAgents());
     });
 }
