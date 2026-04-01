@@ -82,7 +82,8 @@ function authMiddleware(req, res, next) {
     return res.status(401).json({ error: 'Missing Telegram auth' });
   }
 
-  const user = IS_DEV
+  // If TG_BOT_TOKEN is not configured, skip signature check (extractUser only)
+  const user = (IS_DEV || !TG_BOT_TOKEN)
     ? extractUser(initData)
     : validateInitData(initData, TG_BOT_TOKEN);
 
