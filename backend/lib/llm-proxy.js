@@ -382,8 +382,10 @@ function createProxyRouter(express) {
       const result = await proxyAnthropic(agentId, requestBody);
       res.status(result.status).json(result.body);
     } catch (error) {
-      console.error('Proxy error (anthropic):', error.message);
-      res.status(500).json({ error: { message: 'Proxy error: ' + error.message } });
+      const cause = error.cause?.message || error.cause?.code || '';
+      const detail = cause ? `${error.message} (${cause})` : error.message;
+      console.error('Proxy error (anthropic):', detail);
+      res.status(500).json({ error: { message: 'Proxy error: ' + detail } });
     }
   });
 

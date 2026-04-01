@@ -209,16 +209,38 @@ app.get('/api/ping', (req, res) => {
 });
 
 // === Temporary debug endpoint (no auth) ===
-app.get('/api/debug', (req, res) => {
+app.get('/api/debug', async (req, res) => {
   try {
     const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get();
     const agentCount = db.prepare('SELECT COUNT(*) as c FROM agents').get();
     const serverCount = db.prepare("SELECT COUNT(*) as c FROM servers WHERE status = 'active'").get();
+
+    // Quick Anthropic connectivity test (no tokens sent, just checks reachability)
+    let anthropicReachable = false;
+    let anthropicError = null;
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    if (anthropicKey) {
+      try {
+        const testRes = await fetch('https://api.anthropic.com/v1/models', {
+          headers: { 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01' },
+          signal: AbortSignal.timeout(5000),
+        });
+        anthropicReachable = testRes.status === 200 || testRes.status === 401; // 401 means reachable but key issue
+        if (!anthropicReachable) anthropicError = `HTTP ${testRes.status}`;
+      } catch (e) {
+        anthropicError = e.cause?.code || e.cause?.message || e.message;
+      }
+    }
+
     res.json({
       mode: IS_DEV ? 'dev' : 'prod',
       node_env: process.env.NODE_ENV || '(not set)',
       has_tg_token: !!TG_BOT_TOKEN,
       tg_token_len: TG_BOT_TOKEN.length,
+      has_anthropic_key: !!anthropicKey,
+      anthropic_key_prefix: anthropicKey ? anthropicKey.slice(0, 10) + '...' : null,
+      anthropic_reachable: anthropicReachable,
+      anthropic_error: anthropicError,
       cwd: process.cwd(),
       db_path: require('./lib/db').db.name,
       users: userCount.c,
