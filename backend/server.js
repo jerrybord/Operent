@@ -712,7 +712,7 @@ app.post('/api/agents/:id/redeploy', authMiddleware, async (req, res) => {
     skills: capabilities,
     model: agent.model,
     proactivity: agent.proactivity,
-  }, `${process.env.PROXY_BASE_URL || `http://host.docker.internal:${process.env.PORT || 3000}`}/v1/${agent.id}`);
+  }, process.env.PROXY_BASE_URL || `http://host.docker.internal:${process.env.PORT || 3000}`);
 
   const agentData = {
     id: agent.id,
