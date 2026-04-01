@@ -64,7 +64,18 @@ function generateConfig(formData, proxyBaseUrl) {
     model = 'sonnet',
     proactivity = 'smart',
     routing = null,
+    language = 'english',
   } = formData;
+
+  const LANGUAGE_INSTRUCTIONS = {
+    russian:  'Always respond in Russian (Русский). Communicate exclusively in Russian regardless of the language used in instructions or queries.',
+    chinese:  'Always respond in Chinese Mandarin (普通话/中文). Communicate exclusively in Mandarin regardless of the language used in instructions.',
+    hindi:    'Always respond in Hindi (हिन्दी). Communicate exclusively in Hindi regardless of the language used in instructions.',
+    spanish:  'Always respond in Spanish (Español). Communicate exclusively in Spanish regardless of the language used in instructions.',
+    arabic:   'Always respond in Arabic (العربية). Communicate exclusively in Arabic regardless of the language used in instructions.',
+    english:  '',
+  };
+  const languageInstruction = LANGUAGE_INSTRUCTIONS[language] || '';
 
   // Resolve model config
   const primaryModel = MODEL_MAP[model] || MODEL_MAP['sonnet'];
@@ -178,11 +189,12 @@ def p(n):
     `
 CRITICAL RULES:
 - You are a Telegram chat bot. You do NOT have a terminal, shell, or filesystem. You CANNOT run commands, scripts, or code. Never output shell commands, tool_call XML, or pretend to execute anything.
-- Communicate in the user's language. Be helpful, concise, and proactive.
+- Be helpful, concise, and proactive.
 - If a skill requires an API key the user hasn't provided, politely ask them to send it.`,
     description ? `\nUser context: ${description}` : '',
     skillLines ? `\nYour installed skills:\n${skillLines}` : '',
     cronInstructions,
+    languageInstruction ? `\nLANGUAGE RULE: ${languageInstruction}` : '',
   ].filter(Boolean).join('\n');
 
   // Build skill instructions map for agent runtime

@@ -1475,11 +1475,28 @@ var routingNameToKey = {
   'Kimi K2.5': 'kimi',
 };
 
+function detectLanguage(text) {
+  if (!text || text.trim().length < 3) return 'english';
+  var t = text;
+  // Arabic
+  if (/[\u0600-\u06FF]/.test(t)) return 'arabic';
+  // Chinese (Mandarin)
+  if (/[\u4E00-\u9FFF\u3400-\u4DBF]/.test(t)) return 'chinese';
+  // Hindi (Devanagari)
+  if (/[\u0900-\u097F]/.test(t)) return 'hindi';
+  // Russian / Cyrillic
+  if (/[\u0400-\u04FF]/.test(t)) return 'russian';
+  // Spanish: accented vowels or ñ, or common Spanish words
+  if (/[áéíóúñüÁÉÍÓÚÑÜ]/.test(t) || /\b(que|por|para|con|una|del|los|las|pero|como|esta|este)\b/i.test(t)) return 'spanish';
+  return 'english';
+}
+
 function collectFormData() {
   var fd = {};
   // Step 1: description
   var ta = document.querySelector('#p-1 textarea.inp');
   fd.description = ta ? ta.value : '';
+  fd.language = detectLanguage(fd.description);
   // Step 2: goal
   var goalEl = document.querySelector('#p-2 .gl.on h4');
   fd.goal = goalEl ? (goalMap[goalEl.textContent] || 'personal') : 'personal';

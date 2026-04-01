@@ -110,7 +110,7 @@ app.get('/health', (req, res) => {
 // === Deploy ===
 app.post('/api/deploy', authMiddleware, async (req, res) => {
   try {
-    const { name, botToken, description, goal, skills, capabilities, model, proactivity, routing } = req.body;
+    const { name, botToken, description, goal, skills, capabilities, model, proactivity, routing, language } = req.body;
 
     if (!name || !botToken) {
       return res.status(400).json({ error: 'Name and botToken are required' });
@@ -146,6 +146,7 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
       model: model || 'sonnet',
       proactivity: proactivity || 'smart',
       routing,
+      language: language || 'english',
     }, proxyBaseUrl);
 
     // Create agent in DB
