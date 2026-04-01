@@ -248,7 +248,10 @@ async function deployAgent(server, agent, onProgress = () => {}) {
     }
 
     // Step 5b: Write workspace templates
-    const soulMd = loadSoulForGoal(agent.goal || 'personal');
+    const personalities = agent.personalities || [];
+    const soulMd = personalities.length > 0
+      ? mergeSouls(agent.goal || 'personal', personalities)
+      : loadSoulForGoal(agent.goal || 'personal');
     const agentsMd = loadTemplate('AGENTS.md');
     const userMd = generateUserMd(agent);
     const toolsMd = generateToolsMd(enabledSkills);
@@ -525,8 +528,11 @@ async function redeployAgent(server, agent, onProgress = () => {}) {
     const userMd = generateUserMdFull(agent);
     await sftpWriteFile(sftp, `${dir}/workspace/USER.md`, userMd);
 
+    // Skills — read from regenerated config (not stale DB column)
+    const enabledSkills = agent.config?.skills?.enabled || [];
+    const skillInstructions = agent.config?.skills?.instructions || {};
+
     // TOOLS.md — updated skills
-    const enabledSkills = agent.capabilities || [];
     const toolsMd = generateToolsMd(enabledSkills);
     await sftpWriteFile(sftp, `${dir}/workspace/TOOLS.md`, toolsMd);
 
@@ -535,8 +541,17 @@ async function redeployAgent(server, agent, onProgress = () => {}) {
       await sftpWriteFile(sftp, `${dir}/config/openclaw.json`, JSON.stringify(agent.config, null, 2));
     }
 
-    // Update skill instructions
-    const skillInstructions = agent.config?.skills?.instructions || {};
+    // Update .env (description may have changed)
+    const envContent = [
+      `TELEGRAM_BOT_TOKEN=${agent.bot_token}`,
+      `AGENT_ID=${agent.id}`,
+      `AGENT_NAME=${agent.name}`,
+      `AGENT_DESCRIPTION=${(agent.description || '').replace(/\n/g, ' ')}`,
+    ].join('\n');
+    await sftpWriteFile(sftp, `${dir}/.env`, envContent);
+
+    // Wipe old skill files, then write fresh ones (removes deleted skills)
+    await sshExec(conn, `rm -rf ${dir}/skills && mkdir -p ${dir}/skills`);
     for (const skillId of enabledSkills) {
       const content = skillInstructions[skillId];
       if (content) {

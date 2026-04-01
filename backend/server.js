@@ -173,6 +173,7 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
         telegramUsername: req.tgUser.username || '',
         goal: goal || 'personal',
         description: description || '',
+        personalities: [],
       },
       (progress) => deployStatus.set(agentId, progress)
     ).then(async (result) => {
