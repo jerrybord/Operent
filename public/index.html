@@ -754,8 +754,8 @@
           <div class="logo-ring"></div>
           <div class="logo-main"><svg width="48" height="48" viewBox="0 0 48 48" fill="none"><path d="M24 6c-3 0-6 2-7 5l-3-2c-2-1-4 0-5 2s0 4 2 5l3 2c-1 2-1 4-1 6s0 4 1 6l-3 2c-2 1-3 3-2 5s3 3 5 2l3-2c1 3 4 5 7 5s6-2 7-5l3 2c2 1 4 0 5-2s0-4-2-5l-3-2c1-2 1-4 1-6s0-4-1-6l3-2c2-1 3-3 2-5s-3-3-5-2l-3 2c-1-3-4-5-7-5z" fill="url(#lg)"/><circle cx="20" cy="20" r="2" fill="#fff" opacity="0.9"/><circle cx="28" cy="20" r="2" fill="#fff" opacity="0.9"/><defs><linearGradient id="lg" x1="10" y1="6" x2="38" y2="42"><stop stop-color="#FF4D6A"/><stop offset="1" stop-color="#FF2942"/></linearGradient></defs></svg></div>
         </div>
-        <h1>Deploy your<br><span class="red">AI Agent.</span></h1>
-        <p>No code. No servers. No headaches. We handle everything — you just describe what you need.</p>
+        <h1 data-i18n-html="land.h1">Deploy your<br><span class="red">AI Agent.</span></h1>
+        <p data-i18n="land.sub">No code. No servers. No headaches. We handle everything — you just describe what you need.</p>
         <div class="trust-row">
           <span class="trust"><span class="dot"></span> 60s deploy</span>
           <span class="trust"><span class="dot"></span> From $2</span>
@@ -763,53 +763,53 @@
         </div>
       </div>
     </div>
-    <div class="bottom"><button class="btn" onclick="go(1)"><span class="shine"></span>Hire Your Agent</button></div>
+    <div class="bottom"><button class="btn" onclick="go(1)"><span class="shine"></span><span data-i18n="land.btn">Hire Your Agent</span></button></div>
   </div>
 
   <!-- Step 1 -->
   <div class="screen" id="p-1">
     <div class="screen-body">
-      <div class="top"><span class="top-tag">Step 1</span></div>
+      <div class="top"><span class="top-tag" data-i18n="s1.tag">Step 1</span></div>
       <div class="prg"><i style="width:16%"></i></div>
       <div class="sec">
-        <h2 class="h2">Describe your<br>ideal assistant.</h2>
-        <p class="sub">Plain language. It handles the rest.</p>
-        <textarea class="inp" placeholder="e.g. Manage my social media, respond to DMs, schedule posts, analyze metrics..."></textarea>
+        <h2 class="h2" data-i18n-html="s1.h2">Describe your<br>ideal assistant.</h2>
+        <p class="sub" data-i18n="s1.sub">Plain language. It handles the rest.</p>
+        <textarea class="inp" data-i18n-ph="s1.ph" placeholder="e.g. Manage my social media, respond to DMs, schedule posts, analyze metrics..."></textarea>
       </div>
       <div class="sp"></div>
     </div>
-    <div class="bottom"><button class="btn" onclick="go(2)"><span class="shine"></span>Continue</button></div>
+    <div class="bottom"><button class="btn" onclick="go(2)"><span class="shine"></span><span data-i18n="btn.continue">Continue</span></button></div>
   </div>
 
   <!-- Step 2 -->
   <div class="screen" id="p-2">
     <div class="screen-body">
-      <div class="top"><span class="top-tag">Step 2</span></div>
+      <div class="top"><span class="top-tag" data-i18n="s2.tag">Step 2</span></div>
       <div class="prg"><i style="width:33%"></i></div>
       <div class="sec">
-        <h2 class="h2">What's your<br>main goal?</h2>
-        <p class="sub">We'll configure everything for you.</p>
+        <h2 class="h2" data-i18n-html="s2.h2">What's your<br>main goal?</h2>
+        <p class="sub" data-i18n="s2.sub">We'll configure everything for you.</p>
         <div class="goals">
-          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></div><div><h4>Business Automation</h4><p>Workflows & operations</p></div><div class="gl-check"></div></div>
-          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></div><div><h4>Social Media</h4><p>Content & engagement</p></div><div class="gl-check"></div></div>
-          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div><div><h4>Development</h4><p>Code, debug & deploy</p></div><div class="gl-check"></div></div>
-          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div><div><h4>Research & Analytics</h4><p>Data & insights</p></div><div class="gl-check"></div></div>
-          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div><div><h4>Personal Assistant</h4><p>Daily tasks & calendar</p></div><div class="gl-check"></div></div>
+          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></div><div><h4 data-i18n="goal.business">Business Automation</h4><p data-i18n="goal.business.sub">Workflows & operations</p></div><div class="gl-check"></div></div>
+          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg></div><div><h4 data-i18n="goal.social">Social Media</h4><p data-i18n="goal.social.sub">Content & engagement</p></div><div class="gl-check"></div></div>
+          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div><div><h4 data-i18n="goal.dev">Development</h4><p data-i18n="goal.dev.sub">Code, debug & deploy</p></div><div class="gl-check"></div></div>
+          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div><div><h4 data-i18n="goal.research">Research & Analytics</h4><p data-i18n="goal.research.sub">Data & insights</p></div><div class="gl-check"></div></div>
+          <div class="gl" onclick="sel(this,'gl')"><div class="gl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div><div><h4 data-i18n="goal.personal">Personal Assistant</h4><p data-i18n="goal.personal.sub">Daily tasks & calendar</p></div><div class="gl-check"></div></div>
         </div>
       </div>
       <div class="sp"></div>
     </div>
-    <div class="bottom"><button class="btn" onclick="go(3)"><span class="shine"></span>Continue</button></div>
+    <div class="bottom"><button class="btn" onclick="go(3)"><span class="shine"></span><span data-i18n="btn.continue">Continue</span></button></div>
   </div>
 
   <!-- Step 3 -->
   <div class="screen" id="p-3">
     <div class="screen-body">
-      <div class="top"><span class="top-tag">Step 3</span></div>
+      <div class="top"><span class="top-tag" data-i18n="s3.tag">Step 3</span></div>
       <div class="prg"><i style="width:50%"></i></div>
       <div class="sec">
-        <h2 class="h2">Skills</h2>
-        <p class="sub">Pre-install skills from ClawHub. All included.</p>
+        <h2 class="h2" data-i18n="s3.h2">Skills</h2>
+        <p class="sub" data-i18n="s3.sub">Pre-install skills from ClawHub. All included.</p>
         <div class="tw" onclick="tg(this)"><div class="tw-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3.5 3.5 0 0 0-3.5 3.5v5a3.5 3.5 0 0 0 7 0v-5A3.5 3.5 0 0 0 12 2z"/><path d="M19 10.5v.5a7 7 0 0 1-14 0v-.5"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></svg></div><div class="tw-d"><h4>Voice Messages</h4><p>Speech-to-text transcription</p></div><div class="sw2"></div></div>
         <div class="tw" onclick="tg(this)"><div class="tw-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><circle cx="11" cy="11" r="3" stroke-dasharray="2 2.5"/></svg></div><div class="tw-d"><h4>Global Search</h4><p>17 search engines, no API key</p></div><div class="sw2"></div></div>
         <div class="tw" onclick="tg(this)"><div class="tw-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg></div><div class="tw-d"><h4>Google Workspace</h4><p>Gmail, Calendar, Drive, Sheets</p></div><div class="sw2"></div></div>
@@ -827,29 +827,29 @@
       </div>
       <div class="sp"></div>
     </div>
-    <div class="bottom"><button class="btn" onclick="go(4)"><span class="shine"></span>Continue</button></div>
+    <div class="bottom"><button class="btn" onclick="go(4)"><span class="shine"></span><span data-i18n="btn.continue">Continue</span></button></div>
   </div>
 
   <!-- Step 4 -->
   <div class="screen" id="p-4">
     <div class="screen-body">
-      <div class="top"><span class="top-tag">Step 4</span></div>
+      <div class="top"><span class="top-tag" data-i18n="s4.tag">Step 4</span></div>
       <div class="prg"><i style="width:66%"></i></div>
       <div class="sec">
-        <h2 class="h2">Connect your bot</h2>
-        <p class="sub">Create via @BotFather, paste the token.</p>
+        <h2 class="h2" data-i18n="s4.h2">Connect your bot</h2>
+        <p class="sub" data-i18n="s4.sub">Create via @BotFather, paste the token.</p>
         <div class="guide">
-          <div class="gs"><div class="gs-n">1</div><div class="gs-t">Open <b>@BotFather</b></div></div>
-          <div class="gs"><div class="gs-n">2</div><div class="gs-t">Send <b>/newbot</b></div></div>
-          <div class="gs"><div class="gs-n">3</div><div class="gs-t">Copy <b>API Token</b></div></div>
-          <div class="gs"><div class="gs-n">4</div><div class="gs-t">Paste below</div></div>
+          <div class="gs"><div class="gs-n">1</div><div class="gs-t" data-i18n-html="s4.g1">Open <b>@BotFather</b></div></div>
+          <div class="gs"><div class="gs-n">2</div><div class="gs-t" data-i18n-html="s4.g2">Send <b>/newbot</b></div></div>
+          <div class="gs"><div class="gs-n">3</div><div class="gs-t" data-i18n-html="s4.g3">Copy <b>API Token</b></div></div>
+          <div class="gs"><div class="gs-n">4</div><div class="gs-t" data-i18n="s4.g4">Paste below</div></div>
         </div>
-        <div class="api-w"><input class="inp" placeholder="Bot API Token..." /><button class="api-p" onclick="haptic('light');navigator.clipboard.readText().then(t=>{this.previousElementSibling.value=t}).catch(()=>{})">PASTE</button></div>
+        <div class="api-w"><input class="inp" data-i18n-ph="s4.ph" placeholder="Bot API Token..." /><button class="api-p" onclick="haptic('light');navigator.clipboard.readText().then(t=>{this.previousElementSibling.value=t}).catch(()=>{})">PASTE</button></div>
       </div>
       <div class="sep"></div>
       <div class="sec">
-        <h2 class="h2">AI Brain</h2>
-        <p class="sub">Choose the intelligence engine.</p>
+        <h2 class="h2" data-i18n="s4.h2b">AI Brain</h2>
+        <p class="sub" data-i18n="s4.sub2">Choose the intelligence engine.</p>
         <div class="lm" onclick="lp(this,0)"><div class="lm-a" style="background:linear-gradient(135deg,#D4A574,#8B6914);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><div class="lm-d"><h4>Claude Haiku 4.5 <span class="tg tg-r">FAST</span></h4><p>Lightning quick</p></div><div class="rd"></div></div>
         <div class="lm sl" onclick="lp(this,0)"><div class="lm-a" style="background:linear-gradient(135deg,#D4A574,#8B6914);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 017 7c0 3-2 5-3 7h-8c-1-2-3-4-3-7a7 7 0 017-7z"/><path d="M9 22h6M10 18h4"/></svg></div><div class="lm-d"><h4>Claude Sonnet 4.6 <span class="tg tg-r">RECOMMENDED</span></h4><p>Best balance</p></div><div class="rd"></div></div>
         <div class="lm" onclick="lp(this,0)"><div class="lm-a" style="background:linear-gradient(135deg,#D4A574,#8B6914);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg></div><div class="lm-d"><h4>Claude Opus 4.6</h4><p>Max reasoning</p></div><div class="rd"></div></div>
@@ -860,17 +860,17 @@
         <div class="lm" onclick="lp(this,1)"><div class="lm-a" style="background:linear-gradient(135deg,var(--red),#600);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div><div class="lm-d"><h4>Custom Routing <span class="tg tg-b">PRO</span></h4><p>Task-based routing</p></div><div class="rd"></div></div>
       </div>
     </div>
-    <div class="bottom"><button class="btn" onclick="go(5)"><span class="shine"></span>Continue</button></div>
+    <div class="bottom"><button class="btn" onclick="go(5)"><span class="shine"></span><span data-i18n="btn.continue">Continue</span></button></div>
   </div>
 
   <!-- Routing -->
   <div class="screen" id="p-routing">
     <div class="screen-body">
-      <div class="top"><span class="top-tag">Routing</span></div>
+      <div class="top"><span class="top-tag" data-i18n="routing.tag">Routing</span></div>
       <div class="sm"></div>
       <div class="sec" style="text-align:center;">
-        <h2 class="h2">Smart Routing</h2>
-        <p class="sub">Assign models to task types.</p>
+        <h2 class="h2" data-i18n="routing.h2">Smart Routing</h2>
+        <p class="sub" data-i18n="routing.sub">Assign models to task types.</p>
       </div>
       <div class="tree">
         <div class="tree-top"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg> AI Agent</div>
@@ -882,47 +882,47 @@
       </div>
       <div class="sp"></div>
     </div>
-    <div class="bottom"><button class="btn" onclick="go(5)"><span class="shine"></span>Continue</button></div>
+    <div class="bottom"><button class="btn" onclick="go(5)"><span class="shine"></span><span data-i18n="btn.continue">Continue</span></button></div>
   </div>
 
   <!-- Step 5 -->
   <div class="screen" id="p-5">
     <div class="screen-body">
-      <div class="top"><span class="top-tag">Step 5</span></div>
+      <div class="top"><span class="top-tag" data-i18n="s5.tag">Step 5</span></div>
       <div class="prg"><i style="width:83%"></i></div>
       <div class="md"></div>
       <div class="nick-a" id="na">?</div>
       <div class="sec" style="text-align:center;">
-        <h2 class="h2">Name your agent</h2>
-        <p class="sub">Give it personality.</p>
-        <input class="inp" type="text" placeholder="e.g. Clawde, Atlas, Jarvis..." oninput="document.getElementById('na').textContent=this.value?this.value[0].toUpperCase():'?'" style="text-align:center;font-size:18px;font-weight:700;" />
+        <h2 class="h2" data-i18n="s5.h2">Name your agent</h2>
+        <p class="sub" data-i18n="s5.sub">Give it personality.</p>
+        <input class="inp" type="text" data-i18n-ph="s5.ph" placeholder="e.g. Clawde, Atlas, Jarvis..." oninput="document.getElementById('na').textContent=this.value?this.value[0].toUpperCase():'?'" style="text-align:center;font-size:18px;font-weight:700;" />
       </div>
       <div class="sep"></div>
       <div class="sec">
-        <h2 class="h2">Proactivity</h2>
-        <p class="sub">How much initiative?</p>
-        <div class="pr" onclick="sel(this,'pr')"><h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" style="vertical-align:-2px;margin-right:6px;"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>Only when asked</h4><p>Responds to direct messages only.</p></div>
-        <div class="pr on" onclick="sel(this,'pr')"><h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><path d="M12 2a7 7 0 017 7c0 3-2 5-3 7h-8c-1-2-3-4-3-7a7 7 0 017-7z"/><path d="M9 22h6"/></svg>Smart nudges</h4><p>Suggestions & reminders. Balanced.</p></div>
-        <div class="pr" onclick="sel(this,'pr')"><h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/></svg>Full autopilot</h4><p>Maximum autonomy. Acts proactively.</p></div>
+        <h2 class="h2" data-i18n="s5.h2b">Proactivity</h2>
+        <p class="sub" data-i18n="s5.sub2">How much initiative?</p>
+        <div class="pr" onclick="sel(this,'pr')"><h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" style="vertical-align:-2px;margin-right:6px;"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg><span data-i18n="s5.pr1">Only when asked</span></h4><p data-i18n="s5.pr1s">Responds to direct messages only.</p></div>
+        <div class="pr on" onclick="sel(this,'pr')"><h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><path d="M12 2a7 7 0 017 7c0 3-2 5-3 7h-8c-1-2-3-4-3-7a7 7 0 017-7z"/><path d="M9 22h6"/></svg><span data-i18n="s5.pr2">Smart nudges</span></h4><p data-i18n="s5.pr2s">Suggestions & reminders. Balanced.</p></div>
+        <div class="pr" onclick="sel(this,'pr')"><h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/></svg><span data-i18n="s5.pr3">Full autopilot</span></h4><p data-i18n="s5.pr3s">Maximum autonomy. Acts proactively.</p></div>
       </div>
     </div>
-    <div class="bottom"><button class="btn" onclick="go(6)"><span class="shine"></span>Continue</button></div>
+    <div class="bottom"><button class="btn" onclick="go(6)"><span class="shine"></span><span data-i18n="btn.continue">Continue</span></button></div>
   </div>
 
   <!-- Step 6: Deploy -->
   <div class="screen" id="p-6">
     <div class="screen-body">
-      <div class="top"><span class="top-tag">Deploy</span></div>
+      <div class="top"><span class="top-tag" data-i18n="s6.tag">Deploy</span></div>
       <div class="prg"><i style="width:100%"></i></div>
       <div class="lg"></div>
       <div style="text-align:center;">
-        <h2 class="h2">Ready to launch.</h2>
-        <p class="sub">Configured & waiting for deployment.</p>
+        <h2 class="h2" data-i18n="s6.h2">Ready to launch.</h2>
+        <p class="sub" data-i18n="s6.sub">Configured & waiting for deployment.</p>
       </div>
       <div class="dep">
-        <div class="dep-label">Deploy Fee</div>
+        <div class="dep-label" data-i18n="s6.fee">Deploy Fee</div>
         <div class="dep-price"><sup>$</sup>2</div>
-        <div class="dep-sub">One-time. Everything included.</div>
+        <div class="dep-sub" data-i18n="s6.fee2">One-time. Everything included.</div>
         <div class="dep-chips">
           <span class="dep-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/></svg>Hosting</span>
           <span class="dep-chip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M12 2a7 7 0 017 7c0 3-2 5-3 7h-8c-1-2-3-4-3-7a7 7 0 017-7z"/><path d="M9 22h6"/></svg>LLM Credits</span>
@@ -932,7 +932,7 @@
       </div>
       <div class="sp"></div>
     </div>
-    <div class="bottom"><button class="btn btn-deploy" id="dbtn" onclick="dep()"><span class="shine" id="dbtn-shine"></span><div class="btn-track" id="dbtn-track"></div><div class="btn-glow"></div><span class="btn-text" id="dbtn-text">Born your Agent</span></button></div>
+    <div class="bottom"><button class="btn btn-deploy" id="dbtn" onclick="dep()"><span class="shine" id="dbtn-shine"></span><div class="btn-track" id="dbtn-track"></div><div class="btn-glow"></div><span class="btn-text" id="dbtn-text" data-i18n="s6.btn">Born your Agent</span></button></div>
   </div>
 
   <!-- Dashboard -->
@@ -946,15 +946,15 @@
       <!-- Tab: Agents -->
       <div class="dash-panel active" id="panel-agents">
         <div class="dash-hero">
-          <div class="dash-label">Active Agents</div>
-          <div class="dash-count" id="dash-count">0 <span>agents</span></div>
-          <div class="dash-status ok" id="dash-status"><span class="dot-live" style="width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(34,197,94,0.5);"></span> All systems online</div>
+          <div class="dash-label" data-i18n="dash.label">Active Agents</div>
+          <div class="dash-count" id="dash-count">0 <span data-i18n="dash.agents">agents</span></div>
+          <div class="dash-status ok" id="dash-status"><span class="dot-live" style="width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(34,197,94,0.5);"></span> <span data-i18n="dash.online">All systems online</span></div>
         </div>
-        <button class="dash-new" onclick="haptic('heavy');newAgent()"><span class="shine"></span><svg viewBox="0 0 18 18"><line x1="9" y1="3" x2="9" y2="15"/><line x1="3" y1="9" x2="15" y2="9"/></svg> New Agent</button>
+        <button class="dash-new" onclick="haptic('heavy');newAgent()"><span class="shine"></span><svg viewBox="0 0 18 18"><line x1="9" y1="3" x2="9" y2="15"/><line x1="3" y1="9" x2="15" y2="9"/></svg> <span data-i18n="dash.new">New Agent</span></button>
 
         <div class="dash-section">
           <div class="dash-sec-head">
-            <div class="dash-sec-title">Your Agents</div>
+            <div class="dash-sec-title" data-i18n="dash.your">Your Agents</div>
           </div>
           <div class="agent-list" id="agent-list"></div>
         </div>
@@ -1052,9 +1052,9 @@
 
     <div class="dash-tabs">
       <div class="dash-tab-pill" id="tab-pill"></div>
-      <div class="dash-tab active" onclick="haptic('select');switchDashTab(this,0)"><div class="dash-tab-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div><span>Agents</span></div>
-      <div class="dash-tab" onclick="haptic('select');switchDashTab(this,1)"><div class="dash-tab-ic"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div><span>Usage</span></div>
-      <div class="dash-tab" onclick="haptic('select');switchDashTab(this,2)"><div class="dash-tab-ic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg></div><span>Billing</span></div>
+      <div class="dash-tab active" onclick="haptic('select');switchDashTab(this,0)"><div class="dash-tab-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div><span data-i18n="tab.agents">Agents</span></div>
+      <div class="dash-tab" onclick="haptic('select');switchDashTab(this,1)"><div class="dash-tab-ic"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div><span data-i18n="tab.usage">Usage</span></div>
+      <div class="dash-tab" onclick="haptic('select');switchDashTab(this,2)"><div class="dash-tab-ic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg></div><span data-i18n="tab.billing">Billing</span></div>
     </div>
   </div>
 
@@ -1065,40 +1065,40 @@
         <button class="set-back" onclick="haptic('light');bk('dash')">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <div class="set-title">Agent Settings</div>
+        <div class="set-title" data-i18n="set.title">Agent Settings</div>
       </div>
 
       <!-- Description -->
       <div class="set-sec">
-        <div class="set-label">Describe your agent</div>
-        <textarea id="set-desc" class="set-textarea" rows="3" placeholder="e.g. Venture capital analyst helping with market research…"></textarea>
+        <div class="set-label" data-i18n="set.desc">Describe your agent</div>
+        <textarea id="set-desc" class="set-textarea" rows="3" data-i18n-ph="set.desc-ph" placeholder="e.g. Venture capital analyst helping with market research…"></textarea>
       </div>
 
       <!-- Primary Goal -->
       <div class="set-sec" style="margin-top:16px;">
-        <div class="set-label">Primary Goal</div>
+        <div class="set-label" data-i18n="set.goal">Primary Goal</div>
         <select id="set-goal" class="set-select">
-          <option value="personal">👤 Personal Assistant</option>
-          <option value="research">🔬 Research &amp; Analytics</option>
-          <option value="development">💻 Development</option>
-          <option value="social">📱 Social Media Manager</option>
-          <option value="business">💼 Business Automation</option>
+          <option value="personal" data-i18n-opt="set.goal.personal">👤 Personal Assistant</option>
+          <option value="research" data-i18n-opt="set.goal.research">🔬 Research &amp; Analytics</option>
+          <option value="development" data-i18n-opt="set.goal.dev">💻 Development</option>
+          <option value="social" data-i18n-opt="set.goal.social">📱 Social Media Manager</option>
+          <option value="business" data-i18n-opt="set.goal.business">💼 Business Automation</option>
         </select>
       </div>
 
       <!-- Additional Personalities -->
       <div class="set-sec" style="margin-top:20px;">
-        <div class="set-label">Additional Personalities</div>
+        <div class="set-label" data-i18n="set.pers">Additional Personalities</div>
         <div class="pers-list" id="set-pers-list"></div>
         <button class="set-add-btn" onclick="openPersonalityPicker()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          Add Personality
+          <span data-i18n="set.pers-add">Add Personality</span>
         </button>
       </div>
 
       <!-- Skills -->
       <div class="set-sec" style="margin-top:20px;">
-        <div class="set-label">Skills</div>
+        <div class="set-label" data-i18n="set.skills">Skills</div>
         <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;padding:4px 16px;">
           <div id="set-skills-list"></div>
         </div>
@@ -1107,7 +1107,7 @@
       <!-- Update button -->
       <button class="set-redeploy-btn" onclick="saveAndRedeploy()">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        Update Agent
+        <span data-i18n="set.update">Update Agent</span>
       </button>
     </div>
   </div>
@@ -1116,9 +1116,11 @@
 <!-- Dropdown Menu -->
 <div class="dropdown-ov" id="dropdown-ov" onclick="if(event.target===this){haptic('light');toggleDropdown();}">
   <div class="dropdown">
-    <div class="dropdown-item" onclick="haptic('medium');openLink('https://t.me/OperentAI')"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>Channel</div>
+    <div class="dropdown-item" onclick="haptic('medium');openLink('https://t.me/OperentAI')"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg><span data-i18n="dd.channel">Channel</span></div>
     <div class="dropdown-sep"></div>
-    <div class="dropdown-item" onclick="haptic('medium');openLink('https://t.me/reliconaman')"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Support</div>
+    <div class="dropdown-item" onclick="haptic('medium');openLink('https://t.me/reliconaman')"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span data-i18n="dd.support">Support</span></div>
+    <div class="dropdown-sep"></div>
+    <div class="dropdown-item" onclick="haptic('medium');openLanguagePicker()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg><span data-i18n="dd.language">Language</span></div>
   </div>
 </div>
 
@@ -1379,6 +1381,142 @@ function haptic(type) {
 }
 // Navigation history for back button
 var navHistory = [];
+
+// ── i18n ──────────────────────────────────────────────────────────────────────
+var STRINGS = {
+  en: {
+    'land.h1': 'Deploy your<br><span class="red">AI Agent.</span>',
+    'land.sub': 'No code. No servers. No headaches. We handle everything — you just describe what you need.',
+    'land.btn': 'Hire Your Agent',
+    's1.tag': 'Step 1', 's1.h2': 'Describe your<br>ideal assistant.', 's1.sub': 'Plain language. It handles the rest.',
+    's1.ph': 'e.g. Manage my social media, respond to DMs, schedule posts, analyze metrics...',
+    's2.tag': 'Step 2', 's2.h2': "What's your<br>main goal?", 's2.sub': "We'll configure everything for you.",
+    's3.tag': 'Step 3', 's3.h2': 'Skills', 's3.sub': 'Pre-install skills from ClawHub. All included.',
+    's4.tag': 'Step 4', 's4.h2': 'Connect your bot', 's4.sub': 'Create via @BotFather, paste the token.',
+    's4.h2b': 'AI Brain', 's4.sub2': 'Choose the intelligence engine.',
+    's4.g1': 'Open <b>@BotFather</b>', 's4.g2': 'Send <b>/newbot</b>', 's4.g3': 'Copy <b>API Token</b>', 's4.g4': 'Paste below',
+    's4.ph': 'Bot API Token...',
+    's5.tag': 'Step 5', 's5.h2': 'Name your agent', 's5.sub': 'Give it personality.',
+    's5.ph': 'e.g. Clawde, Atlas, Jarvis...',
+    's5.h2b': 'Proactivity', 's5.sub2': 'How much initiative?',
+    's5.pr1': 'Only when asked', 's5.pr1s': 'Responds to direct messages only.',
+    's5.pr2': 'Smart nudges', 's5.pr2s': 'Suggestions & reminders. Balanced.',
+    's5.pr3': 'Full autopilot', 's5.pr3s': 'Maximum autonomy. Acts proactively.',
+    'routing.tag': 'Routing', 'routing.h2': 'Smart Routing', 'routing.sub': 'Assign models to task types.',
+    's6.tag': 'Deploy', 's6.h2': 'Ready to launch.', 's6.sub': 'Configured & waiting for deployment.',
+    's6.fee': 'Deploy Fee', 's6.fee2': 'One-time. Everything included.', 's6.btn': 'Born your Agent',
+    'goal.business': 'Business Automation', 'goal.business.sub': 'Workflows & operations',
+    'goal.social': 'Social Media', 'goal.social.sub': 'Content & engagement',
+    'goal.dev': 'Development', 'goal.dev.sub': 'Code, debug & deploy',
+    'goal.research': 'Research & Analytics', 'goal.research.sub': 'Data & insights',
+    'goal.personal': 'Personal Assistant', 'goal.personal.sub': 'Daily tasks & calendar',
+    'btn.continue': 'Continue',
+    'dash.label': 'Active Agents', 'dash.agents': 'agents', 'dash.agent': 'agent',
+    'dash.online': 'All systems online', 'dash.offline': 'No active agents',
+    'dash.new': 'New Agent', 'dash.your': 'Your Agents',
+    'tab.agents': 'Agents', 'tab.usage': 'Usage', 'tab.billing': 'Billing',
+    'status.online': 'Online', 'status.deploying': 'Deploying…', 'status.error': 'Error',
+    'status.stopped': 'Stopped', 'status.offline': 'Offline',
+    'agent.empty': 'No agents yet.<br>Deploy your first one!',
+    'agent.auth-error': 'Auth error — please reopen app',
+    'set.title': 'Agent Settings', 'set.desc': 'Describe your agent',
+    'set.desc-ph': 'e.g. Venture capital analyst helping with market research…',
+    'set.goal': 'Primary Goal',
+    'set.goal.personal': '👤 Personal Assistant', 'set.goal.research': '🔬 Research & Analytics',
+    'set.goal.dev': '💻 Development', 'set.goal.social': '📱 Social Media Manager',
+    'set.goal.business': '💼 Business Automation',
+    'set.pers': 'Additional Personalities', 'set.pers-add': 'Add Personality',
+    'set.skills': 'Skills', 'set.update': 'Update Agent',
+    'dd.channel': 'Channel', 'dd.support': 'Support', 'dd.language': 'Language',
+  },
+  ru: {
+    'land.h1': 'Запусти своего<br><span class="red">AI Агента.</span>',
+    'land.sub': 'Без кода. Без серверов. Без головной боли. Мы всё настроим — ты просто опиши, что нужно.',
+    'land.btn': 'Нанять Агента',
+    's1.tag': 'Шаг 1', 's1.h2': 'Опиши своего<br>идеального помощника.', 's1.sub': 'Простыми словами. Всё остальное — мы.',
+    's1.ph': 'Например: управляй соцсетями, отвечай в ЛС, планируй посты, анализируй метрики...',
+    's2.tag': 'Шаг 2', 's2.h2': 'Какая главная<br>цель?', 's2.sub': 'Мы всё настроим под тебя.',
+    's3.tag': 'Шаг 3', 's3.h2': 'Навыки', 's3.sub': 'Предустановленные навыки из ClawHub. Всё включено.',
+    's4.tag': 'Шаг 4', 's4.h2': 'Подключи бота', 's4.sub': 'Создай через @BotFather, вставь токен.',
+    's4.h2b': 'AI Мозг', 's4.sub2': 'Выбери движок интеллекта.',
+    's4.g1': 'Открой <b>@BotFather</b>', 's4.g2': 'Отправь <b>/newbot</b>', 's4.g3': 'Скопируй <b>API Token</b>', 's4.g4': 'Вставь ниже',
+    's4.ph': 'Bot API Token...',
+    's5.tag': 'Шаг 5', 's5.h2': 'Назови агента', 's5.sub': 'Дай ему характер.',
+    's5.ph': 'Например: Клавдий, Атлас, Джарвис...',
+    's5.h2b': 'Проактивность', 's5.sub2': 'Сколько инициативы?',
+    's5.pr1': 'Только по запросу', 's5.pr1s': 'Отвечает только на прямые сообщения.',
+    's5.pr2': 'Умные подсказки', 's5.pr2s': 'Подсказки и напоминания. Баланс.',
+    's5.pr3': 'Полный автопилот', 's5.pr3s': 'Максимальная автономия. Действует сам.',
+    'routing.tag': 'Маршрутизация', 'routing.h2': 'Умная Маршрутизация', 'routing.sub': 'Назначь модели для типов задач.',
+    's6.tag': 'Деплой', 's6.h2': 'Готов к запуску.', 's6.sub': 'Настроен и ждёт деплоя.',
+    's6.fee': 'Плата за деплой', 's6.fee2': 'Разово. Всё включено.', 's6.btn': 'Запустить Агента',
+    'goal.business': 'Бизнес-автоматизация', 'goal.business.sub': 'Рабочие процессы',
+    'goal.social': 'Соцсети', 'goal.social.sub': 'Контент и вовлечённость',
+    'goal.dev': 'Разработка', 'goal.dev.sub': 'Код, отладка и деплой',
+    'goal.research': 'Исследования', 'goal.research.sub': 'Данные и аналитика',
+    'goal.personal': 'Личный помощник', 'goal.personal.sub': 'Задачи и календарь',
+    'btn.continue': 'Продолжить',
+    'dash.label': 'Активные Агенты', 'dash.agents': 'агентов', 'dash.agent': 'агент',
+    'dash.online': 'Все системы работают', 'dash.offline': 'Нет активных агентов',
+    'dash.new': 'Новый Агент', 'dash.your': 'Ваши Агенты',
+    'tab.agents': 'Агенты', 'tab.usage': 'Статистика', 'tab.billing': 'Оплата',
+    'status.online': 'Онлайн', 'status.deploying': 'Деплой…', 'status.error': 'Ошибка',
+    'status.stopped': 'Остановлен', 'status.offline': 'Офлайн',
+    'agent.empty': 'Агентов пока нет.<br>Создай первого!',
+    'agent.auth-error': 'Ошибка авторизации — открой приложение заново',
+    'set.title': 'Настройки Агента', 'set.desc': 'Опиши агента',
+    'set.desc-ph': 'Например: аналитик VC, помогает с исследованием рынка…',
+    'set.goal': 'Основная цель',
+    'set.goal.personal': '👤 Личный помощник', 'set.goal.research': '🔬 Исследования и аналитика',
+    'set.goal.dev': '💻 Разработка', 'set.goal.social': '📱 Социальные сети',
+    'set.goal.business': '💼 Бизнес-автоматизация',
+    'set.pers': 'Дополнительные персоны', 'set.pers-add': 'Добавить персону',
+    'set.skills': 'Навыки', 'set.update': 'Обновить Агента',
+    'dd.channel': 'Канал', 'dd.support': 'Поддержка', 'dd.language': 'Язык',
+  }
+};
+var _lang = localStorage.getItem('operent_lang') || 'en';
+function t(key) { return (STRINGS[_lang] && STRINGS[_lang][key]) || (STRINGS.en[key]) || key; }
+function setLang(lang) {
+  _lang = lang;
+  localStorage.setItem('operent_lang', lang);
+  applyLang();
+}
+function applyLang() {
+  // data-i18n: set textContent; data-i18n-html: set innerHTML; data-i18n-ph: set placeholder
+  document.querySelectorAll('[data-i18n]').forEach(function(el) { el.textContent = t(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('[data-i18n-html]').forEach(function(el) { el.innerHTML = t(el.getAttribute('data-i18n-html')); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(function(el) { el.placeholder = t(el.getAttribute('data-i18n-ph')); });
+  // data-i18n-opt: option text content
+  document.querySelectorAll('[data-i18n-opt]').forEach(function(el) { el.textContent = t(el.getAttribute('data-i18n-opt')); });
+  // Dashboard dynamic elements
+  var dl = document.querySelector('.dash-label'); if (dl) dl.textContent = t('dash.label');
+  var ds = document.getElementById('dash-status');
+  if (ds && ds.classList.contains('ok')) ds.innerHTML = '<span class="dot-live" style="width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(34,197,94,0.5);"></span> ' + t('dash.online');
+  else if (ds) ds.textContent = t('dash.offline');
+  var dc = document.getElementById('dash-count');
+  if (dc) {
+    var n = parseInt(dc.textContent) || 0;
+    dc.innerHTML = n + ' <span>' + (n === 1 ? t('dash.agent') : t('dash.agents')) + '</span>';
+  }
+}
+function openLanguagePicker() {
+  toggleDropdown();
+  var buttons = [
+    { id: 'en', type: 'default', text: '🇬🇧  English' },
+    { id: 'ru', type: 'default', text: '🇷🇺  Русский' },
+  ];
+  if (tgApp && tgApp.showPopup) {
+    tgApp.showPopup({ title: _lang === 'ru' ? 'Язык' : 'Language', buttons: buttons }, function(id) {
+      if (id === 'en' || id === 'ru') setLang(id);
+    });
+  } else {
+    var choice = prompt('Language / Язык:\n1 — English\n2 — Русский');
+    if (choice === '1') setLang('en');
+    else if (choice === '2') setLang('ru');
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Back map: which screen to go back to from current
 var backMap = {1:0, 2:1, 3:2, 4:3, 5:4, 6:5, 'routing':4, 'settings':'dash'};
@@ -1753,7 +1891,7 @@ function renderAgents() {
       if (err === 'auth') {
         // Auth failed — show error, don't silently show empty list
         var container2 = document.getElementById('agent-list');
-        if (container2) container2.innerHTML = '<div style="padding:24px;text-align:center;font-size:13px;color:var(--red)">Auth error — please reopen app</div>';
+        if (container2) container2.innerHTML = '<div style="padding:24px;text-align:center;font-size:13px;color:var(--red)">' + t('agent.auth-error') + '</div>';
         return;
       }
       // Network/other error — fall back to localStorage
@@ -1765,19 +1903,19 @@ function _paintAgents(list) {
   var container = document.getElementById('agent-list');
   if (!container) return;
   var countEl = document.getElementById('dash-count');
-  if (countEl) countEl.innerHTML = list.length + ' <span>agent' + (list.length !== 1 ? 's' : '') + '</span>';
+  if (countEl) countEl.innerHTML = list.length + ' <span>' + (list.length === 1 ? t('dash.agent') : t('dash.agents')) + '</span>';
   var statusEl = document.getElementById('dash-status');
   if (statusEl) {
     if (list.length > 0) {
       statusEl.className = 'dash-status ok';
-      statusEl.innerHTML = '<span class="dot-live" style="width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(34,197,94,0.5);"></span> All systems online';
+      statusEl.innerHTML = '<span class="dot-live" style="width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(34,197,94,0.5);"></span> ' + t('dash.online');
     } else {
       statusEl.className = 'dash-status off';
-      statusEl.textContent = 'No active agents';
+      statusEl.textContent = t('dash.offline');
     }
   }
   if (!list.length) {
-    container.innerHTML = '<div class="agent-empty"><div class="agent-empty-ic">🦞</div><p>No agents yet.<br>Deploy your first one!</p></div>';
+    container.innerHTML = '<div class="agent-empty"><div class="agent-empty-ic">🦞</div><p>' + t('agent.empty') + '</p></div>';
     return;
   }
   var modelLabels = {haiku:'Haiku 4.5',sonnet:'Sonnet 4.6',opus:'Opus 4.6',codex:'GPT-4o',gpt4mini:'GPT-4o mini',o3:'o3',kimi:'Kimi K2.5',custom:'Multi-route'};
@@ -1790,7 +1928,7 @@ function _paintAgents(list) {
     var isOnline = a.status === 'active';
     var isDeploying = a.status === 'deploying';
     var statColor = isOnline ? 'var(--green)' : isDeploying ? 'var(--yellow,#F59E0B)' : 'rgba(255,255,255,0.3)';
-    var statLabel = isOnline ? 'Online' : isDeploying ? 'Deploying…' : (a.status === 'error' ? 'Error' : a.status === 'stopped' ? 'Stopped' : 'Offline');
+    var statLabel = isOnline ? t('status.online') : isDeploying ? t('status.deploying') : (a.status === 'error' ? t('status.error') : a.status === 'stopped' ? t('status.stopped') : t('status.offline'));
     var botClick = a.botUsername ? 'haptic(\'medium\');openBot(\'' + a.botUsername + '\')' : '';
     return '<div class="agent-card" onclick="' + botClick + '">' +
       '<div class="agent-ava">' + initial + '</div>' +
@@ -3263,6 +3401,9 @@ function renderBillingData(data) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
+
+// Apply saved language on startup
+applyLang();
 
 // Init: render agents on load
 renderAgents();
