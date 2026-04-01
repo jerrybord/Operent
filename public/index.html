@@ -3229,7 +3229,7 @@ function openSettings(agentId) {
       return r.text().then(function(t) {
         var data;
         try { data = JSON.parse(t); } catch(e) {
-          throw new Error('Server error ' + r.status);
+          throw new Error('[' + r.status + '] ' + t.slice(0, 120));
         }
         if (!r.ok) throw new Error(data.error || 'HTTP ' + r.status);
         return data;
