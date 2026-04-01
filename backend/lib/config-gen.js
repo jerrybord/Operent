@@ -61,6 +61,7 @@ function generateConfig(formData, proxyBaseUrl) {
     description = '',
     goal = 'personal',
     skills = [],
+    personalities = [],
     model = 'sonnet',
     proactivity = 'smart',
     routing = null,
@@ -193,6 +194,10 @@ CRITICAL RULES:
 - If a skill requires an API key the user hasn't provided, politely ask them to send it.`,
     description ? `\nUser context: ${description}` : '',
     skillLines ? `\nYour installed skills:\n${skillLines}` : '',
+    personalities && personalities.length > 0
+      ? `\n=== ADDITIONAL ROLES & PERSONALITIES ===\nYou have been configured with the following extra roles. Blend them into your behavior:\n\n` +
+        personalities.map(p => `[${p.key.toUpperCase()}]${p.instructions ? '\n' + p.instructions : ''}`).join('\n\n')
+      : '',
     cronInstructions,
     languageInstruction ? `\nLANGUAGE RULE: ${languageInstruction}` : '',
   ].filter(Boolean).join('\n');
