@@ -61,6 +61,25 @@ jobs:
             pm2 start server.js --name operent-backend --cwd /root/operent/backend
             pm2 save
 
+            # --- Ensure VPS is registered as agent server ---
+            sleep 4
+            DEBUG_RESP=$(curl -sf http://localhost:3000/api/debug 2>/dev/null || echo '{}')
+            echo "Debug: $DEBUG_RESP"
+            if echo "$DEBUG_RESP" | grep -q '"servers":0'; then
+              echo "No servers in DB — registering this VPS as agent server"
+              ADMIN_KEY_HEADER=""
+              if [ -n "${ADMIN_KEY:-}" ]; then
+                ADMIN_KEY_HEADER="-H x-admin-key:${ADMIN_KEY}"
+              fi
+              curl -s -X POST http://localhost:3000/admin/server \
+                -H "Content-Type: application/json" \
+                ${ADMIN_KEY_HEADER} \
+                -d "{\"label\":\"main\",\"ip\":\"${{ secrets.VPS_HOST }}\",\"port\":22,\"user\":\"${{ secrets.VPS_USER }}\",\"password\":\"${{ secrets.VPS_PASSWORD }}\",\"maxAgents\":30}"
+              echo ""
+              echo "Server registered. New debug:"
+              curl -sf http://localhost:3000/api/debug 2>/dev/null || echo "failed"
+            fi
+
             echo "=== PM2 STATUS ==="
             pm2 list
             echo "=== LAST 20 LOG LINES ==="
