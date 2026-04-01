@@ -130,7 +130,7 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
     const agentId = crypto.randomUUID();
 
     // Generate config
-    const proxyBaseUrl = process.env.PROXY_BASE_URL || `http://${HOST}:${PORT}`;
+    const proxyBaseUrl = process.env.PROXY_BASE_URL || `http://host.docker.internal:${PORT}`;
     // Accept both new 'skills' field and legacy 'capabilities' field
     const agentSkills = skills || capabilities || [];
 
@@ -712,7 +712,7 @@ app.post('/api/agents/:id/redeploy', authMiddleware, async (req, res) => {
     skills: capabilities,
     model: agent.model,
     proactivity: agent.proactivity,
-  }, `http://${process.env.HOST || '0.0.0.0'}:${process.env.PORT || 3000}/v1/${agent.id}`);
+  }, `${process.env.PROXY_BASE_URL || `http://host.docker.internal:${process.env.PORT || 3000}`}/v1/${agent.id}`);
 
   const agentData = {
     id: agent.id,

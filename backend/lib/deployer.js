@@ -281,6 +281,7 @@ async function deployAgent(server, agent, onProgress = () => {}) {
       `--name ${cName}`,
       '--restart unless-stopped',
       `--network agent-net`,
+      '--add-host=host.docker.internal:host-gateway',
       `--env-file ${dir}/.env`,
       `-v ${dir}/config:/root/.openclaw:ro`,
       `-v ${dir}/memory:/root/memory`,
