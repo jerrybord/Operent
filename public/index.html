@@ -1057,6 +1057,60 @@
       <div class="dash-tab" onclick="haptic('select');switchDashTab(this,2)"><div class="dash-tab-ic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg></div><span>Billing</span></div>
     </div>
   </div>
+
+  <!-- Settings Screen -->
+  <div class="screen" id="p-settings">
+    <div class="screen-body" style="padding-bottom:100px;">
+      <div class="set-header">
+        <button class="set-back" onclick="haptic('light');bk('dash')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="set-title">Agent Settings</div>
+      </div>
+
+      <!-- Description -->
+      <div class="set-sec">
+        <div class="set-label">Describe your agent</div>
+        <textarea id="set-desc" class="set-textarea" rows="3" placeholder="e.g. Venture capital analyst helping with market research…"></textarea>
+      </div>
+
+      <!-- Primary Goal -->
+      <div class="set-sec" style="margin-top:16px;">
+        <div class="set-label">Primary Goal</div>
+        <select id="set-goal" class="set-select">
+          <option value="personal">👤 Personal Assistant</option>
+          <option value="research">🔬 Research &amp; Analytics</option>
+          <option value="development">💻 Development</option>
+          <option value="social">📱 Social Media Manager</option>
+          <option value="business">💼 Business Automation</option>
+        </select>
+      </div>
+
+      <!-- Additional Personalities -->
+      <div class="set-sec" style="margin-top:20px;">
+        <div class="set-label">Additional Personalities</div>
+        <div class="pers-list" id="set-pers-list"></div>
+        <button class="set-add-btn" onclick="openPersonalityPicker()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Add Personality
+        </button>
+      </div>
+
+      <!-- Skills -->
+      <div class="set-sec" style="margin-top:20px;">
+        <div class="set-label">Skills</div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;padding:4px 16px;">
+          <div id="set-skills-list"></div>
+        </div>
+      </div>
+
+      <!-- Update button -->
+      <button class="set-redeploy-btn" onclick="saveAndRedeploy()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Update Agent
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- Dropdown Menu -->
@@ -3487,60 +3541,6 @@ function pollRedeployStatus(agentId) {
   }, 3000);
 }
 </script>
-
-<!-- Settings Screen -->
-<div class="screen" id="p-settings">
-  <div class="screen-body" style="padding-bottom:100px;">
-    <div class="set-header">
-      <button class="set-back" onclick="haptic('light');bk('dash')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-      </button>
-      <div class="set-title">Agent Settings</div>
-    </div>
-
-    <!-- Description -->
-    <div class="set-sec">
-      <div class="set-label">Describe your agent</div>
-      <textarea id="set-desc" class="set-textarea" rows="3" placeholder="e.g. Venture capital analyst helping with market research…"></textarea>
-    </div>
-
-    <!-- Primary Goal -->
-    <div class="set-sec" style="margin-top:16px;">
-      <div class="set-label">Primary Goal</div>
-      <select id="set-goal" class="set-select">
-        <option value="personal">👤 Personal Assistant</option>
-        <option value="research">🔬 Research &amp; Analytics</option>
-        <option value="development">💻 Development</option>
-        <option value="social">📱 Social Media Manager</option>
-        <option value="business">💼 Business Automation</option>
-      </select>
-    </div>
-
-    <!-- Additional Personalities -->
-    <div class="set-sec" style="margin-top:20px;">
-      <div class="set-label">Additional Personalities</div>
-      <div class="pers-list" id="set-pers-list"></div>
-      <button class="set-add-btn" onclick="openPersonalityPicker()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        Add Personality
-      </button>
-    </div>
-
-    <!-- Skills -->
-    <div class="set-sec" style="margin-top:20px;">
-      <div class="set-label">Skills</div>
-      <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;padding:4px 16px;">
-        <div id="set-skills-list"></div>
-      </div>
-    </div>
-
-    <!-- Update button -->
-    <button class="set-redeploy-btn" onclick="saveAndRedeploy()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-      Update Agent
-    </button>
-  </div>
-</div>
 
 <!-- Personality Picker Sheet -->
 <div class="sheet-overlay" id="personality-sheet" onclick="if(event.target===this)closePersonalityPicker()">
