@@ -18,7 +18,8 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
             cd /root/operent
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
             cd backend
             npm install --production
             pm2 restart operent-backend || pm2 start server.js --name operent-backend
