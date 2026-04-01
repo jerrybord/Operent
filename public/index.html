@@ -1503,18 +1503,38 @@ function applyLang() {
 function openLanguagePicker() {
   toggleDropdown();
   var buttons = [
-    { id: 'en', type: 'default', text: '🇬🇧  English' },
-    { id: 'ru', type: 'default', text: '🇷🇺  Русский' },
+    { id: 'en', type: 'default', text: '🇬🇧 English' },
+    { id: 'ru', type: 'default', text: '🇷🇺 Русский' },
   ];
-  if (tgApp && tgApp.showPopup) {
-    tgApp.showPopup({ title: _lang === 'ru' ? 'Язык' : 'Language', buttons: buttons }, function(id) {
-      if (id === 'en' || id === 'ru') setLang(id);
-    });
-  } else {
-    var choice = prompt('Language / Язык:\n1 — English\n2 — Русский');
-    if (choice === '1') setLang('en');
-    else if (choice === '2') setLang('ru');
-  }
+  setTimeout(function() {
+    try {
+      if (tgApp && tgApp.showPopup) {
+        tgApp.showPopup({
+          title: _lang === 'ru' ? 'Язык интерфейса' : 'Interface Language',
+          message: _lang === 'ru' ? 'Выберите язык:' : 'Choose language:',
+          buttons: buttons
+        }, function(id) {
+          if (id === 'en' || id === 'ru') setLang(id);
+        });
+      } else {
+        // Fallback: custom in-page picker
+        _showLangFallback();
+      }
+    } catch(e) {
+      _showLangFallback();
+    }
+  }, 150);
+}
+function _showLangFallback() {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = '<div style="background:#1a1a1f;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px;width:80%;max-width:300px;text-align:center;">'
+    + '<div style="font-size:16px;font-weight:700;margin-bottom:20px;">' + (_lang==='ru'?'Язык':'Language') + '</div>'
+    + '<div onclick="setLang(\'en\');this.closest(\'[style*=fixed]\').remove()" style="padding:14px;border-radius:12px;background:rgba(255,255,255,0.06);margin-bottom:10px;font-size:15px;cursor:pointer;">🇬🇧 English</div>'
+    + '<div onclick="setLang(\'ru\');this.closest(\'[style*=fixed]\').remove()" style="padding:14px;border-radius:12px;background:rgba(255,255,255,0.06);font-size:15px;cursor:pointer;">🇷🇺 Русский</div>'
+    + '</div>';
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
