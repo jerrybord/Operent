@@ -53,8 +53,8 @@ const STRINGS = {
       `<tg-emoji emoji-id="${LOBSTER_EMOJI_ID}">🦞</tg-emoji> <b>Welcome to Operent — your gateway to OpenClaw agents.</b>\n\n` +
       `<blockquote><b>No</b> mac, <b>no</b> VPS, <b>no</b> degen coding, just type what you need, select wanted skills, and <b>ENJOY</b>.</blockquote>\n\n` +
       `Don't be slow, <b>be productive</b> <tg-emoji emoji-id="${ARROW_EMOJI_ID}">👇</tg-emoji>`,
-    btn_app:  '🦞 Open App',
-    btn_news: '🔜 News',
+    btn_app:  'Open App',
+    btn_news: 'News',
   },
   ru: {
     picker_text: 'Выберите язык:',
@@ -64,8 +64,8 @@ const STRINGS = {
       `<tg-emoji emoji-id="${LOBSTER_EMOJI_ID}">🦞</tg-emoji> <b>Добро пожаловать в Operent — ваш портал к агентам OpenClaw.</b>\n\n` +
       `<blockquote><b>Никаких</b> серверов, <b>никакого</b> кодинга — просто опишите задачу, выберите нужные навыки и <b>ПОЛУЧАЙТЕ УДОВОЛЬСТВИЕ</b>.</blockquote>\n\n` +
       `Не тормози, <b>будь продуктивным</b> <tg-emoji emoji-id="${ARROW_EMOJI_ID}">👇</tg-emoji>`,
-    btn_app:  '🦞 Открыть приложение',
-    btn_news: '🔜 Новости',
+    btn_app:  'Открыть приложение',
+    btn_news: 'Новости',
   },
 };
 
