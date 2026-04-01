@@ -113,6 +113,8 @@ const migrations = [
   "ALTER TABLE agents ADD COLUMN capabilities JSON DEFAULT '[]'",
   "ALTER TABLE agents ADD COLUMN model TEXT DEFAULT 'sonnet'",
   "ALTER TABLE agents ADD COLUMN proactivity TEXT DEFAULT 'smart'",
+  "ALTER TABLE users ADD COLUMN language TEXT",
+  "CREATE TABLE IF NOT EXISTS bot_cache (key TEXT PRIMARY KEY, value TEXT)",
 ];
 for (const sql of migrations) {
   try { db.exec(sql); } catch (e) { /* column/index already exists */ }

@@ -71,6 +71,8 @@ jobs:
             sleep 1
             pm2 delete operent-backend 2>/dev/null || true
             pm2 start server.js --name operent-backend --cwd /root/operent/backend
+            pm2 delete operent-bot 2>/dev/null || true
+            pm2 start bot.js --name operent-bot --cwd /root/operent/backend
             pm2 save
 
             # --- Ensure VPS is registered as agent server ---
