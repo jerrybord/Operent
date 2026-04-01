@@ -547,7 +547,30 @@ async function redeployAgent(server, agent, onProgress = () => {}) {
 
     onProgress({ step: 3, total: TOTAL, message: 'Restarting agent...' });
     const cName = containerName(agent.id);
-    await sshExec(conn, `docker restart ${cName}`);
+
+    // Recreate container so new flags (--add-host) take effect.
+    // If old container doesn't exist, docker rm just prints a warning — harmless.
+    await sshExec(conn, `docker rm -f ${cName} 2>/dev/null || true`);
+    const rerunCmd = [
+      'docker run -d',
+      `--name ${cName}`,
+      '--restart unless-stopped',
+      '--network agent-net',
+      '--add-host=host.docker.internal:host-gateway',
+      `--env-file ${dir}/.env`,
+      `-v ${dir}/config:/root/.openclaw:ro`,
+      `-v ${dir}/memory:/root/memory`,
+      `-v ${dir}/workspace:/root/workspace`,
+      `-v ${dir}/data:/root/data`,
+      `-v ${dir}/skills:/root/skills:ro`,
+      '--memory=512m',
+      '--cpus=0.5',
+      '--pids-limit=100',
+      '--read-only',
+      '--tmpfs /tmp:rw,noexec,nosuid,size=64m',
+      OPENCLAW_IMAGE,
+    ].join(' ');
+    await sshExec(conn, rerunCmd);
 
     onProgress({ step: 4, total: TOTAL, message: 'Waiting for agent to start...' });
     await new Promise(r => setTimeout(r, 5000));
