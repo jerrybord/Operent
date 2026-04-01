@@ -18,10 +18,15 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           script: |
             cd /root/operent
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
             cd backend
             npm install --production
-            pm2 restart operent-backend || pm2 start server.js --name operent-backend
+            npm rebuild 2>/dev/null || true
+            fuser -k 3000/tcp 2>/dev/null || true
+            sleep 2
+            pm2 start server.js --name operent-backend --cwd /root/operent/backend 2>/dev/null || \
+            pm2 restart operent-backend
             pm2 save
             echo "=== PM2 STATUS ==="
             pm2 list
