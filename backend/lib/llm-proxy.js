@@ -194,6 +194,10 @@ function logUsage(agentId, model, inputTokens, outputTokens) {
  * Proxy request to Anthropic API
  */
 async function proxyAnthropic(agentId, requestBody) {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return { status: 500, body: { error: { message: 'ANTHROPIC_API_KEY not configured on server. Add it to GitHub secrets as ANTHROPIC_API_KEY.' } } };
+  }
+
   const bal = checkBalance(agentId);
   if (!bal.allowed) {
     return {

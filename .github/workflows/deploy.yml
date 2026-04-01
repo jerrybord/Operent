@@ -55,6 +55,26 @@ jobs:
             done
             echo "DB size after check: $(wc -c < $TARGET_DB 2>/dev/null || echo 0) bytes"
 
+            # --- Write .env with API keys from GitHub secrets ---
+            ENV_FILE="/root/operent/backend/.env"
+            touch "$ENV_FILE"
+            chmod 600 "$ENV_FILE"
+            # Write keys only if the secret is non-empty
+            update_env() {
+              local key="$1" val="$2"
+              if [ -n "$val" ]; then
+                # Remove existing line for this key, then append
+                sed -i "/^${key}=/d" "$ENV_FILE" 2>/dev/null || true
+                echo "${key}=${val}" >> "$ENV_FILE"
+              fi
+            }
+            update_env ANTHROPIC_API_KEY "${{ secrets.ANTHROPIC_API_KEY }}"
+            update_env OPENAI_API_KEY    "${{ secrets.OPENAI_API_KEY }}"
+            update_env GROQ_API_KEY      "${{ secrets.GROQ_API_KEY }}"
+            update_env TG_BOT_TOKEN      "${{ secrets.TG_BOT_TOKEN }}"
+            update_env NODE_ENV          "production"
+            echo "=== .env written (keys present: $(grep -c '=.' $ENV_FILE || echo 0)) ==="
+
             cd backend
             npm install --production
             npm rebuild 2>/dev/null || true

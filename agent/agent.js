@@ -622,12 +622,13 @@ bot.on('message', async (msg) => {
 
   // /start
   if (text === '/start') {
-    const skillCount = skillsEnabled.length;
-    const skillLine = skillCount > 0 ? `\n⚡ <b>${skillCount} skills</b> installed` : '';
-    const voiceHint = hasVoiceSkill ? '\n🎙️ Voice messages supported' : '';
-    const cronHint = cronEnabled ? '\n⏰ Scheduling available' : '';
+    const AGENT_DESCRIPTION = process.env.AGENT_DESCRIPTION || '';
+    const skillNames = skillsEnabled.length > 0
+      ? skillsEnabled.map(id => id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')).join(', ')
+      : 'Chat';
+    const descText = AGENT_DESCRIPTION || 'your personal tasks';
     bot.sendMessage(chatId,
-      `👋 I'm <b>${escHtml(AGENT_NAME)}</b>${skillLine}${voiceHint}${cronHint}\n\nHow can I help you?`,
+      `🦞 Hi! I am Operent (<b>${escHtml(AGENT_NAME)}</b>), your personal AI agent.\n\nI created for: "${escHtml(descText)}"\nI can: "${escHtml(skillNames)}"\n\nPowered by @OperentBot`,
       { parse_mode: 'HTML' }
     ).catch(() => {});
     return;

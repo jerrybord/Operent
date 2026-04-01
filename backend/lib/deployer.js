@@ -226,6 +226,7 @@ async function deployAgent(server, agent, onProgress = () => {}) {
       `TELEGRAM_BOT_TOKEN=${agent.bot_token}`,
       `AGENT_ID=${agent.id}`,
       `AGENT_NAME=${agent.name}`,
+      `AGENT_DESCRIPTION=${(agent.description || '').replace(/\n/g, ' ')}`,
     ].join('\n');
     await sftpWriteFile(sftp, `${dir}/.env`, envContent);
     await sshExec(conn, `chmod 600 ${dir}/.env`);
