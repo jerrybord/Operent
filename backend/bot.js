@@ -289,6 +289,45 @@ async function handleCallback(cbq) {
   }
 }
 
+// ── /setphoto — admin uploads welcome photo ───────────────────────────────────
+async function handleSetPhoto(msg) {
+  const chatId = msg.chat.id;
+
+  // Must have a photo attached
+  if (!msg.photo || !msg.photo.length) {
+    await tgCall('sendMessage', { chat_id: chatId, text: 'Отправь это сообщение с прикреплённым фото.' });
+    return;
+  }
+
+  // Get file_id of largest photo size
+  const fileId = msg.photo[msg.photo.length - 1].file_id;
+
+  // Get file path from Telegram
+  const fileInfo = await tgCall('getFile', { file_id: fileId });
+  if (!fileInfo.ok) {
+    await tgCall('sendMessage', { chat_id: chatId, text: 'Ошибка получения файла.' });
+    return;
+  }
+
+  const filePath = fileInfo.result.file_path;
+  const fileUrl = `https://api.telegram.org/file/bot${TOKEN}/${filePath}`;
+
+  // Download and save
+  await new Promise((resolve, reject) => {
+    const dest = fs.createWriteStream(PHOTO_PATH);
+    https.get(fileUrl, (res) => {
+      res.pipe(dest);
+      dest.on('finish', () => { dest.close(); resolve(); });
+    }).on('error', (e) => { fs.unlink(PHOTO_PATH, () => {}); reject(e); });
+  });
+
+  // Clear cached file_id so next /start re-uploads
+  stmtSetCache.run('photo_file_id', '');
+
+  console.log(`[bot] Operent.jpg saved to ${PHOTO_PATH}`);
+  await tgCall('sendMessage', { chat_id: chatId, text: '✅ Фото сохранено! Теперь отправь /start чтобы проверить.' });
+}
+
 // ── Long-polling ──────────────────────────────────────────────────────────────
 let offset = 0;
 let running = true;
@@ -306,8 +345,14 @@ async function poll() {
         for (const update of res.result) {
           offset = update.update_id + 1;
           try {
-            if (update.message && update.message.text === '/start') {
-              await handleStart(update.message);
+            const msg = update.message;
+            if (msg) {
+              const txt = (msg.text || msg.caption || '').trim();
+              if (txt === '/start') {
+                await handleStart(msg);
+              } else if (txt === '/setphoto') {
+                await handleSetPhoto(msg);
+              }
             } else if (update.callback_query) {
               await handleCallback(update.callback_query);
             }
