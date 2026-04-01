@@ -196,6 +196,11 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
   }
 });
 
+// === Ping / version check ===
+app.get('/api/ping', (req, res) => {
+  res.json({ ok: true, v: '9362f46', t: Date.now() });
+});
+
 // === Skills catalog ===
 app.get('/api/skills', (req, res) => {
   res.json(getSkillList());

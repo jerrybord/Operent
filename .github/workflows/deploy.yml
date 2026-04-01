@@ -22,7 +22,9 @@ jobs:
             git reset --hard origin/main
             cd backend
             npm install --production
-            pm2 restart operent-backend || pm2 start server.js --name operent-backend
+            pm2 stop operent-backend 2>/dev/null || true
+            pm2 delete operent-backend 2>/dev/null || true
+            pm2 start /root/operent/backend/server.js --name operent-backend
             pm2 save
             echo "=== PM2 STATUS ==="
             pm2 list
