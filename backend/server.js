@@ -215,7 +215,7 @@ app.get('/api/debug', async (req, res) => {
     const agentCount = db.prepare('SELECT COUNT(*) as c FROM agents').get();
     const serverCount = db.prepare("SELECT COUNT(*) as c FROM servers WHERE status = 'active'").get();
 
-    // Quick Anthropic connectivity test (no tokens sent, just checks reachability)
+    // Quick Anthropic connectivity test
     let anthropicReachable = false;
     let anthropicError = null;
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
@@ -225,24 +225,48 @@ app.get('/api/debug', async (req, res) => {
           headers: { 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01' },
           signal: AbortSignal.timeout(5000),
         });
-        anthropicReachable = testRes.status === 200 || testRes.status === 401; // 401 means reachable but key issue
+        anthropicReachable = testRes.status === 200 || testRes.status === 401;
         if (!anthropicReachable) anthropicError = `HTTP ${testRes.status}`;
       } catch (e) {
         anthropicError = e.cause?.code || e.cause?.message || e.message;
       }
     }
 
+    // Quick Groq connectivity test
+    let groqReachable = false;
+    let groqError = null;
+    const groqKey = process.env.GROQ_API_KEY;
+    if (groqKey) {
+      try {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/models', {
+          headers: { 'Authorization': `Bearer ${groqKey}` },
+          signal: AbortSignal.timeout(5000),
+        });
+        groqReachable = groqRes.status === 200 || groqRes.status === 401;
+        if (!groqReachable) groqError = `HTTP ${groqRes.status}`;
+      } catch (e) {
+        groqError = e.cause?.code || e.cause?.message || e.message;
+      }
+    }
+
+    // Recent LLM usage
+    const recentUsage = db.prepare('SELECT COUNT(*) as c, SUM(input_tokens+output_tokens) as t FROM usage_log').get();
+
     res.json({
       mode: IS_DEV ? 'dev' : 'prod',
       node_env: process.env.NODE_ENV || '(not set)',
       has_tg_token: !!TG_BOT_TOKEN,
-      tg_token_len: TG_BOT_TOKEN.length,
       has_anthropic_key: !!anthropicKey,
-      anthropic_key_prefix: anthropicKey ? anthropicKey.slice(0, 10) + '...' : null,
       anthropic_reachable: anthropicReachable,
       anthropic_error: anthropicError,
+      has_groq_key: !!groqKey,
+      groq_reachable: groqReachable,
+      groq_error: groqError,
+      has_openai_key: !!process.env.OPENAI_API_KEY,
+      voice_transcription_ready: !!(groqKey || process.env.OPENAI_API_KEY),
+      total_llm_calls: recentUsage.c,
+      total_tokens_used: recentUsage.t || 0,
       cwd: process.cwd(),
-      db_path: require('./lib/db').db.name,
       users: userCount.c,
       agents: agentCount.c,
       servers: serverCount.c,
