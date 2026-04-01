@@ -21,9 +21,13 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
+            # --- Find ALL .env files on server ---
+            echo "=== All .env files on server ==="
+            find / -name ".env" -not -path "*/node_modules/*" -maxdepth 8 2>/dev/null | head -20 || true
+
             # --- Locate .env and load it into shell ---
-            echo "=== Searching for .env ==="
-            for f in /root/operent/.env /root/operent/backend/.env /root/.env; do
+            echo "=== Searching for .env to source ==="
+            for f in /root/operent/.env /root/operent/backend/.env /root/.env /etc/environment; do
               if [ -f "$f" ]; then
                 echo "Found .env at: $f"
                 set -a; . "$f"; set +a
@@ -32,14 +36,14 @@ jobs:
             done
 
             # --- Show all DB files on VPS (for diagnostics) ---
-            echo "=== DB files found on VPS ==="
-            find /root /home -name "*.db" -size +10k 2>/dev/null | head -20 || true
+            echo "=== All DB files on VPS ==="
+            find / -name "*.db" -size +10k -not -path "*/node_modules/*" -maxdepth 10 2>/dev/null | head -20 || true
 
             # --- Migrate old DB if it exists and has more data ---
             mkdir -p /root/operent/backend/data
             TARGET_DB="/root/operent/backend/data/rentyourclaw.db"
             TARGET_SZ=$(wc -c < "$TARGET_DB" 2>/dev/null || echo 0)
-            for OLD_DB in /root/operent/data/rentyourclaw.db /root/rentyourclaw.db /root/data/rentyourclaw.db; do
+            for OLD_DB in /root/operent/data/rentyourclaw.db /root/rentyourclaw.db /root/data/rentyourclaw.db /home/rentyourclaw.db; do
               if [ -f "$OLD_DB" ]; then
                 OLD_SZ=$(wc -c < "$OLD_DB")
                 if [ "$OLD_SZ" -gt "$TARGET_SZ" ]; then
