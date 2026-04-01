@@ -38,6 +38,20 @@ jobs:
             # --- Ensure DB directory exists (never touch existing DB) ---
             mkdir -p /root/operent/backend/data
 
+            # --- Copy Operent.jpg from known locations if not already in repo ---
+            mkdir -p /root/operent/public
+            if [ ! -f /root/operent/public/Operent.jpg ]; then
+              for src in /root/RentYourClaw/public/Operent.jpg /srv/rentyourclaw/Operent.jpg /root/Operent.jpg; do
+                if [ -f "$src" ]; then
+                  cp "$src" /root/operent/public/Operent.jpg
+                  echo "Operent.jpg copied from $src"
+                  break
+                fi
+              done
+            else
+              echo "Operent.jpg already present"
+            fi
+
             # --- Publish agent.js so containers mount the latest version ---
             mkdir -p /srv/rentyourclaw
             cp /root/operent/agent/agent.js /srv/rentyourclaw/agent.js
