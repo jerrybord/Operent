@@ -20,13 +20,49 @@ jobs:
             cd /root/operent
             git fetch origin main
             git reset --hard origin/main
+
+            # --- Locate .env and load it ---
+            ENV_FILE=""
+            for f in /root/operent/.env /root/operent/backend/.env /root/.env; do
+              if [ -f "$f" ]; then
+                ENV_FILE="$f"
+                echo "Found .env at: $f"
+                break
+              fi
+            done
+            if [ -z "$ENV_FILE" ]; then
+              echo "WARNING: No .env file found — env vars will not be loaded"
+            fi
+
+            # --- Migrate old DB if it exists and has more data ---
+            mkdir -p /root/operent/backend/data
+            for OLD_DB in /root/operent/data/rentyourclaw.db /root/rentyourclaw.db /tmp/rentyourclaw.db; do
+              if [ -f "$OLD_DB" ]; then
+                OLD_SZ=$(wc -c < "$OLD_DB")
+                NEW_SZ=$(wc -c < /root/operent/backend/data/rentyourclaw.db 2>/dev/null || echo 0)
+                if [ "$OLD_SZ" -gt "$NEW_SZ" ]; then
+                  echo "Migrating DB: $OLD_DB ($OLD_SZ bytes) -> new location ($NEW_SZ bytes)"
+                  cp -f "$OLD_DB" /root/operent/backend/data/rentyourclaw.db
+                fi
+              fi
+            done
+
             cd backend
             npm install --production
             npm rebuild 2>/dev/null || true
+
             fuser -k 3000/tcp 2>/dev/null || true
             sleep 1
             pm2 delete operent-backend 2>/dev/null || true
-            pm2 start server.js --name operent-backend --cwd /root/operent/backend
+
+            # Start with .env if found, else just start normally
+            if [ -n "$ENV_FILE" ]; then
+              env $(grep -v '^#' "$ENV_FILE" | grep -v '^\s*$' | xargs) \
+                pm2 start server.js --name operent-backend --cwd /root/operent/backend
+            else
+              pm2 start server.js --name operent-backend --cwd /root/operent/backend
+            fi
+
             pm2 save
             echo "=== PM2 STATUS ==="
             pm2 list

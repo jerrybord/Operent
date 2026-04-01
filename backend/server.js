@@ -24,9 +24,11 @@
  *   POST /admin/export/:tgId  — Export user data
  */
 
-// Load .env from backend dir, then fall back to repo root (CWD-independent)
-require('dotenv').config({ path: require('path').join(__dirname, '.env') });
-require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+// Load .env — try backend dir, repo root, then /root (CWD-independent)
+const _path = require('path');
+require('dotenv').config({ path: _path.join(__dirname, '.env') });
+require('dotenv').config({ path: _path.join(__dirname, '..', '.env') });
+require('dotenv').config({ path: '/root/.env' });
 
 const express = require('express');
 const cors = require('cors');
