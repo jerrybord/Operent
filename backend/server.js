@@ -697,8 +697,13 @@ app.post('/api/agents/:id/redeploy', authMiddleware, async (req, res) => {
     return res.status(409).json({ error: 'Agent is already being updated' });
   }
 
-  const server = queries.getServer.get(agent.server_id);
-  if (!server) return res.status(400).json({ error: 'No server assigned to this agent' });
+  let server = queries.getServer.get(agent.server_id);
+  if (!server) {
+    // Old agent without server_id — assign to available server
+    server = queries.getAvailableServer.get();
+    if (!server) return res.status(400).json({ error: 'No server available for redeploy' });
+    db.prepare('UPDATE agents SET server_id = ? WHERE id = ?').run(server.id, agent.id);
+  }
 
   const personalities = JSON.parse(agent.personalities || '[]');
   const capabilities = JSON.parse(agent.capabilities || '[]');
