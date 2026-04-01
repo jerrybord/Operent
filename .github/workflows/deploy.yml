@@ -38,6 +38,11 @@ jobs:
             # --- Ensure DB directory exists (never touch existing DB) ---
             mkdir -p /root/operent/backend/data
 
+            # --- Publish agent.js so containers mount the latest version ---
+            mkdir -p /srv/rentyourclaw
+            cp /root/operent/agent/agent.js /srv/rentyourclaw/agent.js
+            echo "agent.js copied ($(wc -c < /srv/rentyourclaw/agent.js) bytes)"
+
             # --- Write .env with API keys from GitHub secrets ---
             ENV_FILE="/root/operent/backend/.env"
             touch "$ENV_FILE"
