@@ -3906,10 +3906,12 @@ function pollRedeployStatus(agentId) {
             haptic('heavy');
             renderAgents();
           }
+          return;
         }
-        if (attempts > 40) { // 2 min timeout
+        if (attempts > 60) { // 3 min hard timeout
           clearInterval(redeployPollInterval);
-          document.getElementById('rdp-status-msg').textContent = 'Taking longer than usual…';
+          showRedeployError('Update is taking too long. Please try again.');
+          renderAgents();
         }
       }).catch(function(){});
   }, 3000);

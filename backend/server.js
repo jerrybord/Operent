@@ -246,6 +246,12 @@ app.get('/api/status/:id', (req, res) => {
   if (!progress) {
     const agent = queries.getAgent.get(req.params.id);
     if (!agent) return res.status(404).json({ error: 'Agent not found' });
+    // If agent is stuck in 'deploying' with no active in-memory job (e.g. after server restart),
+    // treat it as an error so the frontend can recover instead of spinning forever.
+    if (agent.status === 'deploying') {
+      db.prepare("UPDATE agents SET status = 'error' WHERE id = ?").run(agent.id);
+      return res.json({ step: 0, total: 5, message: 'Deploy was interrupted (server restarted). Please redeploy.', done: true, error: true });
+    }
     return res.json({ step: 7, total: 7, message: agent.status, done: true });
   }
   res.json(progress);
@@ -853,6 +859,17 @@ app.listen(PORT, HOST, () => {
   console.log(`  API:    http://${HOST}:${PORT}`);
   console.log(`  Proxy:  http://${HOST}:${PORT}/v1/{agentId}/messages`);
   console.log(`  Mode:   ${IS_DEV ? 'development' : 'production'}\n`);
+
+  // Recovery: reset any agents stuck in 'deploying' from a previous crashed/restarted process
+  try {
+    const stuck = db.prepare("SELECT id, name FROM agents WHERE status = 'deploying'").all();
+    if (stuck.length > 0) {
+      db.prepare("UPDATE agents SET status = 'error' WHERE status = 'deploying'").run();
+      console.log(`  ⚠️  Reset ${stuck.length} stuck deploying agent(s) to 'error': ${stuck.map(a => a.name).join(', ')}`);
+    }
+  } catch (e) {
+    console.error('  Startup recovery error:', e.message);
+  }
 
   // Start blockchain scanner
   startScanner();
