@@ -136,44 +136,52 @@ Rules:
 - When a task fires, you receive [SCHEDULED TASK] prefix — execute and send result` : '';
 
   // HTML formatting override — soul files mention MarkdownV2 but the bot uses parse_mode=HTML
-  const htmlFormatNote = `\n\n=== CRITICAL: TELEGRAM HTML FORMATTING ===
-This bot sends ALL messages with parse_mode=HTML. MANDATORY rules:
+  const htmlFormatNote = `\n\n=== CRITICAL: TELEGRAM FORMATTING STANDARD ===
+This bot uses parse_mode=HTML. NEVER use MarkdownV2 syntax (*bold*, _italic_, \`\`\`code\`\`\`).
 
-TAGS — always use:
-• <b>текст</b> — жирный (заголовки, ключевые слова)
+TAGS:
+• <b>текст</b> — жирный (заголовки H1/H2, ключевые понятия inline)
 • <i>текст</i> — курсив (акценты, подписи)
-• <code>текст</code> — инлайн-код (команды, значения, числа)
-• <pre><code class="language-js">блок кода</code></pre> — многострочный код
-• <blockquote>текст</blockquote> — цитата, ключевой вывод, важная мысль
+• <code>текст</code> — инлайн: команды, имена файлов, термины
+• <pre><code>блок</code></pre> — ASCII-схемы, wireframes, псевдокод, диаграммы потоков
+• <pre><code class="language-js">код</code></pre> — блок кода с подсветкой
+• <blockquote>текст</blockquote> — ключевой вывод, цитата
 
-NEVER use: *bold*  _italic_  \`\`\`code\`\`\`  **bold**  ## headers
+STRUCTURE — обязательная для каждого ответа:
 
-SPACING RULES — выполнять СТРОГО:
-1. После каждого <b>Заголовка</b> — ОБЯЗАТЕЛЬНО пустая строка перед содержимым
-2. Между каждой группой/секцией — пустая строка
-3. Каждый пункт списка (•) — на ОТДЕЛЬНОЙ строке, НИКОГДА несколько • в одну строку
-4. Между крупными блоками — пустая строка (НЕ разделители, только отступ)
-
-СТРУКТУРА ответа (обязательный шаблон):
 <b>🎯 Заголовок блока</b>
 
-<b>Подраздел 1:</b>
+Вводное предложение или описание.
+
+<b>Подраздел:</b>
 • Пункт А
 • Пункт Б
 • Пункт В
 
-<b>Подраздел 2:</b>
-• Пункт А
-• Пункт Б
+———
 
-<b>🔥 Следующий крупный блок</b>
+<b>🔧 Следующий блок</b>
 
 <b>Детали:</b>
-Текст объяснения.
+→ Пункт 1
+→ Пункт 2
 
-<blockquote>Ключевой вывод или цитата</blockquote>
+<pre><code>
+Схема или псевдокод — всегда в pre-блоке
+</code></pre>
 
-Plain unformatted text — НЕ ДОПУСТИМ. Стена текста без разбивки — НЕ ДОПУСТИМА.`;
+———
+
+<b>✅ Вывод или call-to-action</b>
+
+ПРАВИЛА (строго соблюдать):
+1. Каждый ответ = несколько чётких секций, разделённых ———
+2. ——— всегда на отдельной строке, с пустой строкой до и после
+3. После каждого <b>Заголовка</b> — пустая строка перед содержимым
+4. Каждый пункт списка (• или →) — на ОТДЕЛЬНОЙ строке, НИКОГДА несколько в одну строку
+5. Технические схемы, UI-макеты, деревья структур — ТОЛЬКО в <pre><code>
+6. Если ответ > ~35 строк — разбить на 2–3 сообщения по логическим границам
+7. Монолитный текст без разбивки — НЕДОПУСТИМ`;
 
   const systemPrompt = [
     // Soul content comes FIRST — it defines who the agent is and how it responds
