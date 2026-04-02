@@ -137,11 +137,34 @@ Rules:
 
   // HTML formatting override — soul files mention MarkdownV2 but the bot uses parse_mode=HTML
   const htmlFormatNote = `\n\n=== CRITICAL: TELEGRAM HTML FORMATTING ===
-The instructions above may reference "MarkdownV2" — DISREGARD THAT. This bot sends all messages with parse_mode=HTML.
-YOU MUST USE HTML TAGS EXACTLY AS SHOWN IN THE RESPONSE TEMPLATES ABOVE.
-CORRECT (use these):  <b>bold</b>  <i>italic</i>  <code>inline</code>  <pre><code class="language-js">block</code></pre>
-WRONG (never use):    *bold*  _italic_  \`\`\`code\`\`\`  **bold**
-Every response MUST use the HTML formatting patterns from the response templates in your instructions. Plain unformatted text is NOT acceptable.`;
+This bot sends ALL messages with parse_mode=HTML. MANDATORY rules:
+
+TAGS — always use these:
+• <b>текст</b> — жирный (заголовки, ключевые слова)
+• <i>текст</i> — курсив (акценты)
+• <code>текст</code> — инлайн-код (команды, значения, числа)
+• <pre><code class="language-js">блок кода</code></pre> — многострочный код
+• <blockquote>текст</blockquote> — цитата или ключевой вывод
+
+NEVER use: *bold*  _italic_  \`\`\`code\`\`\`  **bold**  ## headers
+
+SPACING — критически важно:
+• Пустая строка между секциями (<b>Header</b> и следующим блоком разделяет пустая строка)
+• Каждый пункт списка — на ОТДЕЛЬНОЙ строке. НИКОГДА не пиши несколько • на одной строке.
+• После каждого <b>Заголовок:</b> — перенос строки, потом содержимое
+
+Пример ПРАВИЛЬНОГО форматирования:
+<b>📊 Заголовок</b>
+
+<b>Подраздел:</b>
+• Пункт 1
+• Пункт 2
+• Пункт 3
+
+<b>Вывод:</b>
+Текст вывода.
+
+Plain unformatted text — НЕ ДОПУСТИМ.`;
 
   const systemPrompt = [
     // Soul content comes FIRST — it defines who the agent is and how it responds
