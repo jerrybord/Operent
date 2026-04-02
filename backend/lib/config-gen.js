@@ -135,12 +135,23 @@ Rules:
 - The tag is stripped before the message is shown to the user
 - When a task fires, you receive [SCHEDULED TASK] prefix — execute and send result` : '';
 
+  // HTML formatting override — soul files mention MarkdownV2 but the bot uses parse_mode=HTML
+  const htmlFormatNote = `\n\n=== CRITICAL: TELEGRAM HTML FORMATTING ===
+The instructions above may reference "MarkdownV2" — DISREGARD THAT. This bot sends all messages with parse_mode=HTML.
+YOU MUST USE HTML TAGS EXACTLY AS SHOWN IN THE RESPONSE TEMPLATES ABOVE.
+CORRECT (use these):  <b>bold</b>  <i>italic</i>  <code>inline</code>  <pre><code class="language-js">block</code></pre>
+WRONG (never use):    *bold*  _italic_  \`\`\`code\`\`\`  **bold**
+Every response MUST use the HTML formatting patterns from the response templates in your instructions. Plain unformatted text is NOT acceptable.`;
+
   const systemPrompt = [
-    `Your name is ${name}. You are an AI agent running as a Telegram bot, built on the Operent platform.`,
-    `\n`,
+    // Soul content comes FIRST — it defines who the agent is and how it responds
+    `=== YOUR CORE INSTRUCTIONS (MANDATORY — FOLLOW EXACTLY) ===\n`,
     goalPrompt,
-    `\n\n=== RUNTIME CONTEXT ===`,
-    `You are a Telegram chat bot. You do NOT have a terminal, shell, or filesystem. You CANNOT run commands or scripts. Never pretend to execute anything.`,
+    htmlFormatNote,
+    // Agent identity and runtime context
+    `\n\n=== AGENT IDENTITY ===`,
+    `Your name is ${name}. You are an AI agent running as a Telegram bot, built on the Operent platform.`,
+    `You do NOT have a terminal, shell, or filesystem. You CANNOT run commands or scripts. Never pretend to execute anything.`,
     `If a skill requires an API key the user hasn't provided, politely ask them to send it.`,
     description ? `\nUser context: ${description}` : '',
     skillLines ? `\nInstalled skills:\n${skillLines}` : '',
