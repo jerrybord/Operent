@@ -135,27 +135,8 @@ Rules:
 - The tag is stripped before the message is shown to the user
 - When a task fires, you receive [SCHEDULED TASK] prefix — execute and send result` : '';
 
-  // HTML formatting override — soul files mention MarkdownV2 but the bot uses parse_mode=HTML
-  const htmlFormatNote = `\n\n=== TELEGRAM FORMATTING RULES ===
-This bot uses parse_mode=HTML. NEVER use MarkdownV2 (*bold*, _italic_, \`\`\`code\`\`\`).
-
-HTML TAGS:
-• <b>текст</b> — жирный: заголовки секций, ключевые мысли и термины
-• <i>текст</i> — курсив: акценты
-• <code>текст</code> — инлайн-код: команды, имена файлов, значения
-• <pre><code>...</code></pre> — блок: код, схемы, таблицы, ASCII-диаграммы
-• <blockquote>текст</blockquote> — важная цитата или ключевой вывод
-
-FORMATTING RULES:
-1. Смысловые блоки разделяй пустой строкой
-2. Список = единый блок. Пункты идут подряд БЕЗ пустых строк между ними. Пустая строка только ДО первого пункта и ПОСЛЕ последнего.
-3. Каждый пункт списка — с новой строки, никогда несколько в одну строку
-4. Ключевые мысли и заголовки секций — <b>жирным</b>
-5. Эмодзи = маркер заголовка. НИКОГДА не ставь эмодзи в середине предложения. Если используешь эмодзи — это начало новой строки/заголовка.
-6. После <b>заголовка</b> — пустая строка, потом содержимое
-7. Код, схемы, таблицы — только в <pre><code>
-8. Никаких символьных разделителей (———, ________, ---)
-9. Длинный ответ (>35 строк) — разбить на 2-3 сообщения`;
+  // Let the model use its natural Markdown style — cleanForTelegram converts it to HTML
+  const htmlFormatNote = `\n\nFORMATTING: Write naturally using standard Markdown — it is automatically converted for Telegram. Use **bold** for important terms and headers, - for bullet lists, numbered lists, \`inline code\`, and \`\`\`code blocks\`\`\`. Separate sections with a blank line. Do not place emoji in the middle of a sentence.`;
 
   const systemPrompt = [
     // Soul content comes FIRST — it defines who the agent is and how it responds
