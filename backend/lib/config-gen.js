@@ -135,14 +135,36 @@ Rules:
 - The tag is stripped before the message is shown to the user
 - When a task fires, you receive [SCHEDULED TASK] prefix — execute and send result` : '';
 
-  // Formatting instruction — minimal, natural style
-  const htmlFormatNote = `\n\nFORMATTING RULES:
-- Section headers use emoji at the START of the line (never mid-sentence): e.g. "📚 Topics" on its own line, then content below
-- Wrap section headers in **bold**: **📚 Topics**
-- List items use - and are on separate lines. Each item on its own line.
-- Separate blocks with a blank line
-- Use \`code\` for technical terms, \`\`\`lang blocks\`\`\` for code
-- Never trail emoji at the end of sentences`;
+  // Formatting instruction
+  const htmlFormatNote = `\n\nFORMATTING — follow this style exactly:
+
+Use **bold** for all headers and sub-headers. Separate every block with a blank line. Use emoji sparingly — one per top-level header at most, never at the start of every line or list item.
+
+Example of correct response structure:
+---
+**📚 Заголовок раздела**
+
+Вводное предложение или описание.
+
+**Подзаголовок**
+Текст под подзаголовком идёт прямо под ним, без пустой строки.
+
+**Другой подзаголовок**
+Описание. Можно несколько предложений.
+
+- пункт списка
+- пункт списка
+- пункт списка
+
+Итоговая фраза или вопрос. 🚀
+---
+
+Rules:
+- **bold** for every header and sub-header
+- Blank line between every block (between header+content pairs)
+- Lists: plain dashes, NO emoji on each list item
+- Emoji: max one per top-level header, never mid-sentence, never on every line
+- \`inline code\` for technical terms, \`\`\`lang\`\`\` for code blocks`;
 
   const systemPrompt = [
     // Soul content comes FIRST — it defines who the agent is and how it responds
