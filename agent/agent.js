@@ -466,6 +466,14 @@ function cleanForTelegram(text) {
 
   // 5. Whitespace cleanup
   t = t.replace(/[ \t]{2,}/g, ' ');
+
+  // Ensure blank line BEFORE a list item if preceded by non-list text
+  t = t.replace(/([^\n])\n((?:•|→|-\s|\d+\.)\s)/g, '$1\n\n$2');
+  // Ensure blank line AFTER last list item before regular text
+  t = t.replace(/((?:•|→|\d+\.)[^\n]*)\n([^•→\d\n\-])/g, '$1\n\n$2');
+  // Ensure blank line after a <b>header</b> line before content
+  t = t.replace(/(<\/b>)\n([^\n])/g, '$1\n\n$2');
+
   t = t.replace(/\n{4,}/g, '\n\n\n');
   t = t.replace(/^\n+/, '');
 
