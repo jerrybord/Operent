@@ -457,8 +457,14 @@ function cleanForTelegram(text) {
   // Bare URLs → clickable (only http/https, not already inside <a>)
   // Skip this — Telegram auto-links URLs anyway
 
-  // Horizontal rules → blank line
-  t = t.replace(/^[-*_]{3,}\s*$/gm, '');
+  // 4.5 Post-format: emoji-led lines → bold, list items → italic
+  // Lines starting with emoji become bold section headers
+  t = t.replace(/^((?:<b>)?[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}][\s\S]*?)(?:<\/b>)?$/gmu, (match, inner) => {
+    if (match.startsWith('<b>')) return match; // already bold
+    return `<b>${match}</b>`;
+  });
+  // List items (- text) → italic, unless already formatted
+  t = t.replace(/^(- (?!<[bi]>).+)$/gm, '<i>$1</i>');
 
   // Tables → simple list
   t = t.replace(/^\s*\|?[-:\s|]+\|[-:\s|]*\s*$/gm, '');

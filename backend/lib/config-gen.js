@@ -135,8 +135,14 @@ Rules:
 - The tag is stripped before the message is shown to the user
 - When a task fires, you receive [SCHEDULED TASK] prefix — execute and send result` : '';
 
-  // Let the model use its natural Markdown style — cleanForTelegram converts it to HTML
-  const htmlFormatNote = `\n\nFORMATTING: Write naturally using standard Markdown — it is automatically converted for Telegram. Use **bold** for important terms and headers, - for bullet lists, numbered lists, \`inline code\`, and \`\`\`code blocks\`\`\`. Separate sections with a blank line. Do not place emoji in the middle of a sentence.`;
+  // Formatting instruction — minimal, natural style
+  const htmlFormatNote = `\n\nFORMATTING RULES:
+- Section headers use emoji at the START of the line (never mid-sentence): e.g. "📚 Topics" on its own line, then content below
+- Wrap section headers in **bold**: **📚 Topics**
+- List items use - and are on separate lines. Each item on its own line.
+- Separate blocks with a blank line
+- Use \`code\` for technical terms, \`\`\`lang blocks\`\`\` for code
+- Never trail emoji at the end of sentences`;
 
   const systemPrompt = [
     // Soul content comes FIRST — it defines who the agent is and how it responds
