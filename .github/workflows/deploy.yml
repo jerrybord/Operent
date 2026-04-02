@@ -12,19 +12,21 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
+          envs: GITHUB_TOKEN
           script: |
+            set -e
             cd /root/operent
-            # Set authenticated remote to avoid silent fetch failures on private repo
-            git remote set-url origin https://x-access-token:${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}@github.com/jerrybord/Operent.git 2>/dev/null || \
-              git remote set-url origin https://github.com/jerrybord/Operent.git
-            git fetch origin main 2>&1
-            # Use FETCH_HEAD — guarantees we use the JUST fetched commit, not old cached origin/main
+            # Authenticate with GITHUB_TOKEN passed via envs (not template substitution)
+            git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/jerrybord/Operent.git"
+            git fetch origin main
             git reset --hard FETCH_HEAD
-            echo "=== Deployed commit: $(git rev-parse --short HEAD) $(git log -1 --format='%s') ==="
+            echo "=== Deployed: $(git rev-parse --short HEAD) — $(git log -1 --format='%s') ==="
 
             # --- Find ALL .env files on server ---
             echo "=== All .env files on server ==="
