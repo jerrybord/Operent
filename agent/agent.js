@@ -473,18 +473,13 @@ function cleanForTelegram(text) {
   // 5. Whitespace cleanup
   t = t.replace(/[ \t]{2,}/g, ' ');
 
-  // List normalization:
-  // Step 1: collapse blank lines INSIDE a list block (between consecutive items)
-  t = t.replace(/((?:•|→|[-*]|\d+\.)[^\n]*)\n\n+((?:•|→|[-*]|\d+\.)\s)/g, '$1\n$2');
-
-  // Step 2: ensure blank line BEFORE the first list item (when preceded by non-list text)
-  t = t.replace(/([^\n])\n((?:•|→|\d+\.)\s)/g, '$1\n\n$2');
-
-  // Step 3: ensure blank line AFTER the last list item (when followed by non-list text)
-  t = t.replace(/((?:•|→|\d+\.)[^\n]+)\n([^•→\d\n\-*])/g, '$1\n\n$2');
-
-  // Ensure blank line after </b> header before content
-  t = t.replace(/(<\/b>)\n([^\n<])/g, '$1\n\n$2');
+  // Blank lines between thematic blocks:
+  // Before any <b> header — blank line if preceded by content
+  t = t.replace(/([^\n])\n(<b>)/g, '$1\n\n$2');
+  // After </b> header — blank line before content
+  t = t.replace(/(<\/b>)\n(?!\n)/g, '$1\n\n');
+  // After last </i> list item — blank line before non-list content
+  t = t.replace(/(<\/i>)\n(?!<i>|\n)/g, '$1\n\n');
 
   t = t.replace(/\n{4,}/g, '\n\n\n');
   t = t.replace(/^\n+/, '');
