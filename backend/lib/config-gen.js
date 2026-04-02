@@ -2,7 +2,21 @@
  * Generates openclaw.json config from user's form data
  */
 
+const fs   = require('fs');
+const path = require('path');
 const { SKILLS_BY_ID, getSkillInstructions } = require('./skills-registry');
+
+// Load soul files from templates
+const TEMPLATES_DIR = path.join(__dirname, '..', 'templates', 'agent-workspace');
+function loadSoul(goal) {
+  const goalFile = path.join(TEMPLATES_DIR, 'goals', `${goal}.md`);
+  const baseSoul = path.join(TEMPLATES_DIR, 'SOUL.md');
+  try {
+    if (fs.existsSync(goalFile)) return fs.readFileSync(goalFile, 'utf8');
+    if (fs.existsSync(baseSoul))  return fs.readFileSync(baseSoul, 'utf8');
+  } catch (e) { /* ignore */ }
+  return null;
+}
 
 // Map form model names to openclaw model identifiers
 const MODEL_MAP = {
@@ -37,13 +51,13 @@ const PROACTIVITY_CONFIG = {
   },
 };
 
-// Goal-based system prompt additions
+// Goal-based fallback prompts (used only if soul file is missing)
 const GOAL_PROMPTS = {
-  'business': 'You are a business automation specialist. Focus on workflows, operations efficiency, and process optimization.',
-  'social': 'You are a social media manager. Focus on content creation, engagement optimization, and community management.',
+  'business':    'You are a business automation specialist. Focus on workflows, operations efficiency, and process optimization.',
+  'social':      'You are a social media manager. Focus on content creation, engagement optimization, and community management.',
   'development': 'You are a development assistant. Focus on code quality, debugging, and deployment workflows.',
-  'research': 'You are a research analyst. Focus on data gathering, analysis, and actionable insights.',
-  'personal': 'You are a personal assistant. Focus on task management, scheduling, and daily organization.',
+  'research':    'You are a research analyst. Focus on data gathering, analysis, and actionable insights.',
+  'personal':    'You are a personal assistant. Focus on task management, scheduling, and daily organization.',
 };
 
 /**
@@ -94,112 +108,48 @@ function generateConfig(formData, proxyBaseUrl) {
     .join('\n');
 
   // Build system prompt
-  const goalPrompt = GOAL_PROMPTS[goal] || GOAL_PROMPTS['personal'];
+  const soulContent = loadSoul(goal);
+  const goalPrompt  = soulContent || GOAL_PROMPTS[goal] || GOAL_PROMPTS['personal'];
   const proactivitySettings = PROACTIVITY_CONFIG[proactivity] || PROACTIVITY_CONFIG['smart'];
 
   // Cron instructions if scheduling is enabled
-  const cronInstructions = proactivitySettings.cronEnabled ? `
-You support scheduled (cron) tasks. When the user asks to schedule something recurring (e.g. "remind me every morning", "send weather daily", "check prices every hour"), reply with the exact /cron command they should send:
-  /cron add daily HH:MM <task>        — runs every day at given time (e.g. /cron add daily 08:00 Send weather for Moscow)
-  /cron add every <N>m <task>         — runs every N minutes
-  /cron add every <N>h <task>         — runs every N hours
-  /cron add hourly <task>             — runs every hour
-  /cron list                          — show all scheduled tasks
-  /cron remove <id>                   — cancel a scheduled task
-When a cron task fires, you will receive a message prefixed with [SCHEDULED TASK] — execute it faithfully and send the result.` : '';
+  const cronInstructions = proactivitySettings.cronEnabled ? `\n\n=== SCHEDULED TASKS (CRON) ===
+
+When the user asks to do something repeatedly or on a schedule ("remind me every morning", "send weather daily", "check prices hourly"), automatically create a cron task by including this invisible XML tag anywhere in your reply:
+
+  <cron schedule="SCHEDULE" task="TASK_DESCRIPTION"/>
+
+SCHEDULE formats:
+  daily HH:MM     — every day at a given time (e.g. daily 08:00)
+  every Nm        — every N minutes (e.g. every 30m)
+  every Nh        — every N hours (e.g. every 2h)
+  hourly          — every hour
+
+TASK_DESCRIPTION: a self-contained instruction of what to do when the task fires.
+
+Example: User asks "Remind me about standup every day at 9"
+→ You reply: "Done! I'll remind you about standup at 09:00 every day. <cron schedule="daily 09:00" task="Send standup reminder to user"/>"
+
+Rules:
+- ALWAYS include the <cron> tag when scheduling is requested — never just promise to do it
+- The tag is stripped before the message is shown to the user
+- When a task fires, you receive [SCHEDULED TASK] prefix — execute and send result` : '';
 
   const systemPrompt = [
-    `Your name is ${name}. You are an AI agent running as a Telegram bot on the Operent platform.`,
+    `Your name is ${name}. You are an AI agent running as a Telegram bot, built on the Operent platform.`,
+    `\n`,
     goalPrompt,
-    `
-=== TELEGRAM MESSAGE FORMATTING === (THIS IS YOUR #1 PRIORITY — ABOVE ALL ELSE)
-
-You write for Telegram. Your output uses markdown that is auto-converted to Telegram HTML.
-You serve mass-market users. EVERY message MUST be beautifully formatted and easy to scan.
-If you break these rules, the message becomes an unreadable wall of text and the user leaves.
-
-RULE 1 — BLANK LINES (most critical):
-Put a blank line:
-• BEFORE and AFTER every **bold title**
-• AFTER every paragraph (max 2-3 sentences per paragraph)
-• BEFORE and AFTER every list block
-• BEFORE and AFTER every code block
-• Between any two different topics or ideas
-• When in doubt — ADD A BLANK LINE
-NEVER put two ideas in the same paragraph. NEVER write a wall of text.
-
-RULE 2 — BOLD for structure:
-• Section titles → **Bold Title** on its own line (NEVER use ## headers)
-• Key terms, answers, important values → **bold**
-• Sub-sections → **Sub-title:** followed by text
-
-RULE 3 — CODE formatting:
-• Multi-line code → ALWAYS use \`\`\`language (specify: python, js, bash, sql, etc.)
-• Short values to copy → \`inline code\` (URLs, commands, file names, variable values)
-• NEVER output code as plain text. ALWAYS wrap it in code formatting.
-
-RULE 4 — OTHER formatting:
-• *italic* → footnotes, side notes, soft emphasis, clarifications
-• ~~strikethrough~~ → corrections, old values
-• ||spoiler|| → quiz answers, sensitive info
-• > blockquote → quoting docs, definitions, user messages
-
-RULE 5 — LISTS:
-• Use emoji bullets: 🔹 ✅ 📌 ▸ 🎯 or contextual emoji
-• Each item on its own line
-• Blank line before and after every list block
-• NO tables — present data as a list
-
-RULE 6 — NO:
-• NO ## or ### markdown headers (use **Bold Title** instead)
-• NO horizontal rules (---, ***, ___)
-• NO tables (use lists)
-• NO walls of text
-
-❌ BAD (never write like this):
-**Задача 1** Функция f рекурсивно вычисляет НОД. f(7006652, 112307574) даёт 2. **Задача 2** Функция p выводит двоичное представление числа. Для 10 результат 1010. Это рекурсивный алгоритм, он делит число на 2 и выводит остаток.
-
-✅ GOOD (always write like this):
-
-**Задача 1 — НОД (GCD)**
-
-Функция \`f\` рекурсивно вычисляет наибольший общий делитель по алгоритму Евклида.
-
-🔹 Делит большее число на меньшее
-🔹 Повторяет, пока остаток не станет 0
-🔹 Ответ: **2**
-
-*Классический алгоритм, O(log(min(a,b)))*
-
-**Задача 2 — Двоичное представление**
-
-Функция \`p\` рекурсивно выводит число в двоичной системе:
-
-\`\`\`python
-def p(n):
-    if n > 0:
-        p(n // 2)
-        print(n % 2, end='')
-\`\`\`
-
-Результат для ввода \`10\`: **1010**
-
-*Копируемые значения (URL, команды) оформляй так:* \`https://example.com\`
-
-=== END OF FORMATTING RULES ===`,
-    `
-CRITICAL RULES:
-- You are a Telegram chat bot. You do NOT have a terminal, shell, or filesystem. You CANNOT run commands, scripts, or code. Never output shell commands, tool_call XML, or pretend to execute anything.
-- Be helpful, concise, and proactive.
-- If a skill requires an API key the user hasn't provided, politely ask them to send it.`,
+    `\n\n=== RUNTIME CONTEXT ===`,
+    `You are a Telegram chat bot. You do NOT have a terminal, shell, or filesystem. You CANNOT run commands or scripts. Never pretend to execute anything.`,
+    `If a skill requires an API key the user hasn't provided, politely ask them to send it.`,
     description ? `\nUser context: ${description}` : '',
-    skillLines ? `\nYour installed skills:\n${skillLines}` : '',
+    skillLines ? `\nInstalled skills:\n${skillLines}` : '',
     personalities && personalities.length > 0
-      ? `\n=== ADDITIONAL ROLES & PERSONALITIES ===\nYou have been configured with the following extra roles. Blend them into your behavior:\n\n` +
+      ? `\n\n=== ADDITIONAL ROLES & PERSONALITIES ===\nYou have been configured with the following extra roles. Blend them naturally into your behavior:\n\n` +
         personalities.map(p => `[${p.key.toUpperCase()}]${p.instructions ? '\n' + p.instructions : ''}`).join('\n\n')
       : '',
     cronInstructions,
-    languageInstruction ? `\nLANGUAGE RULE: ${languageInstruction}` : '',
+    languageInstruction ? `\n\nLANGUAGE RULE: ${languageInstruction}` : '',
   ].filter(Boolean).join('\n');
 
   // Build skill instructions map for agent runtime
