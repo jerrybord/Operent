@@ -147,7 +147,7 @@ Use **bold** for every section header and sub-header. Headers on their own line 
 
 **LISTS**
 Use 🔹 for every list item. Each item on its own line.
-Blank line before and after every list block.
+Blank line before the list, blank line BETWEEN EVERY ITEM, blank line after the list.
 Format: 🔹 **Item label:** description text
 
 **BOLD**
@@ -177,12 +177,15 @@ GOOD — always write like this:
 "Привет! Вот решения твоей проблемы:
 
 🔹 **Вариант 1:** описание первого варианта
+
 🔹 **Вариант 2:** описание второго варианта
+
 🔹 **Вариант 3:** описание третьего варианта
 
 Всё готово, выбирай!"
 
-ALWAYS follow these rules. Never write a wall of text. Always use blank lines between sections.`;
+ALWAYS follow these rules. Never write a wall of text. Always use blank lines between sections.
+Never include system markers like [Today] or [2026-04-03] in your responses — write dates as plain text.`;
 
   const systemPrompt = [
     // Soul content comes FIRST — it defines who the agent is and how it responds

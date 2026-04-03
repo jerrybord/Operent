@@ -476,11 +476,18 @@ function cleanForTelegram(text) {
     return isStandaloneHeader ? tag + '\n\n' : match;
   });
 
-  // Blank lines around 🔹 bullet list blocks
+  // Blank lines around and between 🔹 bullet list items
   // Before first 🔹 — blank line if preceded by non-blank content
   t = t.replace(/([^\n])\n(🔹)/g, '$1\n\n$2');
+  // Between 🔹 items — blank line between each bullet
+  t = t.replace(/(🔹[^\n]*)\n(🔹)/g, '$1\n\n$2');
   // After last 🔹 line — blank line before non-bullet content
   t = t.replace(/(🔹[^\n]*)\n(?!🔹|\n)/g, '$1\n\n');
+
+  // Remove system markers injected into LLM context
+  t = t.replace(/\[Today\]/gi, '');
+  t = t.replace(/\[\d{4}-\d{2}-\d{2}\]/g, '');
+  t = t.replace(/[ \t]{2,}/g, ' ');
 
   t = t.replace(/\n{4,}/g, '\n\n\n');
   t = t.replace(/^\n+/, '');
