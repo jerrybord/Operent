@@ -464,11 +464,23 @@ function cleanForTelegram(text) {
   // 5. Whitespace cleanup
   t = t.replace(/[ \t]{2,}/g, ' ');
 
-  // Blank lines around bold headers — LLM uses **bold** for headers → <b> after conversion
-  // Before any <b> — blank line if preceded by content
+  // Blank lines around bold headers (standalone headers on their own line)
+  // Before <b> at start of line — blank line if preceded by content
   t = t.replace(/([^\n])\n(<b>)/g, '$1\n\n$2');
-  // After </b> — blank line before content
-  t = t.replace(/(<\/b>)\n(?!\n)/g, '$1\n\n');
+  // After standalone </b> at end of line — blank line before next content
+  t = t.replace(/(<\/b>)\n(?!\n)/g, (match, tag, offset, str) => {
+    // Only add blank line if </b> is at end of line (not inline like "🔹 <b>Label:</b> text")
+    const lineStart = str.lastIndexOf('\n', offset - 1) + 1;
+    const lineContent = str.slice(lineStart, offset + tag.length);
+    const isStandaloneHeader = /^(<b>|[\s*#])/.test(lineContent.trimStart());
+    return isStandaloneHeader ? tag + '\n\n' : match;
+  });
+
+  // Blank lines around 🔹 bullet list blocks
+  // Before first 🔹 — blank line if preceded by non-blank content
+  t = t.replace(/([^\n])\n(🔹)/g, '$1\n\n$2');
+  // After last 🔹 line — blank line before non-bullet content
+  t = t.replace(/(🔹[^\n]*)\n(?!🔹|\n)/g, '$1\n\n');
 
   t = t.replace(/\n{4,}/g, '\n\n\n');
   t = t.replace(/^\n+/, '');

@@ -136,35 +136,53 @@ Rules:
 - When a task fires, you receive [SCHEDULED TASK] prefix — execute and send result` : '';
 
   // Formatting instruction
-  const htmlFormatNote = `\n\nFORMATTING — follow this style exactly:
+  const htmlFormatNote = `\n\nFORMATTING — CRITICALLY IMPORTANT. Every Telegram message must follow these rules:
 
-Use **bold** for all headers and sub-headers. Separate every block with a blank line. Use emoji sparingly — one per top-level header at most, never at the start of every line or list item.
+**PARAGRAPHS**
+Separate every paragraph with a blank line. Never write walls of text.
+After greeting — blank line. After each section — blank line. Before conclusion — blank line.
 
-Example of correct response structure:
----
-**📚 Заголовок раздела**
+**HEADERS**
+Use **bold** for every section header and sub-header. Headers on their own line with blank line before and after.
 
-Вводное предложение или описание.
+**LISTS**
+Use 🔹 for every list item. Each item on its own line.
+Blank line before and after every list block.
+Format: 🔹 **Item label:** description text
 
-**Подзаголовок**
-Текст под подзаголовком идёт прямо под ним, без пустой строки.
+**BOLD**
+Use **bold** for headers, sub-headers, key terms, important values.
 
-**Другой подзаголовок**
-Описание. Можно несколько предложений.
+**CODE**
+Multi-line code → \`\`\`language blocks\`\`\`
+Short inline values (commands, filenames, URLs to copy) → \`inline code\`
 
-- пункт списка
-- пункт списка
-- пункт списка
+**RESPONSE STRUCTURE**
+[Opening sentence]
 
-Итоговая фраза или вопрос. 🚀
----
+**Section Header**
 
-Rules:
-- **bold** for every header and sub-header
-- Blank line between every block (between header+content pairs)
-- Lists: plain dashes, NO emoji on each list item
-- Emoji: max one per top-level header, never mid-sentence, never on every line
-- \`inline code\` for technical terms, \`\`\`lang\`\`\` for code blocks`;
+Content paragraph here.
+
+🔹 **Point 1:** description
+🔹 **Point 2:** description
+🔹 **Point 3:** description
+
+[Closing sentence or question]
+
+BAD — never write like this:
+"Привет! Вот решения: 🔹 Вариант 1 🔹 Вариант 2 🔹 Вариант 3 Готово!"
+
+GOOD — always write like this:
+"Привет! Вот решения твоей проблемы:
+
+🔹 **Вариант 1:** описание первого варианта
+🔹 **Вариант 2:** описание второго варианта
+🔹 **Вариант 3:** описание третьего варианта
+
+Всё готово, выбирай!"
+
+ALWAYS follow these rules. Never write a wall of text. Always use blank lines between sections.`;
 
   const systemPrompt = [
     // Soul content comes FIRST — it defines who the agent is and how it responds
