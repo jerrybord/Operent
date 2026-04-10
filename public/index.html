@@ -559,6 +559,50 @@
   .bill-inv-cost.bill-inv-charge{color:#ff6b6b;font-weight:600;font-size:13px;}
   .bill-inv-cost.bill-inv-deposit{color:var(--green);}
 
+  /* Academy */
+  .acad-card{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:transform 0.15s,border-color 0.2s;margin-bottom:14px;}
+  .acad-card:active{transform:scale(0.98);border-color:rgba(255,41,66,0.2);}
+  .acad-thumb{width:100%;aspect-ratio:16/9;background:var(--bg2);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+  .acad-thumb img{width:100%;height:100%;object-fit:cover;}
+  .acad-thumb-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(255,41,66,0.08),rgba(59,130,246,0.06));}
+  .acad-thumb-ic{font-size:36px;opacity:0.5;}
+  .acad-body{padding:14px 16px;}
+  .acad-title{font-size:15px;font-weight:700;line-height:1.35;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .acad-desc{font-size:13px;color:var(--t2);line-height:1.45;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .acad-meta{display:flex;align-items:center;gap:8px;}
+  .acad-date{font-size:11px;color:var(--t3);font-weight:500;}
+  .acad-tag{font-size:10px;font-weight:700;color:var(--red);background:var(--red-s);padding:2px 8px;border-radius:100px;text-transform:uppercase;letter-spacing:0.3px;}
+  .acad-empty{text-align:center;padding:48px 20px;}
+  .acad-empty-ic{font-size:36px;margin-bottom:12px;opacity:0.3;}
+  .acad-empty p{font-size:13px;color:var(--t3);line-height:1.5;}
+
+  /* Academy article screen */
+  .acad-article-screen{position:fixed;top:0;left:0;width:100%;height:100%;z-index:100;background:var(--bg);display:none;flex-direction:column;opacity:0;transform:translateX(40px);transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1),transform 0.35s cubic-bezier(0.16,1,0.3,1);}
+  .acad-article-screen.open{display:flex;opacity:1;transform:translateX(0);}
+  .acad-article-head{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 16px) 20px 16px;flex-shrink:0;border-bottom:1px solid var(--border);}
+  .acad-article-back{width:36px;height:36px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+  .acad-article-back svg{width:18px;height:18px;stroke:var(--t2);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  .acad-article-head-title{font-size:15px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--t2);}
+  .acad-article-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;}
+  .acad-article-hero{width:100%;aspect-ratio:16/9;background:var(--bg2);overflow:hidden;}
+  .acad-article-hero img{width:100%;height:100%;object-fit:cover;}
+  .acad-article-content{padding:24px 20px calc(env(safe-area-inset-bottom,0px) + 32px);}
+  .acad-article-tag{display:inline-block;font-size:11px;font-weight:700;color:var(--red);background:var(--red-s);padding:4px 12px;border-radius:100px;text-transform:uppercase;letter-spacing:0.3px;margin-bottom:14px;}
+  .acad-article-h1{font-size:24px;font-weight:800;letter-spacing:-0.5px;line-height:1.25;margin-bottom:10px;}
+  .acad-article-date{font-size:12px;color:var(--t3);font-weight:500;margin-bottom:24px;}
+  .acad-article-text{font-size:15px;color:var(--t2);line-height:1.7;}
+  .acad-article-text h2{font-size:18px;font-weight:700;color:var(--text);margin:28px 0 12px;line-height:1.3;}
+  .acad-article-text h3{font-size:16px;font-weight:700;color:var(--text);margin:24px 0 10px;line-height:1.3;}
+  .acad-article-text p{margin-bottom:16px;}
+  .acad-article-text ul,.acad-article-text ol{margin:0 0 16px 20px;}
+  .acad-article-text li{margin-bottom:8px;}
+  .acad-article-text strong{color:var(--text);font-weight:600;}
+  .acad-article-text code{font-size:13px;background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:6px;font-family:monospace;}
+  .acad-article-text blockquote{border-left:3px solid var(--red);padding:12px 16px;margin:16px 0;background:rgba(255,41,66,0.04);border-radius:0 12px 12px 0;font-style:italic;}
+  .acad-article-text .tip-box{background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.15);border-radius:14px;padding:16px;margin:16px 0;}
+  .acad-article-text .tip-box-title{font-size:13px;font-weight:700;color:var(--blue);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+  .acad-article-text .tip-box p{margin-bottom:0;font-size:13px;}
+
   /* Numpad screen */
   .numpad-screen{position:fixed;top:0;left:0;width:100%;height:100%;z-index:99;background:var(--bg);display:none;flex-direction:column;transform:translateY(20px);transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1),transform 0.35s cubic-bezier(0.16,1,0.3,1);}
   .numpad-screen.open{display:flex;opacity:1;transform:translateY(0);}
@@ -1032,6 +1076,15 @@
 
       </div>
 
+      <!-- Tab: Academy -->
+      <div class="dash-panel" id="panel-academy">
+        <div style="text-align:center;padding:16px 0 24px;">
+          <div style="font-size:28px;font-weight:900;letter-spacing:-1px;line-height:1.15;">Learn to build<br><span class="red">smarter agents.</span></div>
+          <div style="font-size:13px;color:var(--t2);margin-top:8px;line-height:1.45;">Free guides to get the most out of Operent.</div>
+        </div>
+        <div id="academy-list"></div>
+      </div>
+
       <!-- Tab: Billing -->
       <div class="dash-panel" id="panel-billing">
         <div class="bill-balance">
@@ -1055,6 +1108,7 @@
       <div class="dash-tab active" onclick="haptic('select');switchDashTab(this,0)"><div class="dash-tab-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div><span data-i18n="tab.agents">Agents</span></div>
       <div class="dash-tab" onclick="haptic('select');switchDashTab(this,1)"><div class="dash-tab-ic"><svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg></div><span data-i18n="tab.usage">Usage</span></div>
       <div class="dash-tab" onclick="haptic('select');switchDashTab(this,2)"><div class="dash-tab-ic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg></div><span data-i18n="tab.billing">Billing</span></div>
+      <div class="dash-tab" onclick="haptic('select');switchDashTab(this,3)"><div class="dash-tab-ic"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg></div><span data-i18n="tab.academy">Academy</span></div>
     </div>
   </div>
 
@@ -1122,6 +1176,15 @@
     <div class="dropdown-sep"></div>
     <div class="dropdown-item" onclick="haptic('medium');openLanguagePicker()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg><span data-i18n="dd.language">Language</span></div>
   </div>
+</div>
+
+<!-- Academy Article Screen -->
+<div class="acad-article-screen" id="acad-article-screen">
+  <div class="acad-article-head">
+    <div class="acad-article-back" onclick="haptic('light');closeAcadArticle()"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
+    <div class="acad-article-head-title" id="acad-article-head-title">Academy</div>
+  </div>
+  <div class="acad-article-body" id="acad-article-body"></div>
 </div>
 
 <!-- Numpad Screen -->
@@ -1414,7 +1477,7 @@ var STRINGS = {
     'dash.label': 'Active Agents', 'dash.agents': 'agents', 'dash.agent': 'agent',
     'dash.online': 'All systems online', 'dash.offline': 'No active agents',
     'dash.new': 'New Agent', 'dash.your': 'Your Agents',
-    'tab.agents': 'Agents', 'tab.usage': 'Usage', 'tab.billing': 'Billing',
+    'tab.agents': 'Agents', 'tab.usage': 'Usage', 'tab.billing': 'Billing', 'tab.academy': 'Academy',
     'status.online': 'Online', 'status.deploying': 'Deploying…', 'status.error': 'Error',
     'status.stopped': 'Stopped', 'status.offline': 'Offline',
     'agent.empty': 'No agents yet.<br>Deploy your first one!',
@@ -1540,7 +1603,7 @@ var STRINGS = {
     'dash.label': 'Активные Агенты', 'dash.agents': 'агентов', 'dash.agent': 'агент',
     'dash.online': 'Все системы работают', 'dash.offline': 'Нет активных агентов',
     'dash.new': 'Новый Агент', 'dash.your': 'Ваши Агенты',
-    'tab.agents': 'Агенты', 'tab.usage': 'Статистика', 'tab.billing': 'Оплата',
+    'tab.agents': 'Агенты', 'tab.usage': 'Статистика', 'tab.billing': 'Оплата', 'tab.academy': 'Академия',
     'status.online': 'Онлайн', 'status.deploying': 'Деплой…', 'status.error': 'Ошибка',
     'status.stopped': 'Остановлен', 'status.offline': 'Офлайн',
     'agent.empty': 'Агентов пока нет.<br>Создай первого!',
@@ -2227,7 +2290,7 @@ function openLink(url) {
 }
 
 // Liquid Glass tab bar
-var panelIds = ['panel-agents','panel-usage','panel-billing'];
+var panelIds = ['panel-agents','panel-usage','panel-billing','panel-academy'];
 function switchDashTab(el, idx) {
   // Safety: close any lingering payment overlays
   closeAllOverlays();
@@ -2244,6 +2307,7 @@ function switchDashTab(el, idx) {
   if (hb) hb.style.display = idx === 0 ? '' : 'none';
   if (idx === 1) fetchUsage();
   if (idx === 2) fetchBilling();
+  if (idx === 3) renderAcademy();
 }
 function movePill(idx) {
   var tabs = document.querySelectorAll('.dash-tab');
@@ -3546,6 +3610,118 @@ async function wcAction() {
   }
 }
 
+
+// ── Academy ──────────────────────────────────────────────────────────────────
+
+var ACADEMY_ARTICLES = [
+  {
+    id: 'what-is-operent',
+    tag: 'Getting Started',
+    title: 'What is Operent and How Does It Work?',
+    desc: 'A complete overview of the platform — from creating your first AI agent to managing it in production.',
+    date: '2026-04-10',
+    color: 'linear-gradient(135deg,rgba(255,41,66,0.15),rgba(255,107,53,0.1))',
+    icon: '🚀',
+    content: '<h2>Welcome to Operent</h2><p>Operent is an AI Agent-as-a-Service platform that lets you deploy autonomous Telegram bots powered by the latest Claude models — without writing a single line of code.</p><h2>How It Works</h2><p>The process is simple:</p><ol><li><strong>Describe your agent</strong> — tell us what you need in plain language</li><li><strong>Pick skills</strong> — choose from 14+ integrations like Gmail, GitHub, Trello, and more</li><li><strong>Choose a model</strong> — from fast Haiku to powerful Opus</li><li><strong>Deploy</strong> — your agent goes live in ~60 seconds on our managed infrastructure</li></ol><h2>What Can Your Agent Do?</h2><p>Agents run 24/7 inside Telegram. They can:</p><ul><li>Answer questions and hold conversations</li><li>Search the web, summarize articles and YouTube videos</li><li>Manage your Trello boards, Notion pages, and GitHub repos</li><li>Send and read emails via Gmail</li><li>Generate images with AI</li><li>Schedule recurring tasks with natural language</li></ul><div class="tip-box"><div class="tip-box-title">💡 Pro Tip</div><p>Start with the "smart" proactivity mode — your agent will handle cron jobs and gentle reminders without being too noisy.</p></div><h2>Pricing</h2><p>A one-time <strong>$2 deploy fee</strong> covers hosting, dashboard, and auto-updates. After that, you only pay for the tokens your agent uses — with transparent per-request billing visible in the Usage tab.</p>'
+  },
+  {
+    id: 'choosing-the-right-model',
+    tag: 'Models',
+    title: 'Choosing the Right Model for Your Agent',
+    desc: 'Haiku, Sonnet, or Opus? Understand the trade-offs between speed, cost, and intelligence.',
+    date: '2026-04-09',
+    color: 'linear-gradient(135deg,rgba(59,130,246,0.15),rgba(139,92,246,0.1))',
+    icon: '🧠',
+    content: '<h2>Three Tiers of Intelligence</h2><p>Operent supports multiple Claude models, each optimized for different use cases:</p><h3>Haiku — Fast & Affordable</h3><p>Best for simple Q&A bots, quick lookups, and high-volume conversations. Responds in under a second with minimal cost.</p><ul><li><strong>Input:</strong> $1.25 / 1M tokens</li><li><strong>Output:</strong> $6.25 / 1M tokens</li><li><strong>Best for:</strong> Customer support, FAQs, simple automation</li></ul><h3>Sonnet — Balanced Power</h3><p>The sweet spot for most agents. Great reasoning, solid code generation, and sensible cost.</p><ul><li><strong>Input:</strong> $3.75 / 1M tokens</li><li><strong>Output:</strong> $18.75 / 1M tokens</li><li><strong>Best for:</strong> Research assistants, content creation, project management</li></ul><h3>Opus — Maximum Intelligence</h3><p>The most capable model. Handles complex multi-step tasks, nuanced analysis, and sophisticated tool use.</p><ul><li><strong>Input:</strong> $6.25 / 1M tokens</li><li><strong>Output:</strong> $31.25 / 1M tokens</li><li><strong>Best for:</strong> Development agents, deep research, autonomous workflows</li></ul><div class="tip-box"><div class="tip-box-title">💡 Pro Tip</div><p>You can set a fallback model in routing config — use Opus for complex tasks and automatically fall back to Haiku for simple ones.</p></div>'
+  },
+  {
+    id: 'skills-deep-dive',
+    tag: 'Skills',
+    title: 'Skills Deep Dive: Supercharge Your Agent',
+    desc: 'Explore all 14 built-in skills — from voice messages to GitHub integration and AI image generation.',
+    date: '2026-04-08',
+    color: 'linear-gradient(135deg,rgba(34,197,94,0.15),rgba(59,130,246,0.08))',
+    icon: '⚡',
+    content: '<h2>What Are Skills?</h2><p>Skills are pre-built capabilities you can enable for your agent. Each skill injects specialized instructions into your agent\'s system prompt, teaching it how to use specific tools and APIs.</p><h2>Communication</h2><p><strong>🎙️ Voice Messages</strong> — Your agent can transcribe voice messages using Whisper AI. Users send voice notes, the agent reads and responds to the text.</p><h2>Search & Research</h2><p><strong>🔍 Global Search</strong> — Access 17 search engines without any API key. Your agent can search the web, news, images, and more.</p><p><strong>📺 YouTube</strong> — Extract video transcripts and summaries. Perfect for research agents that need to process video content.</p><p><strong>𝕏 X (Twitter)</strong> — Search real-time posts and trends on X/Twitter.</p><h2>Productivity</h2><p><strong>📧 Google Workspace</strong> — Full Gmail, Calendar, Drive, and Sheets access.</p><p><strong>📋 Trello</strong> — Manage boards, lists, and cards directly from Telegram.</p><p><strong>📝 Notion</strong> — Read and write to Notion pages and databases.</p><p><strong>💬 Slack</strong> — Send messages, react, pin items in Slack channels.</p><p><strong>🐙 GitHub</strong> — Create issues, review PRs, check CI status.</p><h2>Creative</h2><p><strong>🎨 Nano Banana</strong> — AI image generation powered by Gemini. Your agent creates images from text descriptions.</p><p><strong>📄 Nano PDF</strong> — Edit and create PDFs using natural language commands.</p><div class="tip-box"><div class="tip-box-title">💡 Pro Tip</div><p>Enable the Self-Improving skill — your agent will learn from corrections and get better over time.</p></div>'
+  },
+  {
+    id: 'cron-scheduling',
+    tag: 'Automation',
+    title: 'Natural Language Scheduling with Cron',
+    desc: 'Teach your agent to run tasks on autopilot — daily reports, reminders, and recurring workflows.',
+    date: '2026-04-07',
+    color: 'linear-gradient(135deg,rgba(245,158,11,0.15),rgba(255,41,66,0.08))',
+    icon: '⏰',
+    content: '<h2>Schedule Anything in Plain English</h2><p>One of Operent\'s most powerful features is natural language cron scheduling. Just tell your agent what to do and when:</p><blockquote>"Remind me every day at 9 AM to check my emails"</blockquote><blockquote>"Every Monday at 10:00, send me a weekly project summary"</blockquote><blockquote>"Check GitHub for new issues every 2 hours"</blockquote><h2>How It Works</h2><p>When your agent receives a scheduling request, it generates a special cron tag that the runtime picks up and executes automatically:</p><ul><li><strong>daily HH:MM</strong> — Run at a specific time every day</li><li><strong>every Nm</strong> — Run every N minutes</li><li><strong>every Nh</strong> — Run every N hours</li><li><strong>hourly</strong> — Run once every hour</li></ul><h2>Proactivity Modes</h2><p>Cron scheduling works differently based on your agent\'s proactivity setting:</p><ul><li><strong>Passive</strong> — No cron, no automation. Agent only responds when spoken to.</li><li><strong>Smart</strong> (default) — Cron enabled, up to 5 proactive messages per day.</li><li><strong>Autopilot</strong> — Full automation, up to 50 proactive nudges daily.</li></ul><div class="tip-box"><div class="tip-box-title">💡 Pro Tip</div><p>Start with Smart mode. You can always switch to Autopilot later once you trust your agent\'s judgment.</p></div>'
+  },
+  {
+    id: 'payments-and-billing',
+    tag: 'Billing',
+    title: 'Payments, Credits & Cost Management',
+    desc: 'How billing works — top up with crypto or Telegram Stars, track usage in real time.',
+    date: '2026-04-05',
+    color: 'linear-gradient(135deg,rgba(139,92,246,0.15),rgba(236,72,153,0.08))',
+    icon: '💳',
+    content: '<h2>Pay As You Go</h2><p>Operent uses a credit-based system. You top up your balance, and tokens are deducted automatically as your agent processes messages.</p><h2>Payment Methods</h2><p>We support multiple ways to add credits:</p><ul><li><strong>Telegram Stars</strong> — Native Telegram payments, fastest and simplest</li><li><strong>TON</strong> — Direct blockchain transfer via TON Connect</li><li><strong>USDT</strong> — On Ethereum, BSC, Arbitrum, or Tron networks</li><li><strong>USDC</strong> — On Arbitrum</li><li><strong>CryptoBot</strong> — Telegram-native crypto payments</li></ul><h2>Tracking Your Costs</h2><p>The <strong>Usage</strong> tab gives you full visibility:</p><ul><li>Real-time token counters (input & output)</li><li>Cost breakdown by model and by agent</li><li>30-day usage chart with model breakdown</li><li>Daily and monthly spending summaries</li></ul><h2>Cost Optimization Tips</h2><ol><li><strong>Use Haiku for simple tasks</strong> — it\'s 5x cheaper than Opus</li><li><strong>Set daily/monthly token limits</strong> to prevent runaway costs</li><li><strong>Monitor the Usage tab</strong> regularly to spot unexpected spikes</li><li><strong>Use routing</strong> to automatically fallback to cheaper models</li></ol><div class="tip-box"><div class="tip-box-title">💡 Pro Tip</div><p>Enable routing with a fallback model — your agent uses Opus for hard questions and Haiku for everything else, saving up to 70% on token costs.</p></div>'
+  },
+  {
+    id: 'agent-goals',
+    tag: 'Configuration',
+    title: 'Agent Goals: Business, Social, Dev & More',
+    desc: 'How goal presets shape your agent\'s personality, system prompt, and default behavior.',
+    date: '2026-04-03',
+    color: 'linear-gradient(135deg,rgba(20,184,166,0.15),rgba(34,197,94,0.08))',
+    icon: '🎯',
+    content: '<h2>What Are Goals?</h2><p>When you create an agent, you pick a goal category. This shapes the system prompt, tone, and default behavior of your agent.</p><h2>Available Goals</h2><h3>🏢 Business</h3><p>Professional tone, focused on productivity. Great for managing schedules, emails, project boards, and team communication. Default skills: Google Workspace, Trello, Slack.</p><h3>👥 Social</h3><p>Friendly and engaging tone. Ideal for community management, content creation, and social media. Emphasizes natural conversation flow.</p><h3>💻 Development</h3><p>Technical and precise. Optimized for code review, GitHub management, CI/CD monitoring, and developer workflows. Uses structured output formats.</p><h3>🔬 Research</h3><p>Analytical and thorough. Built for deep web research, article summarization, data analysis, and knowledge management.</p><h3>🏠 Personal</h3><p>Casual and helpful. Your personal assistant for reminders, daily briefings, quick lookups, and life organization.</p><div class="tip-box"><div class="tip-box-title">💡 Pro Tip</div><p>The goal you choose is a starting point — you can fully customize your agent\'s behavior in the description field during setup.</p></div>'
+  }
+];
+
+var academyRendered = false;
+function renderAcademy() {
+  if (academyRendered) return;
+  academyRendered = true;
+  var container = document.getElementById('academy-list');
+  if (!container) return;
+  var html = '';
+  ACADEMY_ARTICLES.forEach(function(a) {
+    html += '<div class="acad-card" onclick="haptic(\'medium\');openAcadArticle(\'' + a.id + '\')">' +
+      '<div class="acad-thumb"><div class="acad-thumb-placeholder" style="background:' + a.color + '"><div class="acad-thumb-ic">' + a.icon + '</div></div></div>' +
+      '<div class="acad-body">' +
+        '<div class="acad-title">' + a.title + '</div>' +
+        '<div class="acad-desc">' + a.desc + '</div>' +
+        '<div class="acad-meta"><span class="acad-tag">' + a.tag + '</span><span class="acad-date">' + a.date + '</span></div>' +
+      '</div></div>';
+  });
+  container.innerHTML = html;
+}
+
+function openAcadArticle(id) {
+  var article = ACADEMY_ARTICLES.find(function(a){ return a.id === id; });
+  if (!article) return;
+  var screen = document.getElementById('acad-article-screen');
+  var body = document.getElementById('acad-article-body');
+  document.getElementById('acad-article-head-title').textContent = article.tag;
+  body.innerHTML =
+    '<div class="acad-article-hero"><div class="acad-thumb-placeholder" style="background:' + article.color + ';width:100%;height:100%;"><div class="acad-thumb-ic" style="font-size:56px;">' + article.icon + '</div></div></div>' +
+    '<div class="acad-article-content">' +
+      '<div class="acad-article-tag">' + article.tag + '</div>' +
+      '<div class="acad-article-h1">' + article.title + '</div>' +
+      '<div class="acad-article-date">' + article.date + '</div>' +
+      '<div class="acad-article-text">' + article.content + '</div>' +
+    '</div>';
+  body.scrollTop = 0;
+  screen.style.display = 'flex';
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ screen.classList.add('open'); }); });
+}
+
+function closeAcadArticle() {
+  var screen = document.getElementById('acad-article-screen');
+  screen.classList.remove('open');
+  screen.addEventListener('transitionend', function handler() {
+    screen.removeEventListener('transitionend', handler);
+    if (!screen.classList.contains('open')) screen.style.display = 'none';
+  });
+}
 
 // ── Billing ──────────────────────────────────────────────────────────────────
 
