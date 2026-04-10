@@ -577,12 +577,11 @@
   .acad-empty p{font-size:13px;color:var(--t3);line-height:1.5;}
 
   /* Academy article screen */
-  .acad-article-screen{position:fixed;top:0;left:0;width:100%;height:100%;z-index:100;background:var(--bg);display:none;flex-direction:column;opacity:0;transform:translateX(40px);transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1),transform 0.35s cubic-bezier(0.16,1,0.3,1);}
-  .acad-article-screen.open{display:flex;opacity:1;transform:translateX(0);}
-  .acad-article-head{display:flex;align-items:center;gap:12px;padding:calc(env(safe-area-inset-top,0px) + 16px) 20px 16px;flex-shrink:0;border-bottom:1px solid var(--border);}
-  .acad-article-back{width:36px;height:36px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
-  .acad-article-back svg{width:18px;height:18px;stroke:var(--t2);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
-  .acad-article-head-title{font-size:15px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--t2);}
+  .acad-article-screen{position:fixed;top:0;left:0;width:100%;height:100%;z-index:100;background:var(--bg);display:none;flex-direction:column;}
+  .acad-article-screen.visible{display:flex;}
+  .acad-article-screen.visible.open{opacity:1;transform:translateX(0);}
+  .acad-article-screen.visible:not(.open){opacity:0;transform:translateX(40px);transition:opacity 0.3s cubic-bezier(0.16,1,0.3,1),transform 0.3s cubic-bezier(0.16,1,0.3,1);}
+  .acad-article-screen.open{opacity:1;transform:translateX(0);transition:opacity 0.35s cubic-bezier(0.16,1,0.3,1),transform 0.35s cubic-bezier(0.16,1,0.3,1);}
   .acad-article-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;}
   .acad-article-hero{width:100%;aspect-ratio:16/9;background:var(--bg2);overflow:hidden;}
   .acad-article-hero img{width:100%;height:100%;object-fit:cover;}
@@ -1180,10 +1179,6 @@
 
 <!-- Academy Article Screen -->
 <div class="acad-article-screen" id="acad-article-screen">
-  <div class="acad-article-head">
-    <div class="acad-article-back" onclick="haptic('light');closeAcadArticle()"><svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></div>
-    <div class="acad-article-head-title" id="acad-article-head-title">Academy</div>
-  </div>
   <div class="acad-article-body" id="acad-article-body"></div>
 </div>
 
@@ -1839,6 +1834,7 @@ function updateTgBackButton(currentScreen){
 // Wire up Telegram BackButton
 if(tgApp && tgApp.BackButton){
   tgApp.BackButton.onClick(function(){
+    if (acadArticleOpen) { haptic('light'); closeAcadArticle(); return; }
     if (overlayScreen === 'wc') { haptic('light'); closeWcScreen(); return; }
     if (overlayScreen === 'ton') { haptic('light'); closeTonScreen(); return; }
     if (overlayScreen === 'addr') { haptic('light'); closeAddrScreen(); return; }
@@ -3700,7 +3696,6 @@ function openAcadArticle(id) {
   if (!article) return;
   var screen = document.getElementById('acad-article-screen');
   var body = document.getElementById('acad-article-body');
-  document.getElementById('acad-article-head-title').textContent = article.tag;
   body.innerHTML =
     '<div class="acad-article-hero"><div class="acad-thumb-placeholder" style="background:' + article.color + ';width:100%;height:100%;"><div class="acad-thumb-ic" style="font-size:56px;">' + article.icon + '</div></div></div>' +
     '<div class="acad-article-content">' +
@@ -3710,17 +3705,20 @@ function openAcadArticle(id) {
       '<div class="acad-article-text">' + article.content + '</div>' +
     '</div>';
   body.scrollTop = 0;
-  screen.style.display = 'flex';
-  requestAnimationFrame(function(){ requestAnimationFrame(function(){ screen.classList.add('open'); }); });
+  screen.classList.add('visible');
+  acadArticleOpen = true;
+  if (tgApp && tgApp.BackButton) tgApp.BackButton.show();
+  void screen.offsetHeight;
+  screen.classList.add('open');
 }
 
+var acadArticleOpen = false;
 function closeAcadArticle() {
   var screen = document.getElementById('acad-article-screen');
   screen.classList.remove('open');
-  screen.addEventListener('transitionend', function handler() {
-    screen.removeEventListener('transitionend', handler);
-    if (!screen.classList.contains('open')) screen.style.display = 'none';
-  });
+  acadArticleOpen = false;
+  if (tgApp && tgApp.BackButton) tgApp.BackButton.hide();
+  setTimeout(function(){ if (!screen.classList.contains('open')) screen.classList.remove('visible'); }, 350);
 }
 
 // ── Billing ──────────────────────────────────────────────────────────────────
