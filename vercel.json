@@ -1,6 +1,6 @@
 {
   "name": "operent",
   "rewrites": [
-    { "source": "/:path*", "destination": "http://193.58.121.157:3000/:path*" }
+    { "source": "/:path*", "destination": "http://2.26.98.7:3001/:path*" }
   ]
 }
