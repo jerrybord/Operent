@@ -41,7 +41,7 @@ const { db, queries } = require('./lib/db');
 const { generateConfig } = require('./lib/config-gen');
 const { getSkillList } = require('./lib/skills-registry');
 const { deployAgent, stopAgent, checkHealth, getAgentLogs, exportUserData, getServerStats, redeployAgent } = require('./lib/deployer');
-const { validateInitData, extractUser, sendMessage } = require('./lib/telegram');
+const { validateInitData, extractUser, sendMessage, savePreparedKeyboardButton, getManagedBotToken } = require('./lib/telegram');
 const { createProxyRouter } = require('./lib/llm-proxy');
 const { startScanner, triggerImmediateScan } = require('./lib/crypto-scanner');
 
@@ -110,13 +110,10 @@ app.get('/health', (req, res) => {
 // === Deploy ===
 app.post('/api/deploy', authMiddleware, async (req, res) => {
   try {
-    const { name, botToken, description, goal, skills, capabilities, model, proactivity, routing, language } = req.body;
+    const { name, description, goal, skills, capabilities, model, proactivity, routing, language } = req.body;
 
-    if (!name || !botToken) {
-      return res.status(400).json({ error: 'Name and botToken are required' });
-    }
-    if (!/^\d+:[A-Za-z0-9_-]{30,}$/.test(botToken)) {
-      return res.status(400).json({ error: 'Invalid bot token format' });
+    if (!name) {
+      return res.status(400).json({ error: 'Name is required' });
     }
 
     // Upsert user
@@ -130,15 +127,14 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
 
     const agentId = crypto.randomUUID();
 
-    // Generate config
+    // Generate config (botToken will be filled after managed bot creation)
     const proxyBaseUrl = process.env.PROXY_BASE_URL || `http://host.docker.internal:${PORT}`;
-    // Accept both new 'skills' field and legacy 'capabilities' field
     const agentSkills = skills || capabilities || [];
 
     const config = generateConfig({
       agentId,
       name,
-      botToken,
+      botToken: '',
       telegramUserId: req.tgUser.id,
       description,
       goal,
@@ -149,59 +145,112 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
       language: language || 'english',
     }, proxyBaseUrl);
 
-    // Create agent in DB
+    // Create agent in DB with pending_bot status (no token yet)
     queries.createAgent.run(
-      agentId, user.id, name, botToken,
+      agentId, user.id, name, '',
       JSON.stringify(config),
       description || '', goal || 'personal',
       JSON.stringify(agentSkills),
       model || 'sonnet', proactivity || 'smart'
     );
     queries.updateAgentServer.run(server.id, agentId);
-    queries.updateAgentStatus.run('deploying', agentId);
+    queries.updateAgentStatus.run('pending_bot', agentId);
 
-    // Start deployment in background
-    deployStatus.set(agentId, { step: 0, total: 7, message: 'Queued...' });
+    deployStatus.set(agentId, { step: 0, total: 8, message: 'Creating your bot...' });
 
-    deployAgent(
-      server,
-      {
-        id: agentId,
-        name,
-        bot_token: botToken,
-        config,
-        telegramId: req.tgUser.id,
-        telegramUsername: req.tgUser.username || '',
-        goal: goal || 'personal',
-        description: description || '',
-        personalities: [],
-      },
-      (progress) => deployStatus.set(agentId, progress)
-    ).then(async (result) => {
-      if (result.success) {
-        queries.updateAgentDeploy.run(result.containerId, agentId);
-        deployStatus.set(agentId, { step: 7, total: 7, message: 'Agent is live!', done: true });
+    // Prepare managed bot creation button for the Mini App
+    const safeName = name.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20) || 'Agent';
+    const suggestedUsername = `${safeName}_${req.tgUser.id}_bot`;
 
-        if (TG_BOT_TOKEN) {
-          await sendMessage(TG_BOT_TOKEN, req.tgUser.id,
-            `🦞 <b>${name}</b> is now live!\n\nYour agent is deployed and ready.`
-          );
-        }
-      } else {
-        queries.updateAgentStatus.run('error', agentId);
-        deployStatus.set(agentId, { step: 0, total: 7, message: result.error, done: true, error: true });
+    if (TG_BOT_TOKEN) {
+      const prepared = await savePreparedKeyboardButton(
+        TG_BOT_TOKEN, req.tgUser.id, name, suggestedUsername
+      );
+      if (prepared.ok) {
+        return res.json({
+          agentId,
+          status: 'pending_bot',
+          preparedButtonId: prepared.result.id,
+        });
       }
-    }).catch((err) => {
-      queries.updateAgentStatus.run('error', agentId);
-      deployStatus.set(agentId, { step: 0, total: 7, message: err.message, done: true, error: true });
-    });
+      // Fallback: send keyboard button in chat
+      console.log('[deploy] savePreparedKeyboardButton failed, using chat fallback:', JSON.stringify(prepared));
+      await sendMessage(TG_BOT_TOKEN, req.tgUser.id,
+        `🦞 Tap the button below to create your agent bot <b>${name}</b>.`,
+        {
+          reply_markup: JSON.stringify({
+            keyboard: [[{
+              text: `✨ Create ${name}`,
+              request_managed_bot: {
+                request_id: Math.floor(Math.random() * 2147483647),
+                suggested_name: name,
+                suggested_username: suggestedUsername,
+              },
+            }]],
+            resize_keyboard: true,
+            one_time_keyboard: true,
+          }),
+        }
+      );
+      return res.json({ agentId, status: 'pending_bot', fallback: 'chat' });
+    }
 
+    // Dev mode: no TG_BOT_TOKEN — skip managed bot, use placeholder
+    queries.updateAgentManagedBot.run('DEV_TOKEN', 0, 'dev_bot', agentId);
+    queries.updateAgentStatus.run('deploying', agentId);
+    deployStatus.set(agentId, { step: 0, total: 7, message: 'Queued...' });
+    startAgentDeployment(agentId, server, name, 'DEV_TOKEN', config, req.tgUser, goal, description, agentSkills);
     res.json({ agentId, status: 'deploying' });
   } catch (error) {
     console.error('Deploy error:', error);
     res.status(500).json({ error: 'Deployment failed: ' + error.message });
   }
 });
+
+// Shared deployment logic used by both deploy endpoint and managed bot handler
+function startAgentDeployment(agentId, server, name, botToken, config, tgUser, goal, description, skills) {
+  deployStatus.set(agentId, { step: 1, total: 8, message: 'Starting deployment...' });
+
+  deployAgent(
+    server,
+    {
+      id: agentId,
+      name,
+      bot_token: botToken,
+      config,
+      telegramId: tgUser.id,
+      telegramUsername: tgUser.username || '',
+      goal: goal || 'personal',
+      description: description || '',
+      personalities: [],
+    },
+    (progress) => {
+      // Offset steps by 1 (step 1 was "creating bot")
+      deployStatus.set(agentId, { ...progress, step: progress.step + 1, total: 8 });
+    }
+  ).then(async (result) => {
+    if (result.success) {
+      queries.updateAgentDeploy.run(result.containerId, agentId);
+      deployStatus.set(agentId, { step: 8, total: 8, message: 'Agent is live!', done: true });
+
+      if (TG_BOT_TOKEN) {
+        await sendMessage(TG_BOT_TOKEN, tgUser.id,
+          `🦞 <b>${name}</b> is now live!\n\nYour agent is deployed and ready.`
+        );
+      }
+    } else {
+      queries.updateAgentStatus.run('error', agentId);
+      deployStatus.set(agentId, { step: 0, total: 8, message: result.error, done: true, error: true });
+    }
+  }).catch((err) => {
+    queries.updateAgentStatus.run('error', agentId);
+    deployStatus.set(agentId, { step: 0, total: 8, message: err.message, done: true, error: true });
+  });
+}
+
+// Exported for bot.js to call when managed_bot update arrives
+module.exports.startAgentDeployment = (...args) => startAgentDeployment(...args);
+module.exports.deployStatus = deployStatus;
 
 // === Ping / version check ===
 app.get('/api/ping', (req, res) => {
@@ -246,13 +295,16 @@ app.get('/api/status/:id', (req, res) => {
   if (!progress) {
     const agent = queries.getAgent.get(req.params.id);
     if (!agent) return res.status(404).json({ error: 'Agent not found' });
+    if (agent.status === 'pending_bot') {
+      return res.json({ step: 0, total: 8, message: 'Waiting for bot creation...' });
+    }
     // If agent is stuck in 'deploying' with no active in-memory job (e.g. after server restart),
     // treat it as an error so the frontend can recover instead of spinning forever.
     if (agent.status === 'deploying') {
       db.prepare("UPDATE agents SET status = 'error' WHERE id = ?").run(agent.id);
-      return res.json({ step: 0, total: 5, message: 'Deploy was interrupted (server restarted). Please redeploy.', done: true, error: true });
+      return res.json({ step: 0, total: 8, message: 'Deploy was interrupted (server restarted). Please redeploy.', done: true, error: true });
     }
-    return res.json({ step: 7, total: 7, message: agent.status, done: true });
+    return res.json({ step: 8, total: 8, message: agent.status, done: true });
   }
   res.json(progress);
 });
@@ -298,7 +350,7 @@ app.get('/api/agents', authMiddleware, (req, res) => {
   const user = queries.getUser.get(req.tgUser.id);
   if (!user) return res.json([]);
   const agents = queries.getUserAgents.all(user.id);
-  const safe = agents.map(({ bot_token, config, ...a }) => a);
+  const safe = agents.map(({ bot_token, config, ...rest }) => rest);
   res.json(safe);
 });
 

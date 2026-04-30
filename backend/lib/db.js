@@ -115,6 +115,8 @@ const migrations = [
   "ALTER TABLE agents ADD COLUMN proactivity TEXT DEFAULT 'smart'",
   "ALTER TABLE users ADD COLUMN language TEXT",
   "CREATE TABLE IF NOT EXISTS bot_cache (key TEXT PRIMARY KEY, value TEXT)",
+  "ALTER TABLE agents ADD COLUMN managed_bot_id INTEGER",
+  "ALTER TABLE agents ADD COLUMN bot_username TEXT",
 ];
 for (const sql of migrations) {
   try { db.exec(sql); } catch (e) { /* column/index already exists */ }
@@ -170,6 +172,16 @@ const queries = {
   createAgent: db.prepare(`
     INSERT INTO agents (id, user_id, name, bot_token, config, description, goal, capabilities, model, proactivity)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `),
+
+  findPendingManagedDeploy: db.prepare(`
+    SELECT * FROM agents
+    WHERE user_id = ? AND status = 'pending_bot'
+    ORDER BY created_at DESC LIMIT 1
+  `),
+
+  updateAgentManagedBot: db.prepare(`
+    UPDATE agents SET bot_token = ?, managed_bot_id = ?, bot_username = ? WHERE id = ?
   `),
 
   getAgent: db.prepare('SELECT * FROM agents WHERE id = ?'),

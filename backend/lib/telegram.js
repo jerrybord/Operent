@@ -90,4 +90,53 @@ async function createInvoice(botToken, chatId, { title, description, amount }) {
   return response.json();
 }
 
-module.exports = { validateInitData, extractUser, sendMessage, createInvoice };
+/**
+ * Generic Telegram Bot API call
+ */
+async function callBotApi(botToken, method, body = {}) {
+  const url = `https://api.telegram.org/bot${botToken}/${method}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return response.json();
+}
+
+/**
+ * Prepare a KeyboardButton for managed bot creation (Bot API 9.6+).
+ * Returns PreparedKeyboardButton { id } that can be triggered from a Mini App.
+ */
+async function savePreparedKeyboardButton(botToken, userId, suggestedName, suggestedUsername) {
+  return callBotApi(botToken, 'savePreparedKeyboardButton', {
+    user_id: userId,
+    button: {
+      text: 'Create Agent Bot',
+      request_managed_bot: {
+        request_id: Math.floor(Math.random() * 2147483647),
+        suggested_name: suggestedName,
+        suggested_username: suggestedUsername,
+      },
+    },
+  });
+}
+
+/**
+ * Get the API token of a managed bot (Bot API 9.6+).
+ * @param {number} botUserId — the managed bot's user ID (not the human user)
+ */
+async function getManagedBotToken(botToken, botUserId) {
+  return callBotApi(botToken, 'getManagedBotToken', {
+    user_id: botUserId,
+  });
+}
+
+module.exports = {
+  validateInitData,
+  extractUser,
+  sendMessage,
+  createInvoice,
+  callBotApi,
+  savePreparedKeyboardButton,
+  getManagedBotToken,
+};

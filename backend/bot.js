@@ -328,6 +328,78 @@ async function handleSetPhoto(msg) {
   await tgCall('sendMessage', { chat_id: chatId, text: '✅ Фото сохранено! Теперь отправь /start чтобы проверить.' });
 }
 
+// ── Managed bot handler ──────────────────────────────────────────────────────
+const { queries: dbQueries } = require('./lib/db');
+const { getManagedBotToken } = require('./lib/telegram');
+const { generateConfig } = require('./lib/config-gen');
+
+async function handleManagedBotUpdate(update) {
+  const { user: creator, bot: managedBot } = update;
+  console.log(`[bot] managed_bot update: user=${creator.id} created bot @${managedBot.username} (id=${managedBot.id})`);
+
+  // Find the pending deploy for this user
+  const userRow = dbQueries.getUser.get(creator.id);
+  if (!userRow) {
+    console.log('[bot] managed_bot: no user row found for', creator.id);
+    return;
+  }
+
+  const pendingAgent = dbQueries.findPendingManagedDeploy.get(userRow.id);
+  if (!pendingAgent) {
+    console.log('[bot] managed_bot: no pending deploy for user', creator.id);
+    return;
+  }
+
+  // Get the managed bot's token
+  const tokenResult = await tgCall('getManagedBotToken', { user_id: managedBot.id });
+  if (!tokenResult.ok) {
+    console.error('[bot] getManagedBotToken failed:', JSON.stringify(tokenResult));
+    const { deployStatus } = require('./server');
+    deployStatus.set(pendingAgent.id, {
+      step: 0, total: 8, message: 'Failed to get bot token: ' + (tokenResult.description || 'unknown error'),
+      done: true, error: true,
+    });
+    db.prepare("UPDATE agents SET status = 'error' WHERE id = ?").run(pendingAgent.id);
+    return;
+  }
+
+  const botToken = tokenResult.result;
+  const botUsername = managedBot.username || '';
+
+  // Update agent record with the managed bot info
+  dbQueries.updateAgentManagedBot.run(botToken, managedBot.id, botUsername, pendingAgent.id);
+
+  // Regenerate config with real bot token
+  const agentConfig = JSON.parse(pendingAgent.config);
+  agentConfig.channels.telegram.botToken = '{{BOT_TOKEN}}';
+
+  db.prepare('UPDATE agents SET config = ? WHERE id = ?').run(JSON.stringify(agentConfig), pendingAgent.id);
+  db.prepare("UPDATE agents SET status = 'deploying' WHERE id = ?").run(pendingAgent.id);
+
+  // Find server and start actual deployment
+  const server = dbQueries.getServer.get(pendingAgent.server_id);
+  if (!server) {
+    console.error('[bot] managed_bot: no server for agent', pendingAgent.id);
+    return;
+  }
+
+  const capabilities = JSON.parse(pendingAgent.capabilities || '[]');
+  const { startAgentDeployment } = require('./server');
+  startAgentDeployment(
+    pendingAgent.id, server, pendingAgent.name, botToken, agentConfig,
+    { id: creator.id, username: creator.username || '' },
+    pendingAgent.goal, pendingAgent.description, capabilities
+  );
+
+  // Remove the reply keyboard (if chat fallback was used)
+  await tgCall('sendMessage', {
+    chat_id: creator.id,
+    text: `✅ Bot <b>@${botUsername}</b> created! Deploying your agent...`,
+    parse_mode: 'HTML',
+    reply_markup: JSON.stringify({ remove_keyboard: true }),
+  });
+}
+
 // ── Long-polling ──────────────────────────────────────────────────────────────
 let offset = 0;
 let running = true;
@@ -338,15 +410,17 @@ async function poll() {
       const res = await tgCall('getUpdates', {
         offset,
         timeout: 30,
-        allowed_updates: ['message', 'callback_query'],
+        allowed_updates: ['message', 'callback_query', 'managed_bot'],
       });
 
       if (res.ok && Array.isArray(res.result)) {
         for (const update of res.result) {
           offset = update.update_id + 1;
           try {
-            const msg = update.message;
-            if (msg) {
+            if (update.managed_bot) {
+              await handleManagedBotUpdate(update.managed_bot);
+            } else if (update.message) {
+              const msg = update.message;
               const txt = (msg.text || msg.caption || '').trim();
               if (txt === '/start') {
                 await handleStart(msg);
