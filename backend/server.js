@@ -162,7 +162,8 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
     //  2) chat reply-keyboard with request_managed_bot — works as visible fallback
     const safeName = name.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20) || 'Agent';
     const shortId = req.tgUser.id.toString(36);
-    const suggestedUsername = `${safeName}_${shortId}_bot`.toLowerCase();
+    const rand = Math.random().toString(36).slice(2, 6);
+    const suggestedUsername = `${safeName}_${shortId}_${rand}_bot`.toLowerCase();
     const managerUsername = process.env.MANAGER_BOT_USERNAME || 'OperentBot';
     const deepLink = `https://t.me/newbot/${managerUsername}/${suggestedUsername}?name=${encodeURIComponent(name)}`;
 
