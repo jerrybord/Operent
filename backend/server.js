@@ -158,41 +158,45 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
 
     deployStatus.set(agentId, { step: 0, total: 8, message: 'Creating your bot...' });
 
-    // Prepare managed bot creation button for the Mini App
+    // Build the managed-bot creation flow.
+    // Two parallel paths so the Mini App can pick whichever works:
+    //  1) deep link t.me/newbot/<manager>/<suggested>?name=...  — works in every client
+    //  2) chat reply-keyboard with request_managed_bot — works as visible fallback
     const safeName = name.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20) || 'Agent';
-    const suggestedUsername = `${safeName}_${req.tgUser.id}_bot`;
+    const shortId = req.tgUser.id.toString(36);
+    const suggestedUsername = `${safeName}_${shortId}_bot`.toLowerCase();
+    const managerUsername = process.env.MANAGER_BOT_USERNAME || 'OperentBot';
+    const deepLink = `https://t.me/newbot/${managerUsername}/${suggestedUsername}?name=${encodeURIComponent(name)}`;
 
     if (TG_BOT_TOKEN) {
-      const prepared = await savePreparedKeyboardButton(
-        TG_BOT_TOKEN, req.tgUser.id, name, suggestedUsername
-      );
-      if (prepared.ok) {
-        return res.json({
-          agentId,
-          status: 'pending_bot',
-          preparedButtonId: prepared.result.id,
-        });
+      // Always send a chat keyboard as fallback (in case deep link is dismissed)
+      try {
+        await sendMessage(TG_BOT_TOKEN, req.tgUser.id,
+          `🦞 Tap the button below to create your agent bot <b>${name}</b>.`,
+          {
+            reply_markup: JSON.stringify({
+              keyboard: [[{
+                text: `✨ Create ${name}`,
+                request_managed_bot: {
+                  request_id: Math.floor(Math.random() * 2147483647),
+                  suggested_name: name,
+                  suggested_username: suggestedUsername,
+                },
+              }]],
+              resize_keyboard: true,
+              one_time_keyboard: true,
+            }),
+          }
+        );
+      } catch (e) {
+        console.log('[deploy] chat keyboard send failed:', e.message);
       }
-      // Fallback: send keyboard button in chat
-      console.log('[deploy] savePreparedKeyboardButton failed, using chat fallback:', JSON.stringify(prepared));
-      await sendMessage(TG_BOT_TOKEN, req.tgUser.id,
-        `🦞 Tap the button below to create your agent bot <b>${name}</b>.`,
-        {
-          reply_markup: JSON.stringify({
-            keyboard: [[{
-              text: `✨ Create ${name}`,
-              request_managed_bot: {
-                request_id: Math.floor(Math.random() * 2147483647),
-                suggested_name: name,
-                suggested_username: suggestedUsername,
-              },
-            }]],
-            resize_keyboard: true,
-            one_time_keyboard: true,
-          }),
-        }
-      );
-      return res.json({ agentId, status: 'pending_bot', fallback: 'chat' });
+      return res.json({
+        agentId,
+        status: 'pending_bot',
+        deepLink,
+        suggestedUsername,
+      });
     }
 
     // Dev mode: no TG_BOT_TOKEN — skip managed bot, use placeholder

@@ -2586,23 +2586,23 @@ async function realDeploy(formData, onStep) {
 
     const agentId = data.agentId;
 
-    // Managed bot flow: trigger bot creation via Mini App API or chat fallback
-    if (data.status === 'pending_bot') {
+    // Managed bot flow: open Telegram's native bot-creation dialog via deep link.
+    // The chat reply-keyboard with request_managed_bot is sent by the backend as a
+    // visible fallback, so even if the deep link is dismissed the user has a way through.
+    if (data.status === 'pending_bot' && data.deepLink) {
       onStep(0, 8, 'Creating your bot...', false, false);
-
-      if (data.preparedButtonId && tgApp && tgApp.requestKeyboardButton) {
-        // Mini App API: show native bot creation dialog
-        tgApp.requestKeyboardButton({ id: data.preparedButtonId }, function(ok) {
-          if (!ok) {
-            console.log('requestKeyboardButton denied or unavailable, polling for chat fallback');
-          }
-        });
-      } else if (data.fallback === 'chat') {
-        // Chat fallback: button was sent to the chat, prompt user to tap it
+      try {
+        if (tgApp && tgApp.openTelegramLink) {
+          tgApp.openTelegramLink(data.deepLink);
+        } else {
+          window.open(data.deepLink, '_blank');
+        }
+      } catch (e) {
+        console.log('openTelegramLink failed:', e.message);
         if (tgApp && tgApp.showPopup) {
           tgApp.showPopup({
             title: 'Create your agent bot',
-            message: 'Tap the button in the Telegram chat to create your bot, then come back here.',
+            message: 'Open the @' + (data.suggestedUsername || 'OperentBot') + ' chat and tap the create button there.',
             buttons: [{ type: 'ok' }],
           });
         }
