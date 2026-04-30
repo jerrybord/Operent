@@ -48,10 +48,12 @@ function startAgentDeployment(agentId, server, name, botToken, config, tgUser, g
         } catch (e) { /* notification best-effort */ }
       }
     } else {
+      console.error(`[deploy] agent=${agentId} FAILED: ${result.error}`);
       queries.updateAgentStatus.run('error', agentId);
       deployStatus.set(agentId, { step: 0, total: 8, message: result.error, done: true, error: true });
     }
   }).catch((err) => {
+    console.error(`[deploy] agent=${agentId} threw:`, err && err.stack || err);
     queries.updateAgentStatus.run('error', agentId);
     deployStatus.set(agentId, { step: 0, total: 8, message: err.message, done: true, error: true });
   });
