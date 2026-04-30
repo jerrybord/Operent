@@ -91,6 +91,26 @@ async function createInvoice(botToken, chatId, { title, description, amount }) {
 }
 
 /**
+ * Edit text of a previously-sent message. Pass the chat_id and message_id
+ * returned from sendMessage. Returns the parsed Telegram API response.
+ */
+async function editMessageText(botToken, chatId, messageId, text, options = {}) {
+  const url = `https://api.telegram.org/bot${botToken}/editMessageText`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+      text,
+      parse_mode: 'HTML',
+      ...options,
+    }),
+  });
+  return response.json();
+}
+
+/**
  * Generic Telegram Bot API call
  */
 async function callBotApi(botToken, method, body = {}) {
@@ -135,6 +155,7 @@ module.exports = {
   validateInitData,
   extractUser,
   sendMessage,
+  editMessageText,
   createInvoice,
   callBotApi,
   savePreparedKeyboardButton,

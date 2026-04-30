@@ -5,6 +5,11 @@
  * Uses native https module (no extra deps) + better-sqlite3 (already in package)
  */
 
+const _path = require('path');
+require('dotenv').config({ path: _path.join(__dirname, '.env') });
+require('dotenv').config({ path: _path.join(__dirname, '..', '.env') });
+require('dotenv').config({ path: '/root/.env' });
+
 const https = require('https');
 const fs    = require('fs');
 const path  = require('path');
@@ -382,19 +387,13 @@ async function handleManagedBotUpdate(update) {
   }
 
   const capabilities = JSON.parse(pendingAgent.capabilities || '[]');
+  // The deployer takes care of sending and editing the user-facing status
+  // message. We just need to drop the reply-keyboard fallback if it was sent.
   startAgentDeployment(
     pendingAgent.id, server, pendingAgent.name, botToken, agentConfig,
     { id: creator.id, username: creator.username || '' },
     pendingAgent.goal, pendingAgent.description, capabilities
   );
-
-  // Remove the reply keyboard (if chat fallback was used)
-  await tgCall('sendMessage', {
-    chat_id: creator.id,
-    text: `✅ Bot <b>@${botUsername}</b> created! Deploying your agent...`,
-    parse_mode: 'HTML',
-    reply_markup: JSON.stringify({ remove_keyboard: true }),
-  });
 }
 
 // ── Long-polling ──────────────────────────────────────────────────────────────
