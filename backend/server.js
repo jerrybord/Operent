@@ -42,7 +42,7 @@ const { generateConfig } = require('./lib/config-gen');
 const { getSkillList } = require('./lib/skills-registry');
 const { deployAgent, stopAgent, checkHealth, getAgentLogs, exportUserData, getServerStats, redeployAgent } = require('./lib/deployer');
 const { validateInitData, extractUser, sendMessage, savePreparedKeyboardButton, getManagedBotToken } = require('./lib/telegram');
-const { startAgentDeployment, deployStatus } = require('./lib/agent-deployer');
+const { startAgentDeployment, setProgress, getProgress } = require('./lib/agent-deployer');
 const { createProxyRouter } = require('./lib/llm-proxy');
 const { startScanner, triggerImmediateScan } = require('./lib/crypto-scanner');
 
@@ -154,7 +154,7 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
     queries.updateAgentServer.run(server.id, agentId);
     queries.updateAgentStatus.run('pending_bot', agentId);
 
-    deployStatus.set(agentId, { step: 0, total: 8, message: 'Creating your bot...' });
+    setProgress(agentId, { step: 0, total: 8, message: 'Creating your bot...' });
 
     // Build the managed-bot creation flow.
     // Two parallel paths so the Mini App can pick whichever works:
@@ -201,7 +201,7 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
     // Dev mode: no TG_BOT_TOKEN — skip managed bot, use placeholder
     queries.updateAgentManagedBot.run('DEV_TOKEN', 0, 'dev_bot', agentId);
     queries.updateAgentStatus.run('deploying', agentId);
-    deployStatus.set(agentId, { step: 0, total: 7, message: 'Queued...' });
+    setProgress(agentId, { step: 0, total: 8, message: 'Queued...' });
     startAgentDeployment(agentId, server, name, 'DEV_TOKEN', config, req.tgUser, goal, description, agentSkills);
     res.json({ agentId, status: 'deploying' });
   } catch (error) {
@@ -249,22 +249,27 @@ app.get('/api/skills', (req, res) => {
 
 // === Status ===
 app.get('/api/status/:id', (req, res) => {
-  const progress = deployStatus.get(req.params.id);
-  if (!progress) {
-    const agent = queries.getAgent.get(req.params.id);
-    if (!agent) return res.status(404).json({ error: 'Agent not found' });
-    if (agent.status === 'pending_bot') {
-      return res.json({ step: 0, total: 8, message: 'Waiting for bot creation...' });
-    }
-    // If agent is stuck in 'deploying' with no active in-memory job (e.g. after server restart),
-    // treat it as an error so the frontend can recover instead of spinning forever.
-    if (agent.status === 'deploying') {
-      db.prepare("UPDATE agents SET status = 'error' WHERE id = ?").run(agent.id);
-      return res.json({ step: 0, total: 8, message: 'Deploy was interrupted (server restarted). Please redeploy.', done: true, error: true });
-    }
-    return res.json({ step: 8, total: 8, message: agent.status, done: true });
+  const agent = queries.getAgent.get(req.params.id);
+  if (!agent) return res.status(404).json({ error: 'Agent not found' });
+
+  const progress = getProgress(req.params.id);
+  if (progress) return res.json(progress);
+
+  if (agent.status === 'pending_bot') {
+    return res.json({ step: 0, total: 8, message: 'Waiting for bot creation...' });
   }
-  res.json(progress);
+  if (agent.status === 'active') {
+    return res.json({ step: 8, total: 8, message: 'Agent is live!', done: true });
+  }
+  if (agent.status === 'error') {
+    return res.json({ step: 0, total: 8, message: 'Deploy failed. Please try again.', done: true, error: true });
+  }
+  // Status 'deploying' with no progress row = server restarted mid-deploy
+  if (agent.status === 'deploying') {
+    db.prepare("UPDATE agents SET status = 'error' WHERE id = ?").run(agent.id);
+    return res.json({ step: 0, total: 8, message: 'Deploy was interrupted (server restarted). Please redeploy.', done: true, error: true });
+  }
+  return res.json({ step: 8, total: 8, message: agent.status, done: true });
 });
 
 // === Agent health ===
@@ -774,20 +779,20 @@ app.post('/api/agents/:id/redeploy', authMiddleware, async (req, res) => {
   };
 
   queries.updateAgentStatus.run('deploying', agent.id);
-  deployStatus.set(agent.id, { step: 0, total: 5, message: 'Starting update...', done: false });
+  setProgress(agent.id, { step: 0, total: 5, message: 'Starting update...', done: false });
 
   redeployAgent(server, agentData, (progress) => {
-    deployStatus.set(agent.id, progress);
+    setProgress(agent.id, progress);
   }).then((result) => {
     if (result.success) {
       queries.updateAgentStatus.run('active', agent.id);
     } else {
       queries.updateAgentStatus.run('active', agent.id); // restore even on error
-      deployStatus.set(agent.id, { step: 0, total: 5, message: result.error, done: true, error: true });
+      setProgress(agent.id, { step: 0, total: 5, message: result.error, done: true, error: true });
     }
   }).catch((err) => {
     queries.updateAgentStatus.run('active', agent.id);
-    deployStatus.set(agent.id, { step: 0, total: 5, message: err.message, done: true, error: true });
+    setProgress(agent.id, { step: 0, total: 5, message: err.message, done: true, error: true });
   });
 
   res.json({ ok: true, redeployId: agent.id });
