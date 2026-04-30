@@ -42,6 +42,7 @@ const { generateConfig } = require('./lib/config-gen');
 const { getSkillList } = require('./lib/skills-registry');
 const { deployAgent, stopAgent, checkHealth, getAgentLogs, exportUserData, getServerStats, redeployAgent } = require('./lib/deployer');
 const { validateInitData, extractUser, sendMessage, savePreparedKeyboardButton, getManagedBotToken } = require('./lib/telegram');
+const { startAgentDeployment, deployStatus } = require('./lib/agent-deployer');
 const { createProxyRouter } = require('./lib/llm-proxy');
 const { startScanner, triggerImmediateScan } = require('./lib/crypto-scanner');
 
@@ -51,9 +52,6 @@ const HOST = process.env.HOST || '0.0.0.0';
 const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || '';
 const CRYPTOBOT_TOKEN = process.env.CRYPTOBOT_TOKEN || '';
 const IS_DEV = process.env.NODE_ENV !== 'production';
-
-// In-memory deploy status tracker
-const deployStatus = new Map();
 
 // === Middleware ===
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -210,51 +208,6 @@ app.post('/api/deploy', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Deployment failed: ' + error.message });
   }
 });
-
-// Shared deployment logic used by both deploy endpoint and managed bot handler
-function startAgentDeployment(agentId, server, name, botToken, config, tgUser, goal, description, skills) {
-  deployStatus.set(agentId, { step: 1, total: 8, message: 'Starting deployment...' });
-
-  deployAgent(
-    server,
-    {
-      id: agentId,
-      name,
-      bot_token: botToken,
-      config,
-      telegramId: tgUser.id,
-      telegramUsername: tgUser.username || '',
-      goal: goal || 'personal',
-      description: description || '',
-      personalities: [],
-    },
-    (progress) => {
-      // Offset steps by 1 (step 1 was "creating bot")
-      deployStatus.set(agentId, { ...progress, step: progress.step + 1, total: 8 });
-    }
-  ).then(async (result) => {
-    if (result.success) {
-      queries.updateAgentDeploy.run(result.containerId, agentId);
-      deployStatus.set(agentId, { step: 8, total: 8, message: 'Agent is live!', done: true });
-
-      if (TG_BOT_TOKEN) {
-        await sendMessage(TG_BOT_TOKEN, tgUser.id,
-          `🦞 <b>${name}</b> is now live!\n\nYour agent is deployed and ready.`
-        );
-      }
-    } else {
-      queries.updateAgentStatus.run('error', agentId);
-      deployStatus.set(agentId, { step: 0, total: 8, message: result.error, done: true, error: true });
-    }
-  }).catch((err) => {
-    queries.updateAgentStatus.run('error', agentId);
-    deployStatus.set(agentId, { step: 0, total: 8, message: err.message, done: true, error: true });
-  });
-}
-
-// Exported for bot.js to call when managed_bot update arrives
-module.exports.startAgentDeployment = (...args) => startAgentDeployment(...args);
-module.exports.deployStatus = deployStatus;
 
 // === Ping / version check ===
 app.get('/api/ping', (req, res) => {

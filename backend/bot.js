@@ -330,8 +330,7 @@ async function handleSetPhoto(msg) {
 
 // ── Managed bot handler ──────────────────────────────────────────────────────
 const { queries: dbQueries } = require('./lib/db');
-const { getManagedBotToken } = require('./lib/telegram');
-const { generateConfig } = require('./lib/config-gen');
+const { startAgentDeployment, deployStatus } = require('./lib/agent-deployer');
 
 async function handleManagedBotUpdate(update) {
   const { user: creator, bot: managedBot } = update;
@@ -354,7 +353,6 @@ async function handleManagedBotUpdate(update) {
   const tokenResult = await tgCall('getManagedBotToken', { user_id: managedBot.id });
   if (!tokenResult.ok) {
     console.error('[bot] getManagedBotToken failed:', JSON.stringify(tokenResult));
-    const { deployStatus } = require('./server');
     deployStatus.set(pendingAgent.id, {
       step: 0, total: 8, message: 'Failed to get bot token: ' + (tokenResult.description || 'unknown error'),
       done: true, error: true,
@@ -384,7 +382,6 @@ async function handleManagedBotUpdate(update) {
   }
 
   const capabilities = JSON.parse(pendingAgent.capabilities || '[]');
-  const { startAgentDeployment } = require('./server');
   startAgentDeployment(
     pendingAgent.id, server, pendingAgent.name, botToken, agentConfig,
     { id: creator.id, username: creator.username || '' },
