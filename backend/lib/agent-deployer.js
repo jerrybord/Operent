@@ -74,7 +74,8 @@ function getProgress(agentId) {
 }
 
 // Send the initial Telegram status message and remember its id so we can edit
-// it on every progress step. Falls back gracefully if Telegram refuses.
+// it on every progress step. Returns when the message_id is saved so the
+// caller can guarantee subsequent edits will find it.
 async function initStatusMessage(agentId, name, tgUserId) {
   const token = getBotToken();
   if (!token || !tgUserId) return;
@@ -84,8 +85,9 @@ async function initStatusMessage(agentId, name, tgUserId) {
       reply_markup: JSON.stringify({ remove_keyboard: true }),
     });
     if (res && res.ok && res.result && res.result.message_id) {
+      // Only persist the chat/message id — do NOT overwrite step/total/message,
+      // those are owned by the deploy progress callback.
       setProgress(agentId, {
-        step: 1, total: TOTAL_STEPS, message: STEP_LABELS[1],
         chatId: tgUserId,
         messageId: res.result.message_id,
       });
@@ -110,11 +112,17 @@ async function syncStatusMessage(agentId, name, progress, botUsername) {
   }
 }
 
-function startAgentDeployment(agentId, server, name, botToken, config, tgUser, goal, description, skills) {
+async function startAgentDeployment(agentId, server, name, botToken, config, tgUser, goal, description, skills) {
   setProgress(agentId, { step: 1, total: TOTAL_STEPS, message: STEP_LABELS[1] });
 
-  // Send the initial chat message; subsequent edits target this message.
-  initStatusMessage(agentId, name, tgUser.id).catch(() => {});
+  // Wait for the initial chat message to be sent and its message_id to be
+  // persisted *before* starting deployAgent — otherwise the early progress
+  // callbacks fire while messageId is still null and silently drop edits.
+  try {
+    await initStatusMessage(agentId, name, tgUser.id);
+  } catch (e) {
+    console.error('[deploy] init message error (continuing):', e.message);
+  }
 
   let lastSyncedStep = 1;
   const syncIfNewStep = (progress) => {
